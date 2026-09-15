@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Mai Hu Kabadiwala",
+    "slug": "mai-hu-kabadiwala",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "maihukabadiwala",
+    "splash": {
+      "backgroundColor": "#FBF9F1"
+    },
+    "android": {
+      "package": "com.maihukabadiwala.collector",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Mai Hu Kabadiwala to photograph e-waste for material identification."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Mai Hu Kabadiwala to estimate pickup distance and nearby buyer options."
+        }
+      ],
+      "expo-sqlite",
+      "expo-notifications"
+    ]
+  }
+}

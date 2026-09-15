@@ -1,0 +1,44 @@
+import { StyleSheet, Text, View } from "react-native";
+
+import { colors } from "../constants/theme";
+import type { Lot } from "../types/domain";
+import { currency, relativeDate } from "../utils/format";
+
+type Props = { lot: Lot; syncedLabel: string; pendingLabel: string };
+
+const materialIcon: Record<Lot["material"], string> = {
+  "Copper cable": "〰",
+  "Server boards": "▦",
+  Aluminium: "◒",
+  "Mixed e-waste": "◉"
+};
+
+export function LotCard({ lot, syncedLabel, pendingLabel }: Props) {
+  const isPending = lot.syncState === "PENDING";
+  return <View style={styles.row}>
+    <View style={[styles.icon, isPending ? styles.pendingIcon : styles.syncedIcon]}><Text>{materialIcon[lot.material]}</Text></View>
+    <View style={styles.copy}>
+      <Text style={styles.title}>{lot.material}</Text>
+      <Text style={styles.sub}>{lot.weightKg} kg · {relativeDate(lot.createdAt)}</Text>
+    </View>
+    <View style={styles.right}>
+      <Text style={styles.value}>{lot.expectedNetEarnings ? currency(lot.expectedNetEarnings) : "—"}</Text>
+      <Text style={[styles.status, isPending ? styles.pending : styles.synced]}>{isPending ? pendingLabel : syncedLabel}</Text>
+    </View>
+  </View>;
+}
+
+const styles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: colors.line },
+  icon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  pendingIcon: { backgroundColor: "#FFF0D8" },
+  syncedIcon: { backgroundColor: colors.greenLight },
+  copy: { flex: 1 },
+  title: { color: colors.ink, fontSize: 13, fontWeight: "700" },
+  sub: { marginTop: 3, color: colors.muted, fontSize: 10 },
+  right: { alignItems: "flex-end" },
+  value: { color: colors.ink, fontSize: 12, fontWeight: "700" },
+  status: { marginTop: 3, fontSize: 9, fontWeight: "700" },
+  pending: { color: "#A8781A" },
+  synced: { color: "#40805A" }
+});

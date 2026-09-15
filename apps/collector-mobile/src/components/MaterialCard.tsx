@@ -1,0 +1,29 @@
+import { StyleSheet, Text, View } from "react-native";
+
+import { colors } from "../constants/theme";
+
+type Props = { material: string; price: string; note: string; badge?: string };
+
+export function MaterialCard({ material, price, note, badge }: Props) {
+  return <View style={styles.card}>
+    <View style={styles.visual}><Text style={styles.visualText}>〰</Text></View>
+    <View style={styles.copy}>
+      {badge ? <Text style={styles.badge}>{badge}</Text> : null}
+      <Text style={styles.title}>{material}</Text>
+      <Text style={styles.note}>{note}</Text>
+    </View>
+    <Text style={styles.price}>{price}<Text style={styles.unit}>/kg</Text></Text>
+  </View>;
+}
+
+const styles = StyleSheet.create({
+  card: { flexDirection: "row", alignItems: "center", gap: 11, padding: 13, borderRadius: 18, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
+  visual: { width: 49, height: 49, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: "#335F51" },
+  visualText: { color: "#F2B64A", fontSize: 30, fontWeight: "700" },
+  copy: { flex: 1 },
+  badge: { alignSelf: "flex-start", marginBottom: 4, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4, overflow: "hidden", color: "#8B6707", backgroundColor: "#FFF0BA", fontSize: 8, fontWeight: "800", letterSpacing: .6 },
+  title: { color: colors.ink, fontSize: 14, fontWeight: "700" },
+  note: { marginTop: 3, color: colors.muted, fontSize: 10 },
+  price: { color: colors.green, fontSize: 15, fontWeight: "800" },
+  unit: { color: colors.muted, fontSize: 9, fontWeight: "500" }
+});
