@@ -30,6 +30,10 @@ export function BazarBhavScreen({ navigation }: BazarBhavProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeMaterial, setActiveMaterial] = useState<Material | null>(null);
 
+  // Dynamic best opportunity
+  const topGainer = [...prices].filter(p => p.trend === "up").sort((a, b) => b.changePercent - a.changePercent)[0];
+  const topLoser  = [...prices].filter(p => p.trend === "down").sort((a, b) => a.changePercent - b.changePercent)[0];
+
   const filteredPrices = prices.filter((item) => {
     const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
     const meta = MATERIAL_METADATA[item.material];
@@ -79,6 +83,39 @@ export function BazarBhavScreen({ navigation }: BazarBhavProps) {
       <Text style={styles.kicker}>DAILY SCRAP INTELLIGENCE</Text>
       <Text style={styles.title}>{t("bazarBhav")}</Text>
       <Text style={styles.subtitle}>{t("dailyRates")}</Text>
+
+      {/* TODAY'S BEST OPPORTUNITY Banner */}
+      {topGainer && (
+        <TouchableOpacity
+          style={styles.opportunityBanner}
+          activeOpacity={0.88}
+          onPress={() => navigation.navigate("Market", { material: topGainer.material, quality: "medium", weightKg: 35 })}
+        >
+          <View style={styles.oppLeft}>
+            <Text style={styles.oppEmoji}>{MATERIAL_METADATA[topGainer.material]?.icon ?? "🔥"}</Text>
+            <View>
+              <Text style={styles.oppLabel}>🔥 TODAY'S BEST OPPORTUNITY</Text>
+              <Text style={styles.oppMaterialName}>
+                {language === "hi"
+                  ? MATERIAL_METADATA[topGainer.material]?.hindi
+                  : language === "mr"
+                  ? MATERIAL_METADATA[topGainer.material]?.marathi
+                  : topGainer.material}
+              </Text>
+              <Text style={styles.oppAdvice} numberOfLines={1}>
+                {language === "hi" ? topGainer.adviceHi : language === "mr" ? topGainer.adviceMr : topGainer.advice}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.oppRight}>
+            <Text style={styles.oppPrice}>₹{topGainer.currentPrice}/kg</Text>
+            <View style={styles.oppChangePill}>
+              <Text style={styles.oppChangePillText}>▲ +{topGainer.changePercent}%</Text>
+            </View>
+            <Text style={styles.oppCta}>Sell now →</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Voice Instruction Banner */}
       <View style={styles.audioHintCard}>
@@ -359,5 +396,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenLight
   },
   sellShortcutText: { fontSize: 11, fontWeight: "800", color: colors.green },
-  sellShortcutArrow: { fontSize: 14, fontWeight: "900", color: colors.green }
+  sellShortcutArrow: { fontSize: 14, fontWeight: "900", color: colors.green },
+
+  // Opportunity Banner
+  opportunityBanner: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 18,
+    backgroundColor: colors.green,
+    marginBottom: 10,
+    gap: 8
+  },
+  oppLeft: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+  oppEmoji: { fontSize: 28 },
+  oppLabel: { fontSize: 8, fontWeight: "800", color: "rgba(255,255,255,.65)", letterSpacing: .8, marginBottom: 2 },
+  oppMaterialName: { fontSize: 15, fontWeight: "900", color: "#fff", letterSpacing: -.3 },
+  oppAdvice: { fontSize: 9, color: "rgba(255,255,255,.65)", marginTop: 2 },
+  oppRight: { alignItems: "flex-end", gap: 3 },
+  oppPrice: { fontSize: 16, fontWeight: "900", color: "#fff" },
+  oppChangePill: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, backgroundColor: "rgba(255,255,255,.15)" },
+  oppChangePillText: { fontSize: 9, fontWeight: "800", color: "#a7f3cc" },
+  oppCta: { fontSize: 9, fontWeight: "800", color: "#F8E5AE" }
 });
+

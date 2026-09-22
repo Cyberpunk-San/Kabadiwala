@@ -176,6 +176,94 @@ export const BAZAR_PRICES: BazarPriceItem[] = [
     advice: "Construction rebar scrap demand is healthy. Best sold in lots > 50 kg.",
     adviceHi: "लोहे का भाव स्थिर एवं मजबूत। 50 किलो से अधिक का लॉट बनाकर बेचना फ़ायदेमंद।",
     adviceMr: "बांधकाम क्षेत्रातील स्टील मागणी चांगली. 50 किलोपेक्षा जास्त लॉट केल्यास फायदा."
+  },
+  {
+    id: "p_mixed_ewaste",
+    material: "Mixed e-waste",
+    category: "Electronics",
+    currentPrice: 85,
+    previousPrice: 80,
+    changePercent: 6.25,
+    trend: "up",
+    demand: "MODERATE",
+    history7Days: [
+      { day: "Day 1", price: 75 },
+      { day: "Day 2", price: 76 },
+      { day: "Day 3", price: 78 },
+      { day: "Day 4", price: 80 },
+      { day: "Day 5", price: 81 },
+      { day: "Day 6", price: 83 },
+      { day: "Day 7", price: 85 }
+    ],
+    advice: "Mixed e-waste accepted at bulk. Sort out metals first for better yield.",
+    adviceHi: "मिश्रित ई-कचरा थोक में स्वीकृत। पहले धातुएं अलग करने पर ज़्यादा कमाई।",
+    adviceMr: "मिश्र ई-कचरा घाऊक स्वरूपात स्वीकारला जातो. धातू आधी वेगळ्या करा."
+  },
+  {
+    id: "p_crt",
+    material: "CRT & monitor glass",
+    category: "Electronics",
+    currentPrice: 18,
+    previousPrice: 20,
+    changePercent: -10.0,
+    trend: "down",
+    demand: "LOW",
+    history7Days: [
+      { day: "Day 1", price: 22 },
+      { day: "Day 2", price: 21 },
+      { day: "Day 3", price: 21 },
+      { day: "Day 4", price: 20 },
+      { day: "Day 5", price: 19 },
+      { day: "Day 6", price: 18 },
+      { day: "Day 7", price: 18 }
+    ],
+    advice: "CRT demand is declining. Only TSDF-authorised recyclers accept safely. Do not break.",
+    adviceHi: "सीआरटी की मांग घट रही है। केवल अधिकृत TSDF केंद्र स्वीकार करते हैं। न तोड़ें।",
+    adviceMr: "सीआरटीची मागणी घटत आहे. फक्त TSDF परवानाधारक रीसायकलर स्वीकारतात. तोडू नका."
+  },
+  {
+    id: "p_lead_acid",
+    material: "Lead acid batteries",
+    category: "Batteries",
+    currentPrice: 98,
+    previousPrice: 95,
+    changePercent: 3.16,
+    trend: "up",
+    demand: "HIGH",
+    history7Days: [
+      { day: "Day 1", price: 90 },
+      { day: "Day 2", price: 91 },
+      { day: "Day 3", price: 93 },
+      { day: "Day 4", price: 94 },
+      { day: "Day 5", price: 95 },
+      { day: "Day 6", price: 96 },
+      { day: "Day 7", price: 98 }
+    ],
+    advice: "Lead recyclers offering good rates. Keep upright, avoid tipping. UPS and automotive demand is high.",
+    adviceHi: "लेड रीसाइक्लर अच्छा दाम दे रहे हैं। सीधा रखें, उल्टा न पलटें। यूपीएस और गाड़ियों में ज़बरदस्त मांग।",
+    adviceMr: "लेड रीसायकलर्स चांगला दर देत आहेत. सरळ ठेवा. यूपीएस आणि वाहनांची मागणी जास्त."
+  },
+  {
+    id: "p_compressors",
+    material: "Compressors & cooling units",
+    category: "Heavy Scrap",
+    currentPrice: 165,
+    previousPrice: 160,
+    changePercent: 3.13,
+    trend: "up",
+    demand: "MODERATE",
+    history7Days: [
+      { day: "Day 1", price: 155 },
+      { day: "Day 2", price: 157 },
+      { day: "Day 3", price: 158 },
+      { day: "Day 4", price: 160 },
+      { day: "Day 5", price: 161 },
+      { day: "Day 6", price: 163 },
+      { day: "Day 7", price: 165 }
+    ],
+    advice: "AC compressors with copper coil yield high copper extraction value. Drain refrigerant first.",
+    adviceHi: "तांबे की कॉइल वाले एसी कंप्रेसर सबसे अच्छे। पहले गैस निकालें।",
+    adviceMr: "तांब्याच्या कॉइलसह एसी कंप्रेसर सर्वोत्तम. आधी गॅस काढा."
   }
 ];
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -32,6 +32,7 @@ export function HandoverScreen({ navigation, route }: HandoverProps) {
   const { t } = useTranslation();
   const lots = useAppStore((state) => state.lots);
   const updateLotStatus = useAppStore((state) => state.updateLotStatus);
+  const profile = useAppStore((state) => state.profile);
 
   const lotId = route.params?.lotId || lots[0]?.id || "lot_demo_7821";
   const currentLot = lots.find((l) => l.id === lotId) || {
@@ -43,19 +44,22 @@ export function HandoverScreen({ navigation, route }: HandoverProps) {
     status: "PICKUP_SCHEDULED" as const
   };
 
+  const collectorId = profile.collectorId ?? profile.id;
+  const collectorName = profile.name;
+
   const [isSettled, setIsSettled] = useState(currentLot.status === "SOLD" || currentLot.status === "PAID");
   const [utrNumber, setUtrNumber] = useState("UTR-MHK-98214732");
   const [pickupPin] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
 
   const qrPayload = JSON.stringify({
     lotId: currentLot.id,
-    collectorId: "CLT-4218",
-    collectorName: "Ramesh Kumar",
+    collectorId,
+    collectorName,
     material: currentLot.material,
     weightKg: currentLot.weightKg,
     amount: currentLot.expectedNetEarnings,
     pin: pickupPin,
-    hub: "Pune Bhosari Cluster",
+    hub: profile.cluster,
     auth: "SIG_MHK_OK_VERIFIED"
   });
 
@@ -218,7 +222,7 @@ export function HandoverScreen({ navigation, route }: HandoverProps) {
           </View>
           <View style={styles.receiptRow}>
             <Text style={styles.receiptLabel}>Beneficiary:</Text>
-            <Text style={styles.receiptVal}>Ramesh Kumar (CLT-4218)</Text>
+            <Text style={styles.receiptVal}>{collectorName} ({collectorId})</Text>
           </View>
           <View style={styles.receiptRow}>
             <Text style={styles.receiptLabel}>Mode:</Text>

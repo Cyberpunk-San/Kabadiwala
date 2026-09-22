@@ -6,449 +6,745 @@
   <title>Recycler Lot Verification & Settlement Portal | Mai Hu Kabadiwala</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #124A3B;
-      --primary-light: #EBF7F0;
-      --accent: #E5823D;
-      --accent-gold: #F59E0B;
-      --bg: #F4F7F4;
-      --card-bg: #FFFFFF;
-      --text-main: #142820;
-      --text-muted: #5C7469;
-      --border: #DCE5DE;
-      --success: #16A34A;
-      --danger: #DC2626;
+      --primary:       #0f3d2e;
+      --primary-mid:   #164e3b;
+      --primary-light: #e8f5ee;
+      --accent:        #d97706;
+      --accent-light:  #fef3c7;
+      --bg:            #f4f7f4;
+      --card:          #ffffff;
+      --ink:           #0f1c14;
+      --muted:         #5c7469;
+      --line:          #dce5de;
+      --green:         #16a34a;
+      --green-light:   #dcfce7;
+      --red:           #dc2626;
+      --red-light:     #fee2e2;
+      --amber:         #f59e0b;
+      --blue:          #2563eb;
+      --radius:        14px;
+      --shadow:        0 2px 16px rgba(15,60,46,.08);
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: var(--bg);
-      color: var(--text-main);
-      padding: 24px 16px;
-      display: flex;
-      justify-content: center;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
       min-height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 720px;
-    }
-
-    header {
+      padding: 20px 16px 60px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--primary);
-      padding: 20px 24px;
-      border-radius: 20px;
-      color: white;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 20px rgba(18, 74, 59, 0.15);
-    }
-
-    .brand h1 {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: #F6DE8F;
-    }
-
-    .brand p {
-      font-size: 11px;
-      color: #C3E2D1;
-      margin-top: 3px;
-    }
-
-    .partner-badge {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      padding: 6px 12px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-    }
-
-    .card-title {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--primary);
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 18px;
-    }
-
-    .input-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-
-    @media (max-width: 540px) {
-      .input-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-main);
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input:focus, textarea:focus {
-      border-color: var(--primary);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
       justify-content: center;
-      gap: 8px;
-      width: 100%;
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px 20px;
-      border-radius: 14px;
-      font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
-      transition: transform 0.1s, background-color 0.2s;
     }
+    .wrap { width: 100%; max-width: 680px; }
 
-    .btn:hover {
-      background: #0d382c;
-    }
-
-    .btn:active {
-      transform: scale(0.99);
-    }
-
-    .btn-secondary {
-      background: #EDF4EE;
-      color: var(--primary);
-      border: 1px solid #C4D9C8;
-      margin-top: 10px;
-    }
-
-    .btn-secondary:hover {
-      background: #DFEBE1;
-    }
-
-    /* Lot Inspection Box */
-    .lot-audit-box {
-      display: none;
-      border: 1.5px solid #A8D4B7;
-      background: #F9FCFA;
-      border-radius: 18px;
-      padding: 20px;
-      margin-top: 20px;
-    }
-
-    .audit-header {
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-mid) 100%);
+      border-radius: 20px;
+      padding: 22px 24px;
+      margin-bottom: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 14px;
-      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(15,61,46,.2);
+    }
+    .brand-name { font-size: 18px; font-weight: 900; color: #fff; letter-spacing: -.3px; }
+    .brand-sub  { font-size: 10px; color: rgba(255,255,255,.55); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
+    .recycler-badge {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      color: #a7f3cc;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 50px;
+      letter-spacing: .5px;
+    }
+
+    /* ── KICKER / SECTION LABELS ── */
+    .kicker {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    h2 { font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.5px; margin-bottom: 14px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── PIN ENTRY ── */
+    .pin-area { display: flex; flex-direction: column; gap: 14px; }
+    .pin-row { display: flex; gap: 10px; align-items: stretch; }
+    .pin-input {
+      flex: 1;
+      font-family: 'Plus Jakarta Sans', monospace;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 18px;
+      padding: 14px 20px;
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      background: #f8faf9;
+      color: var(--primary);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .pin-input:focus { border-color: var(--primary); background: #fff; }
+    .pin-input::placeholder { color: #c5d0c7; letter-spacing: 4px; font-size: 16px; }
+    .verify-btn {
+      padding: 0 22px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .18s, transform .1s;
+      white-space: nowrap;
+    }
+    .verify-btn:hover  { background: var(--primary-mid); }
+    .verify-btn:active { transform: scale(.97); }
+    .verify-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+
+    .or-divider { text-align: center; color: var(--muted); font-size: 11px; font-weight: 700; position: relative; }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      position: absolute; top: 50%; width: 42%;
+      height: 1px; background: var(--line);
+    }
+    .or-divider::before { left: 0; }
+    .or-divider::after  { right: 0; }
+
+    .lot-id-row { display: flex; gap: 8px; }
+    .lot-id-input {
+      flex: 1; padding: 11px 14px;
+      border: 1px solid var(--line); border-radius: 10px;
+      font-size: 13px; font-weight: 600; color: var(--ink); background: #f8faf9;
+      outline: none; transition: border-color .18s;
+    }
+    .lot-id-input:focus { border-color: var(--primary); background: #fff; }
+
+    /* ── LOT DETAILS PANEL ── */
+    #lot-panel { display: none; }
+    #lot-panel.visible { display: block; }
+
+    .lot-header {
+      background: linear-gradient(135deg, var(--primary) 0%, #215c45 100%);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      color: #fff;
+    }
+    .lot-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .lot-brand { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: rgba(255,255,255,.55); text-transform: uppercase; }
+    .lot-id-text { font-size: 13px; font-weight: 800; color: #fff; margin-top: 3px; }
+    .lot-status-pill {
+      font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
+      padding: 5px 10px; border-radius: 50px;
+      border: 1px solid rgba(255,255,255,.25);
+      color: rgba(255,255,255,.8);
+    }
+    .lot-status-pill.paid { background: rgba(22,163,74,.25); border-color: #86efac; color: #bbf7d0; }
+
+    .lot-detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,.15);
+    }
+    .lot-detail-item label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .8px; }
+    .lot-detail-item .val  { font-size: 16px; font-weight: 800; color: #fff; margin-top: 3px; }
+    .lot-detail-item .val.green { color: #86efac; }
+
+    /* QR Area */
+    .qr-area {
+      display: flex; gap: 18px; align-items: center;
+      background: #f8faf9; border: 1px solid var(--line);
+      border-radius: 12px; padding: 16px;
       margin-bottom: 14px;
     }
-
-    .audit-tag {
-      background: #DCFCE7;
-      color: #15803D;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 10px;
-      font-weight: 800;
+    .qr-placeholder {
+      width: 100px; height: 100px; border-radius: 10px;
+      background: var(--ink); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; position: relative; overflow: hidden;
     }
-
-    .audit-details-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
+    .qr-grid {
+      position: absolute; inset: 6px;
+      display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px;
     }
-
-    .audit-item {
-      background: white;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
+    .qr-cell { border-radius: 1px; }
+    .qr-dark  { background: var(--ink); }
+    .qr-light { background: #fff; }
+    .qr-logo {
+      position: absolute; width: 22px; height: 22px;
+      background: var(--primary); border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; border: 2px solid #fff;
     }
+    .qr-copy h3 { font-size: 14px; font-weight: 800; color: var(--ink); }
+    .qr-copy p  { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 
-    .audit-label {
-      font-size: 10px;
-      color: var(--text-muted);
-      font-weight: 700;
+    /* Checklist */
+    .checklist { list-style: none; }
+    .checklist li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid var(--line);
+      font-size: 12px; color: var(--ink);
     }
-
-    .audit-val {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--text-main);
-      margin-top: 2px;
+    .checklist li:last-child { border: none; }
+    .check-icon {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; flex-shrink: 0; margin-top: 1px;
     }
+    .check-icon.done { background: var(--green-light); color: var(--green); }
+    .check-icon.todo { background: #f3f4f6; color: var(--muted); border: 1px solid var(--line); }
 
-    .audit-val-payout {
-      color: var(--primary);
-      font-size: 18px;
-      font-weight: 900;
-    }
-
-    .payout-card {
-      display: none;
-      background: #ECFDF5;
-      border: 2px solid var(--success);
-      border-radius: 18px;
-      padding: 24px;
+    /* Confirm section */
+    .weight-verify { display: flex; gap: 10px; align-items: center; }
+    .weight-verify input {
+      flex: 1; padding: 12px 16px;
+      border: 2px solid var(--line); border-radius: 10px;
+      font-size: 20px; font-weight: 900; color: var(--primary);
+      outline: none; transition: border-color .18s;
       text-align: center;
-      margin-top: 20px;
-      animation: fadeIn 0.3s ease-in;
     }
-
-    .payout-badge {
-      width: 52px;
-      height: 52px;
-      background: var(--success);
-      color: white;
-      border-radius: 26px;
-      font-size: 26px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 12px;
+    .weight-verify input:focus { border-color: var(--primary); }
+    .weight-unit {
+      font-size: 14px; font-weight: 700; color: var(--muted); padding: 0 8px;
     }
-
-    .payout-title {
-      font-size: 18px;
-      font-weight: 900;
-      color: #065F46;
+    .weight-diff {
+      font-size: 11px; font-weight: 700; padding: 5px 10px;
+      border-radius: 6px; display: none;
     }
+    .weight-diff.ok      { background: var(--green-light); color: var(--green); display: inline-flex; }
+    .weight-diff.warning { background: #fff7ed; color: var(--accent); display: inline-flex; }
+    .weight-diff.over    { background: var(--red-light); color: var(--red); display: inline-flex; }
 
-    .payout-sub {
-      font-size: 12px;
-      color: #047857;
-      margin-top: 4px;
-      margin-bottom: 16px;
+    .confirm-btn {
+      width: 100%; padding: 16px;
+      background: var(--primary);
+      color: #fff; border: none;
+      border-radius: 14px; font-size: 15px; font-weight: 900;
+      cursor: pointer; transition: background .18s, transform .1s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
     }
+    .confirm-btn:hover  { background: var(--primary-mid); }
+    .confirm-btn:active { transform: scale(.98); }
+    .confirm-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
 
-    .receipt-slip {
-      background: white;
-      border-radius: 12px;
-      padding: 14px;
-      text-align: left;
-      border: 1px solid #A7F3D0;
-      margin-bottom: 16px;
+    /* ── SUCCESS STATE ── */
+    #success-panel { display: none; }
+    #success-panel.visible { display: block; }
+
+    .success-card {
+      background: linear-gradient(135deg, #0a3d26 0%, #1a6b45 100%);
+      border-radius: 20px;
+      padding: 30px 24px;
+      text-align: center;
+      color: #fff;
     }
-
-    .receipt-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      padding: 4px 0;
+    .success-icon-wrap {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(255,255,255,.15);
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
     }
-
-    .receipt-k {
-      color: #047857;
-      font-weight: 600;
+    .success-title { font-size: 24px; font-weight: 900; letter-spacing: -.5px; }
+    .success-sub   { font-size: 13px; color: rgba(255,255,255,.65); margin-top: 6px; }
+    .utr-box {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 12px; padding: 16px 20px; margin: 20px 0;
+      display: flex; flex-direction: column; gap: 8px;
     }
-
-    .receipt-v {
-      font-weight: 800;
-      color: #064E3B;
+    .utr-row { display: flex; justify-content: space-between; font-size: 12px; }
+    .utr-label { color: rgba(255,255,255,.5); font-weight: 600; }
+    .utr-val   { color: #fff; font-weight: 800; }
+    .epr-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(22,163,74,.2); border: 1px solid rgba(134,239,172,.3);
+      color: #a7f3cc; font-size: 11px; font-weight: 700;
+      padding: 8px 16px; border-radius: 50px;
+      margin-top: 8px;
     }
+    .back-btn {
+      display: inline-block; margin-top: 18px; padding: 11px 24px;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 10px; color: rgba(255,255,255,.75);
+      font-size: 12px; font-weight: 700;
+      cursor: pointer; background: none;
+      transition: background .18s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,.1); }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+    /* ── RECENT LOTS TABLE ── */
+    .lot-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .lot-table th {
+      background: var(--ink); color: #fff; font-weight: 700;
+      font-size: 10px; letter-spacing: .5px; text-transform: uppercase;
+      padding: 9px 12px; text-align: left;
+    }
+    .lot-table th:first-child { border-radius: 8px 0 0 0; }
+    .lot-table th:last-child  { border-radius: 0 8px 0 0; }
+    .lot-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .lot-table tr:nth-child(even) td { background: #f9fbf9; }
+    .lot-table tr:last-child td { border: none; }
+    .badge {
+      display: inline-flex; padding: 3px 8px; border-radius: 50px;
+      font-size: 9px; font-weight: 700; letter-spacing: .3px;
+    }
+    .badge-green  { background: var(--green-light); color: #15803d; }
+    .badge-amber  { background: var(--accent-light); color: #92400e; }
+    .badge-gray   { background: #f3f4f6; color: #374151; }
+
+    @media (max-width: 500px) {
+      .lot-detail-grid { grid-template-columns: 1fr; }
+      .pin-row { flex-direction: column; }
+      .qr-area { flex-direction: column; }
     }
   </style>
 </head>
 <body>
+<div class="wrap">
 
-  <div class="container">
-    <header>
-      <div class="brand">
-        <h1>EcoCycle Recycler Station</h1>
-        <p>Mai Hu Kabadiwala Verified Collection & Settlement Gateway</p>
-      </div>
-      <div class="partner-badge">
-        🌿 CPCB / MPCB Certified
-      </div>
-    </header>
+  <header>
+    <div>
+      <div class="brand-name">♻ Mai Hu Kabadiwala</div>
+      <div class="brand-sub">Recycler Verification Portal</div>
+    </div>
+    <div class="recycler-badge">🏭 AUTHORIZED RECYCLER</div>
+  </header>
 
-    <div class="card">
-      <h2 class="card-title">📦 Collector Handover Audit</h2>
-      <p class="card-desc">Scan the collector's digital QR pass or enter their 4-digit verification PIN to confirm lot weight and approve instant bank transfer.</p>
+  <!-- PIN / LOT ID Entry -->
+  <div class="card" id="entry-panel">
+    <p class="kicker">Verify Incoming Lot</p>
+    <h2>Enter Lot PIN or ID</h2>
 
-      <div class="input-grid">
-        <div>
-          <label for="pickupPin">4-Digit Pickup PIN</label>
-          <input type="text" id="pickupPin" placeholder="e.g. 5821" maxlength="4" value="5821">
-        </div>
-        <div>
-          <label for="lotId">Lot Identifier</label>
-          <input type="text" id="lotId" placeholder="lot_demo_7821" value="lot_demo_7821">
-        </div>
-      </div>
-
-      <div style="margin-bottom: 16px;">
-        <label for="qrJson">Or Paste QR Code Payload JSON</label>
-        <textarea id="qrJson" rows="2" placeholder='{"lotId":"lot_demo_7821","material":"Copper cable","weightKg":35,"amount":18450}'></textarea>
+    <div class="pin-area">
+      <div class="pin-row">
+        <input
+          type="number"
+          class="pin-input"
+          id="pinInput"
+          placeholder="• • • •"
+          maxlength="4"
+          oninput="this.value = this.value.slice(0,4)"
+        >
+        <button class="verify-btn" onclick="verifyByPin()" id="verifyPinBtn">Verify PIN →</button>
       </div>
 
-      <button class="btn" id="inspectBtn" onclick="inspectLot()">
-        🔍 Inspect & Verify Lot
-      </button>
+      <div class="or-divider">OR</div>
 
-      <!-- Lot Audit Section -->
-      <div class="lot-audit-box" id="auditBox">
-        <div class="audit-header">
-          <div>
-            <strong id="auditLotTitle">Copper Cable (Class A Grade)</strong>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;" id="auditCollector">Collector: Ramesh Kumar · CLT-4218</div>
-          </div>
-          <span class="audit-tag">✓ GPS Cluster Verified</span>
-        </div>
-
-        <div class="audit-details-grid">
-          <div class="audit-item">
-            <div class="audit-label">Certified Weight</div>
-            <div class="audit-val" id="auditWeight">35 kg</div>
-          </div>
-          <div class="audit-item">
-            <div class="audit-label">Quality Check</div>
-            <div class="audit-val">High (98% Pure Cu)</div>
-          </div>
-          <div class="audit-item">
-            <div class="audit-label">Digital Scale Calibrated</div>
-            <div class="audit-val" style="color: var(--success);">✓ 0% Middleman Tampering</div>
-          </div>
-          <div class="audit-item">
-            <div class="audit-label">Total Agreed Settlement</div>
-            <div class="audit-val-payout" id="auditPayout">₹18,450</div>
-          </div>
-        </div>
-
-        <button class="btn" onclick="executePayout()">
-          💳 Approve Quality & Release Instant Payout
-        </button>
+      <div class="lot-id-row">
+        <input type="text" class="lot-id-input" id="lotIdInput" placeholder="Lot ID (e.g. lot_1753278312847_ab3f9c)">
+        <button class="verify-btn" onclick="verifyByLotId()" style="padding:0 16px;font-size:12px">Look up →</button>
       </div>
-
-      <!-- Payout Receipt Card -->
-      <div class="payout-card" id="payoutCard">
-        <div class="payout-badge">✓</div>
-        <h3 class="payout-title">Instant Settlement Confirmed!</h3>
-        <p class="payout-sub">Payment credited directly to collector's bank via simulated IMPS/UPI.</p>
-
-        <div class="receipt-slip">
-          <div class="receipt-row">
-            <span class="receipt-k">Transaction ID / UTR:</span>
-            <span class="receipt-v" id="rcptUtr">UTR-MHK-98214732</span>
-          </div>
-          <div class="receipt-row">
-            <span class="receipt-k">Settlement Amount:</span>
-            <span class="receipt-v" id="rcptAmt">₹18,450.00</span>
-          </div>
-          <div class="receipt-row">
-            <span class="receipt-k">Beneficiary:</span>
-            <span class="receipt-v">Ramesh Kumar (CLT-4218)</span>
-          </div>
-          <div class="receipt-row">
-            <span class="receipt-k">Processing Fee:</span>
-            <span class="receipt-v" style="color: var(--success);">₹0.00 (Zero Fee Demo)</span>
-          </div>
-          <div class="receipt-row">
-            <span class="receipt-k">E-Waste EPR Certificate:</span>
-            <span class="receipt-v">EPR-IND-2026-8819</span>
-          </div>
-        </div>
-
-        <button class="btn btn-secondary" onclick="window.print()">
-          🖨 Print Green Recycling Compliance Certificate
-        </button>
-      </div>
-
     </div>
   </div>
 
-  <script>
-    function inspectLot() {
-      const pin = document.getElementById('pickupPin').value.trim();
-      const qrData = document.getElementById('qrJson').value.trim();
-      const lotId = document.getElementById('lotId').value.trim();
+  <!-- Lot Details Panel (shown after verification) -->
+  <div id="lot-panel">
+    <div class="lot-header">
+      <div class="lot-header-top">
+        <div>
+          <div class="lot-brand">Mai Hu Kabadiwala · Lot</div>
+          <div class="lot-id-text" id="disp-lot-id">—</div>
+        </div>
+        <div class="lot-status-pill" id="disp-status">AWAITING VERIFICATION</div>
+      </div>
+      <div class="lot-detail-grid">
+        <div class="lot-detail-item">
+          <label>Material</label>
+          <div class="val" id="disp-material">—</div>
+        </div>
+        <div class="lot-detail-item">
+          <label>Collector</label>
+          <div class="val" id="disp-collector">—</div>
+        </div>
+        <div class="lot-detail-item">
+          <label>Declared Weight</label>
+          <div class="val" id="disp-weight">—</div>
+        </div>
+        <div class="lot-detail-item">
+          <label>Net Payout</label>
+          <div class="val green" id="disp-amount">—</div>
+        </div>
+      </div>
+    </div>
 
-      let material = "Copper cable";
-      let weight = 35;
-      let payout = 18450;
+    <!-- QR Info -->
+    <div class="qr-area">
+      <div class="qr-placeholder">
+        <div class="qr-grid" id="qr-grid"></div>
+        <div class="qr-logo">⚡</div>
+      </div>
+      <div class="qr-copy">
+        <h3>QR Authenticated</h3>
+        <p>This lot's QR code has been cryptographically signed by the platform. The PIN and lot data match.</p>
+        <p style="margin-top:8px;font-size:10px;color:#7a8f83;">Cluster: <span id="disp-hub" style="font-weight:700;color:#0f3d2e">—</span></p>
+      </div>
+    </div>
 
-      if (qrData) {
-        try {
-          const parsed = JSON.parse(qrData);
-          if (parsed.material) material = parsed.material;
-          if (parsed.weightKg) weight = parsed.weightKg;
-          if (parsed.amount) payout = parsed.amount;
-        } catch(e) {
-          console.warn("Invalid QR payload, using fallback demo lot");
-        }
+    <!-- Recycler Verification Checklist -->
+    <div class="card">
+      <p class="kicker">Verification Checklist</p>
+      <ul class="checklist">
+        <li>
+          <div class="check-icon done">✓</div>
+          <span><strong>Identity & PIN verified</strong> — Collector ID and pickup PIN match platform record.</span>
+        </li>
+        <li>
+          <div class="check-icon done">✓</div>
+          <span><strong>Material classification confirmed</strong> — Category and hazard status verified.</span>
+        </li>
+        <li>
+          <div class="check-icon todo" id="weight-check-icon">○</div>
+          <span><strong>Physical weight verification</strong> — Weigh on calibrated scale and enter below.</span>
+        </li>
+        <li>
+          <div class="check-icon todo" id="receipt-check-icon">○</div>
+          <span><strong>Receipt confirmation</strong> — Confirm receipt and release payment to collector.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Weight Verification -->
+    <div class="card">
+      <p class="kicker">Step 1 — Weigh the Material</p>
+      <h2 style="font-size:18px;margin-bottom:12px">Enter Verified Weight</h2>
+      <div class="weight-verify">
+        <input type="number" id="actualWeight" placeholder="0.0" step="0.1" min="0" oninput="checkWeightDiff()">
+        <div class="weight-unit">kg</div>
+        <span class="weight-diff" id="weightDiffBadge"></span>
+      </div>
+      <p style="font-size:10px;color:var(--muted);margin-top:8px;">Collector declared: <strong id="declared-weight-hint">—</strong>. A discrepancy of more than 5% will be flagged.</p>
+    </div>
+
+    <!-- Confirm Handover -->
+    <div class="card">
+      <p class="kicker">Step 2 — Release Payment</p>
+      <h2 style="font-size:18px;margin-bottom:6px">Confirm Receipt & Release</h2>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">By clicking below, you confirm the material has been physically received and weighed. This action triggers instant payment to the collector's UPI/bank account.</p>
+      <button class="confirm-btn" onclick="confirmHandover()" id="confirmBtn">
+        🤝 Confirm Receipt & Release ₹<span id="confirm-amount">—</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Success State -->
+  <div id="success-panel">
+    <div class="success-card">
+      <div class="success-icon-wrap">✓</div>
+      <div class="success-title">Handover Complete!</div>
+      <div class="success-sub">Payment released · EPR credit generated · Chain of custody sealed</div>
+      <div class="utr-box">
+        <div class="utr-row"><span class="utr-label">UTR / Transaction ID</span><span class="utr-val" id="utr-display">—</span></div>
+        <div class="utr-row"><span class="utr-label">Beneficiary</span><span class="utr-val" id="beneficiary-display">—</span></div>
+        <div class="utr-row"><span class="utr-label">Amount</span><span class="utr-val" id="amount-display">—</span></div>
+        <div class="utr-row"><span class="utr-label">Verified Weight</span><span class="utr-val" id="verified-weight-display">—</span></div>
+        <div class="utr-row"><span class="utr-label">Lot ID</span><span class="utr-val" id="lot-id-display">—</span></div>
+        <div class="utr-row"><span class="utr-label">EPR Credit</span><span class="utr-val" style="color:#a7f3cc">✓ Generated</span></div>
+      </div>
+      <div class="epr-badge">🌱 Green EPR Credit Recorded — CPCB Compliant</div>
+      <br>
+      <button class="back-btn" onclick="resetPortal()">← Verify Another Lot</button>
+    </div>
+  </div>
+
+  <!-- Recent Verified Lots -->
+  <div class="card" style="margin-top:8px;">
+    <p class="kicker">Recent Activity</p>
+    <h2 style="font-size:18px;margin-bottom:12px">Verified Lots Today</h2>
+    <table class="lot-table">
+      <thead>
+        <tr>
+          <th>Lot ID</th>
+          <th>Material</th>
+          <th>Weight</th>
+          <th>Amount</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="recent-lots-body">
+        <tr>
+          <td style="font-family:monospace;font-size:10px">lot_demo_copper_01</td>
+          <td>Copper cable</td>
+          <td>35 kg</td>
+          <td>₹18,450</td>
+          <td><span class="badge badge-green">PAID</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:monospace;font-size:10px">lot_demo_server_02</td>
+          <td>Server boards</td>
+          <td>22.5 kg</td>
+          <td>₹11,475</td>
+          <td><span class="badge badge-green">PAID</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:monospace;font-size:10px">lot_demo_battery_03</td>
+          <td>Lithium-ion batteries</td>
+          <td>18 kg</td>
+          <td>₹5,040</td>
+          <td><span class="badge badge-amber">PENDING</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  // ── Demo lot database (mirrors app demo data) ──────────────────────────────
+  const DEMO_LOTS = {
+    "lot_demo_copper_01": {
+      id: "lot_demo_copper_01",
+      material: "Copper cable",
+      collectorId: "CLT-4218",
+      collectorName: "Ramesh Kumar",
+      weightKg: 35,
+      amount: 18450,
+      hub: "Pune Bhosari Cluster",
+      status: "AVAILABLE"
+    },
+    "lot_demo_server_02": {
+      id: "lot_demo_server_02",
+      material: "Server boards",
+      collectorId: "CLT-4218",
+      collectorName: "Ramesh Kumar",
+      weightKg: 22.5,
+      amount: 11475,
+      hub: "Pune Bhosari Cluster",
+      status: "PICKUP_SCHEDULED"
+    },
+    "lot_demo_battery_03": {
+      id: "lot_demo_battery_03",
+      material: "Lithium-ion batteries",
+      collectorId: "CLT-4218",
+      collectorName: "Ramesh Kumar",
+      weightKg: 18,
+      amount: 5040,
+      hub: "Pune Bhosari Cluster",
+      status: "IDENTIFIED"
+    }
+  };
+
+  // PIN to lot mapping (demo: PIN 1234 → copper)
+  const PIN_MAP = { "1234": "lot_demo_copper_01", "5678": "lot_demo_server_02", "9012": "lot_demo_battery_03" };
+
+  let currentLot = null;
+
+  // ── On load: check URL params ──────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const pin    = params.get('pin');
+    const lotId  = params.get('lotId');
+    const material = params.get('material');
+    const weight   = params.get('weight');
+    const amount   = params.get('amount');
+    const collector = params.get('collector');
+
+    if (lotId || pin) {
+      // Build a lot from URL params (from QR scan)
+      if (lotId) {
+        const lot = DEMO_LOTS[lotId] || {
+          id:           lotId,
+          material:     material || "E-waste material",
+          collectorId:  "CLT-XXXX",
+          collectorName: collector || "Collector",
+          weightKg:     parseFloat(weight) || 10,
+          amount:       parseFloat(amount) || 0,
+          hub:          "Pune Cluster",
+          status:       "PICKUP_SCHEDULED"
+        };
+        showLotPanel(lot, pin || "----");
+      } else if (pin) {
+        document.getElementById('pinInput').value = pin;
+        verifyByPin();
       }
-
-      document.getElementById('auditLotTitle').innerText = material + " · " + (lotId || "lot_demo_7821");
-      document.getElementById('auditWeight').innerText = weight + " kg";
-      document.getElementById('auditPayout').innerText = "₹" + Number(payout).toLocaleString('en-IN');
-      document.getElementById('rcptAmt').innerText = "₹" + Number(payout).toLocaleString('en-IN') + ".00";
-
-      document.getElementById('auditBox').style.display = 'block';
-      document.getElementById('payoutCard').style.display = 'none';
     }
 
-    function executePayout() {
-      const randomUtr = "UTR-MHK-" + Math.floor(10000000 + Math.random() * 90000000);
-      document.getElementById('rcptUtr').innerText = randomUtr;
-      document.getElementById('payoutCard').style.display = 'block';
-      document.getElementById('payoutCard').scrollIntoView({ behavior: 'smooth' });
+    // Render QR visual
+    renderQrGrid('qr-grid');
+  });
+
+  function renderQrGrid(containerId) {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
+    // 9×9 simplified QR-like pattern
+    const pattern = [
+      [1,1,1,1,1,1,1,0,0],
+      [1,0,0,0,0,0,1,0,1],
+      [1,0,1,1,1,0,1,0,0],
+      [1,0,1,1,1,0,1,0,1],
+      [1,0,1,1,1,0,1,0,0],
+      [1,0,0,0,0,0,1,0,1],
+      [1,1,1,1,1,1,1,0,0],
+      [0,0,0,0,0,0,0,0,1],
+      [0,1,0,1,1,0,0,1,0]
+    ];
+    pattern.forEach(row => {
+      row.forEach(cell => {
+        const div = document.createElement('div');
+        div.className = 'qr-cell ' + (cell ? 'qr-dark' : 'qr-light');
+        grid.appendChild(div);
+      });
+    });
+  }
+
+  function verifyByPin() {
+    const pin = document.getElementById('pinInput').value.trim();
+    if (pin.length < 4) {
+      alert('Please enter a 4-digit pickup PIN.');
+      return;
     }
-  </script>
+    const lotId = PIN_MAP[pin];
+    if (!lotId) {
+      // Build a generic lot from the PIN for demo
+      const fakeLot = {
+        id: `lot_${Date.now()}_mhk`,
+        material: "Copper cable",
+        collectorId: "CLT-4218",
+        collectorName: "Ramesh Kumar",
+        weightKg: 35,
+        amount: 18450,
+        hub: "Pune Bhosari Cluster",
+        status: "PICKUP_SCHEDULED"
+      };
+      showLotPanel(fakeLot, pin);
+      return;
+    }
+    showLotPanel(DEMO_LOTS[lotId], pin);
+  }
+
+  function verifyByLotId() {
+    const id = document.getElementById('lotIdInput').value.trim();
+    if (!id) { alert('Please enter a Lot ID.'); return; }
+    const lot = DEMO_LOTS[id] || {
+      id,
+      material: "Mixed e-waste",
+      collectorId: "CLT-4218",
+      collectorName: "Ramesh Kumar",
+      weightKg: 20,
+      amount: 1700,
+      hub: "Pune Bhosari Cluster",
+      status: "PICKUP_SCHEDULED"
+    };
+    showLotPanel(lot, '----');
+  }
+
+  function showLotPanel(lot, pin) {
+    currentLot = lot;
+    document.getElementById('disp-lot-id').textContent   = lot.id;
+    document.getElementById('disp-material').textContent = lot.material;
+    document.getElementById('disp-collector').textContent = `${lot.collectorName} · ${lot.collectorId}`;
+    document.getElementById('disp-weight').textContent   = `${lot.weightKg} kg`;
+    document.getElementById('disp-amount').textContent   = `₹${lot.amount.toLocaleString('en-IN')}`;
+    document.getElementById('disp-hub').textContent      = lot.hub;
+    document.getElementById('disp-status').textContent   = 'PIN VERIFIED ✓';
+    document.getElementById('disp-status').classList.add('paid');
+    document.getElementById('declared-weight-hint').textContent = `${lot.weightKg} kg`;
+    document.getElementById('confirm-amount').textContent = lot.amount.toLocaleString('en-IN');
+
+    document.getElementById('lot-panel').classList.add('visible');
+    document.getElementById('lot-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function checkWeightDiff() {
+    if (!currentLot) return;
+    const actual    = parseFloat(document.getElementById('actualWeight').value) || 0;
+    const declared  = currentLot.weightKg;
+    const diffPct   = Math.abs((actual - declared) / declared * 100);
+    const badge     = document.getElementById('weightDiffBadge');
+    const weightIcon = document.getElementById('weight-check-icon');
+
+    if (actual === 0) { badge.className = 'weight-diff'; return; }
+
+    if (diffPct <= 2) {
+      badge.className = 'weight-diff ok';
+      badge.textContent = '✓ Within tolerance';
+      weightIcon.textContent = '✓';
+      weightIcon.className = 'check-icon done';
+    } else if (diffPct <= 5) {
+      badge.className = 'weight-diff warning';
+      badge.textContent = `⚠ ${diffPct.toFixed(1)}% difference`;
+      weightIcon.textContent = '~';
+      weightIcon.className = 'check-icon todo';
+    } else {
+      badge.className = 'weight-diff over';
+      badge.textContent = `✗ ${diffPct.toFixed(1)}% — Flag`;
+      weightIcon.textContent = '!';
+      weightIcon.className = 'check-icon todo';
+    }
+  }
+
+  function confirmHandover() {
+    if (!currentLot) return;
+    const actualWeight = parseFloat(document.getElementById('actualWeight').value);
+    if (!actualWeight || actualWeight <= 0) {
+      alert('Please enter the verified weight before confirming.');
+      return;
+    }
+
+    const btn = document.getElementById('confirmBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Processing payment…';
+
+    setTimeout(() => {
+      const utr = `UTR-MHK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+      document.getElementById('utr-display').textContent           = utr;
+      document.getElementById('beneficiary-display').textContent   = `${currentLot.collectorName} (${currentLot.collectorId})`;
+      document.getElementById('amount-display').textContent        = `₹${currentLot.amount.toLocaleString('en-IN')}`;
+      document.getElementById('verified-weight-display').textContent = `${actualWeight} kg`;
+      document.getElementById('lot-id-display').textContent        = currentLot.id;
+
+      // Add to recent lots table
+      const tbody = document.getElementById('recent-lots-body');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-family:monospace;font-size:10px">${currentLot.id.slice(-18)}</td>
+        <td>${currentLot.material}</td>
+        <td>${actualWeight} kg</td>
+        <td>₹${currentLot.amount.toLocaleString('en-IN')}</td>
+        <td><span class="badge badge-green">PAID</span></td>
+      `;
+      tbody.prepend(tr);
+
+      document.getElementById('lot-panel').classList.remove('visible');
+      document.getElementById('success-panel').classList.add('visible');
+      document.getElementById('success-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 1800);
+  }
+
+  function resetPortal() {
+    currentLot = null;
+    document.getElementById('pinInput').value       = '';
+    document.getElementById('lotIdInput').value     = '';
+    document.getElementById('actualWeight').value   = '';
+    document.getElementById('weightDiffBadge').className = 'weight-diff';
+    document.getElementById('lot-panel').classList.remove('visible');
+    document.getElementById('success-panel').classList.remove('visible');
+    document.getElementById('confirmBtn').disabled  = false;
+    document.getElementById('confirmBtn').innerHTML = '🤝 Confirm Receipt & Release ₹<span id="confirm-amount">—</span>';
+    document.getElementById('weight-check-icon').textContent  = '○';
+    document.getElementById('weight-check-icon').className    = 'check-icon todo';
+    document.getElementById('receipt-check-icon').textContent = '○';
+    document.getElementById('receipt-check-icon').className   = 'check-icon todo';
+    document.getElementById('entry-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
 </body>
 </html>

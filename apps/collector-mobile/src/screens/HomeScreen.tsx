@@ -5,10 +5,12 @@ import { LotCard } from "../components/LotCard";
 import { MaterialCard } from "../components/MaterialCard";
 import { VoiceButton } from "../components/VoiceButton";
 import { colors } from "../constants/theme";
+import { getAllBazarPrices } from "../data/prices";
 import { useTranslation } from "../hooks/useTranslation";
 import type { RootTabParamList } from "../navigation/types";
 import { speak } from "../services/voice/speech";
 import { useAppStore } from "../store/appStore";
+import { MATERIAL_METADATA } from "../types/domain";
 import { currency } from "../utils/format";
 
 type Props = BottomTabScreenProps<RootTabParamList, "Home">;
@@ -24,15 +26,47 @@ export function HomeScreen({ navigation }: Props) {
   const weeklyGoalProgress = useAppStore((s) => s.weeklyGoalProgress);
   const adminStats = useAppStore((s) => s.adminStats);
 
+  // ── Live Opportunity Pulse from BAZAR_PRICES ───────────────────────────────
+  const bazarPrices = getAllBazarPrices();
+  const topOpportunity = bazarPrices
+    .filter((p) => p.trend === "up" && p.demand === "HIGH")
+    .sort((a, b) => b.changePercent - a.changePercent)[0]
+    ?? bazarPrices.sort((a, b) => b.changePercent - a.changePercent)[0]
+    ?? bazarPrices[0]!;
+
+  const topMeta = MATERIAL_METADATA[topOpportunity?.material];
+  const topMaterialName = topOpportunity
+    ? (language === "hi" ? topMeta?.hindi : language === "mr" ? topMeta?.marathi : topOpportunity.material)
+    : "Copper cable";
+  const topDemandText =
+    language === "hi"
+      ? `${topMaterialName} की आज आपके पास ज़बरदस्त मांग है। भाव ${topOpportunity?.changePercent > 0 ? "+" : ""}${topOpportunity?.changePercent}% ${topOpportunity?.changePercent > 0 ? "ऊपर" : "नीचे"} है।`
+      : language === "mr"
+      ? `${topMaterialName} ला आज तुमच्या जवळ मोठी मागणी आहे. दर ${topOpportunity?.changePercent > 0 ? "+" : ""}${topOpportunity?.changePercent}% ${topOpportunity?.changePercent > 0 ? "वर" : "खाली"} आहे.`
+      : `${topOpportunity?.material} is in high demand near you today. Rate: ${topOpportunity?.changePercent > 0 ? "+" : ""}${topOpportunity?.changePercent}% today.`;
+
   const totalEarnings = weeklyEarnings();
   const totalWeight = weeklyWeight();
   const progress = weeklyGoalProgress();
   const remaining = Math.max(0, (profile.weeklyGoal || 12000) - totalEarnings);
   const recentLots = lots.slice(0, 3);
 
+  // ── Derive live admin stats from actual lots ────────────────────────────────
+  const hazardMaterials = new Set(["Lithium-ion batteries", "CRT & monitor glass", "Lead acid batteries"]);
+  const liveHazardOpen = lots.filter((l) => hazardMaterials.has(l.material) && l.status !== "PAID").length;
+  const livePendingSync = lots.filter((l) => l.syncState === "PENDING").length;
+  const derivedAdminStats = {
+    ...adminStats,
+    hazardLotsOpen: liveHazardOpen > 0 ? liveHazardOpen : adminStats.hazardLotsOpen,
+    pendingSyncLots: livePendingSync > 0 ? livePendingSync : adminStats.pendingSyncLots,
+    totalLotsToday: lots.length > 0 ? lots.length : adminStats.totalLotsToday,
+    totalKgToday: totalWeight > 0 && lots.length > 0 ? totalWeight : adminStats.totalKgToday,
+    totalEarningsToday: totalEarnings > 0 && lots.length > 0 ? totalEarnings : adminStats.totalEarningsToday
+  };
+
   // ── Admin view ─────────────────────────────────────────────────────────────
   if (role === "admin") {
-    const stats = adminStats;
+    const stats = derivedAdminStats;
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
@@ -47,14 +81,14 @@ export function HomeScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.adminGrid}>
-          <AdminTile icon="👷" label="Active Collectors" value={stats.totalCollectors.toLocaleString()} accent="#3B82F6" />
-          <AdminTile icon="📦" label="Lots Today" value={stats.totalLotsToday.toLocaleString()} accent={colors.green} />
-          <AdminTile icon="⚖️" label="kg Today" value={`${stats.totalKgToday.toLocaleString()} kg`} accent="#F59E0B" />
-          <AdminTile icon="💰" label="Flow Today" value={currency(stats.totalEarningsToday)} accent="#8B5CF6" />
-          <AdminTile icon="⚠️" label="Hazard Open" value={stats.hazardLotsOpen.toString()} accent="#EF4444" />
-          <AdminTile icon="🔄" label="Pending Sync" value={stats.pendingSyncLots.toString()} accent="#F97316" />
-          <AdminTile icon="🌿" label="EPR Tonnage/mo" value={`${stats.eprTonnageMonth} T`} accent="#10B981" />
-          <AdminTile icon="📍" label="Top Cluster" value={stats.topCluster.split(",")[0] ?? stats.topCluster} accent="#6366F1" />
+          <AdminTile icon="👷" label="Active Collectors" value={derivedAdminStats.totalCollectors.toLocaleString()} accent="#3B82F6" />
+          <AdminTile icon="📦" label="Lots Today" value={derivedAdminStats.totalLotsToday.toLocaleString()} accent={colors.green} />
+          <AdminTile icon="⚖️" label="kg Today" value={`${derivedAdminStats.totalKgToday.toLocaleString()} kg`} accent="#F59E0B" />
+          <AdminTile icon="💰" label="Flow Today" value={currency(derivedAdminStats.totalEarningsToday)} accent="#8B5CF6" />
+          <AdminTile icon="⚠️" label="Hazard Open" value={derivedAdminStats.hazardLotsOpen.toString()} accent="#EF4444" />
+          <AdminTile icon="🔄" label="Pending Sync" value={derivedAdminStats.pendingSyncLots.toString()} accent="#F97316" />
+          <AdminTile icon="🌿" label="EPR Tonnage/mo" value={`${derivedAdminStats.eprTonnageMonth} T`} accent="#10B981" />
+          <AdminTile icon="📍" label="Top Cluster" value={derivedAdminStats.topCluster.split(",")[0] ?? derivedAdminStats.topCluster} accent="#6366F1" />
         </View>
 
         <Text style={styles.sectionTitle}>Live Lot Feed — All Collectors</Text>
@@ -149,12 +183,12 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>✦ {t("opportunity")}</Text>
         <Text style={styles.heroTitle}>{t("collectSmarter")}</Text>
-        <Text style={styles.heroDescription}>{t("copperDemand")}</Text>
+        <Text style={styles.heroDescription}>{topDemandText}</Text>
         <View style={styles.pills}>
-          <Text style={styles.pill}>↗ +12% price up</Text>
-          <Text style={styles.pill}>● {t("highDemand")}</Text>
+          <Text style={styles.pill}>↗ +{topOpportunity?.changePercent}% today</Text>
+          <Text style={styles.pill}>● {topOpportunity?.demand === "HIGH" ? t("highDemand") : "Active Demand"}</Text>
         </View>
-        <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate("Market", { material: "Copper cable", quality: "medium", weightKg: 35 })}>
+        <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate("Market", { material: topOpportunity?.material ?? "Copper cable", quality: "medium", weightKg: 35 })}>
           <Text style={styles.heroButtonText}>{t("viewOpportunities")}</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
@@ -182,8 +216,8 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.link}>See all</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => navigation.navigate("Market", { material: "Copper cable", quality: "medium", weightKg: 35 })}>
-        <MaterialCard material="Copper cable" price="₹612" note="EcoCycle · 2.4 km away" badge={t("highDemand").toUpperCase()} />
+      <TouchableOpacity onPress={() => navigation.navigate("Market", { material: topOpportunity?.material ?? "Copper cable", quality: "medium", weightKg: 35 })}>
+        <MaterialCard material={topOpportunity?.material ?? "Copper cable"} price={`₹${topOpportunity?.currentPrice ?? 612}`} note={`${topOpportunity?.demand ?? "High"} demand · ${topMaterialName}`} badge={topOpportunity?.demand === "HIGH" ? "HOT OPPORTUNITY" : t("highDemand").toUpperCase()} />
       </TouchableOpacity>
 
       <View style={styles.sectionHeading}>
