@@ -1,22 +1,17 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { colors } from "../constants/theme";
-import type { Lot } from "../types/domain";
+import { MATERIAL_METADATA, type Lot } from "../types/domain";
 import { currency, relativeDate } from "../utils/format";
 
 type Props = { lot: Lot; syncedLabel: string; pendingLabel: string };
 
-const materialIcon: Record<Lot["material"], string> = {
-  "Copper cable": "〰",
-  "Server boards": "▦",
-  Aluminium: "◒",
-  "Mixed e-waste": "◉"
-};
-
 export function LotCard({ lot, syncedLabel, pendingLabel }: Props) {
   const isPending = lot.syncState === "PENDING";
+  const icon = MATERIAL_METADATA[lot.material]?.icon || "◉";
   return <View style={styles.row}>
-    <View style={[styles.icon, isPending ? styles.pendingIcon : styles.syncedIcon]}><Text>{materialIcon[lot.material]}</Text></View>
+    <View style={[styles.icon, isPending ? styles.pendingIcon : styles.syncedIcon]}><Text>{icon}</Text></View>
+
     <View style={styles.copy}>
       <Text style={styles.title}>{lot.material}</Text>
       <Text style={styles.sub}>{lot.weightKg} kg · {relativeDate(lot.createdAt)}</Text>

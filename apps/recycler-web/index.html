@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recycler Lot Verification & Settlement Portal | Mai Hu Kabadiwala</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #124A3B;
+      --primary-light: #EBF7F0;
+      --accent: #E5823D;
+      --accent-gold: #F59E0B;
+      --bg: #F4F7F4;
+      --card-bg: #FFFFFF;
+      --text-main: #142820;
+      --text-muted: #5C7469;
+      --border: #DCE5DE;
+      --success: #16A34A;
+      --danger: #DC2626;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--primary);
+      padding: 20px 24px;
+      border-radius: 20px;
+      color: white;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(18, 74, 59, 0.15);
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #F6DE8F;
+    }
+
+    .brand p {
+      font-size: 11px;
+      color: #C3E2D1;
+      margin-top: 3px;
+    }
+
+    .partner-badge {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 540px) {
+      .input-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .btn:hover {
+      background: #0d382c;
+    }
+
+    .btn:active {
+      transform: scale(0.99);
+    }
+
+    .btn-secondary {
+      background: #EDF4EE;
+      color: var(--primary);
+      border: 1px solid #C4D9C8;
+      margin-top: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: #DFEBE1;
+    }
+
+    /* Lot Inspection Box */
+    .lot-audit-box {
+      display: none;
+      border: 1.5px solid #A8D4B7;
+      background: #F9FCFA;
+      border-radius: 18px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .audit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    .audit-tag {
+      background: #DCFCE7;
+      color: #15803D;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .audit-details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .audit-item {
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .audit-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .audit-val {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 2px;
+    }
+
+    .audit-val-payout {
+      color: var(--primary);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .payout-card {
+      display: none;
+      background: #ECFDF5;
+      border: 2px solid var(--success);
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 20px;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .payout-badge {
+      width: 52px;
+      height: 52px;
+      background: var(--success);
+      color: white;
+      border-radius: 26px;
+      font-size: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .payout-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #065F46;
+    }
+
+    .payout-sub {
+      font-size: 12px;
+      color: #047857;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
+
+    .receipt-slip {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: left;
+      border: 1px solid #A7F3D0;
+      margin-bottom: 16px;
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 4px 0;
+    }
+
+    .receipt-k {
+      color: #047857;
+      font-weight: 600;
+    }
+
+    .receipt-v {
+      font-weight: 800;
+      color: #064E3B;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>EcoCycle Recycler Station</h1>
+        <p>Mai Hu Kabadiwala Verified Collection & Settlement Gateway</p>
+      </div>
+      <div class="partner-badge">
+        🌿 CPCB / MPCB Certified
+      </div>
+    </header>
+
+    <div class="card">
+      <h2 class="card-title">📦 Collector Handover Audit</h2>
+      <p class="card-desc">Scan the collector's digital QR pass or enter their 4-digit verification PIN to confirm lot weight and approve instant bank transfer.</p>
+
+      <div class="input-grid">
+        <div>
+          <label for="pickupPin">4-Digit Pickup PIN</label>
+          <input type="text" id="pickupPin" placeholder="e.g. 5821" maxlength="4" value="5821">
+        </div>
+        <div>
+          <label for="lotId">Lot Identifier</label>
+          <input type="text" id="lotId" placeholder="lot_demo_7821" value="lot_demo_7821">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="qrJson">Or Paste QR Code Payload JSON</label>
+        <textarea id="qrJson" rows="2" placeholder='{"lotId":"lot_demo_7821","material":"Copper cable","weightKg":35,"amount":18450}'></textarea>
+      </div>
+
+      <button class="btn" id="inspectBtn" onclick="inspectLot()">
+        🔍 Inspect & Verify Lot
+      </button>
+
+      <!-- Lot Audit Section -->
+      <div class="lot-audit-box" id="auditBox">
+        <div class="audit-header">
+          <div>
+            <strong id="auditLotTitle">Copper Cable (Class A Grade)</strong>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;" id="auditCollector">Collector: Ramesh Kumar · CLT-4218</div>
+          </div>
+          <span class="audit-tag">✓ GPS Cluster Verified</span>
+        </div>
+
+        <div class="audit-details-grid">
+          <div class="audit-item">
+            <div class="audit-label">Certified Weight</div>
+            <div class="audit-val" id="auditWeight">35 kg</div>
+          </div>
+          <div class="audit-item">
+            <div class="audit-label">Quality Check</div>
+            <div class="audit-val">High (98% Pure Cu)</div>
+          </div>
+          <div class="audit-item">
+            <div class="audit-label">Digital Scale Calibrated</div>
+            <div class="audit-val" style="color: var(--success);">✓ 0% Middleman Tampering</div>
+          </div>
+          <div class="audit-item">
+            <div class="audit-label">Total Agreed Settlement</div>
+            <div class="audit-val-payout" id="auditPayout">₹18,450</div>
+          </div>
+        </div>
+
+        <button class="btn" onclick="executePayout()">
+          💳 Approve Quality & Release Instant Payout
+        </button>
+      </div>
+
+      <!-- Payout Receipt Card -->
+      <div class="payout-card" id="payoutCard">
+        <div class="payout-badge">✓</div>
+        <h3 class="payout-title">Instant Settlement Confirmed!</h3>
+        <p class="payout-sub">Payment credited directly to collector's bank via simulated IMPS/UPI.</p>
+
+        <div class="receipt-slip">
+          <div class="receipt-row">
+            <span class="receipt-k">Transaction ID / UTR:</span>
+            <span class="receipt-v" id="rcptUtr">UTR-MHK-98214732</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-k">Settlement Amount:</span>
+            <span class="receipt-v" id="rcptAmt">₹18,450.00</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-k">Beneficiary:</span>
+            <span class="receipt-v">Ramesh Kumar (CLT-4218)</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-k">Processing Fee:</span>
+            <span class="receipt-v" style="color: var(--success);">₹0.00 (Zero Fee Demo)</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-k">E-Waste EPR Certificate:</span>
+            <span class="receipt-v">EPR-IND-2026-8819</span>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="window.print()">
+          🖨 Print Green Recycling Compliance Certificate
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function inspectLot() {
+      const pin = document.getElementById('pickupPin').value.trim();
+      const qrData = document.getElementById('qrJson').value.trim();
+      const lotId = document.getElementById('lotId').value.trim();
+
+      let material = "Copper cable";
+      let weight = 35;
+      let payout = 18450;
+
+      if (qrData) {
+        try {
+          const parsed = JSON.parse(qrData);
+          if (parsed.material) material = parsed.material;
+          if (parsed.weightKg) weight = parsed.weightKg;
+          if (parsed.amount) payout = parsed.amount;
+        } catch(e) {
+          console.warn("Invalid QR payload, using fallback demo lot");
+        }
+      }
+
+      document.getElementById('auditLotTitle').innerText = material + " · " + (lotId || "lot_demo_7821");
+      document.getElementById('auditWeight').innerText = weight + " kg";
+      document.getElementById('auditPayout').innerText = "₹" + Number(payout).toLocaleString('en-IN');
+      document.getElementById('rcptAmt').innerText = "₹" + Number(payout).toLocaleString('en-IN') + ".00";
+
+      document.getElementById('auditBox').style.display = 'block';
+      document.getElementById('payoutCard').style.display = 'none';
+    }
+
+    function executePayout() {
+      const randomUtr = "UTR-MHK-" + Math.floor(10000000 + Math.random() * 90000000);
+      document.getElementById('rcptUtr').innerText = randomUtr;
+      document.getElementById('payoutCard').style.display = 'block';
+      document.getElementById('payoutCard').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
