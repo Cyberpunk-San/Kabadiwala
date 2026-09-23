@@ -1,8 +1,9 @@
+// src/navigation/types.ts
 import type { Material } from "../types/domain";
 
 export type RootTabParamList = {
   Home: undefined;
-  Collect: undefined;
+  Collect: { prefillWeightKg?: number } | undefined;
   Market: {
     material?: Material;
     quality?: "low" | "medium" | "high";
@@ -12,15 +13,11 @@ export type RootTabParamList = {
   BazarBhav: undefined;
   Earnings: undefined;
   Profile: undefined;
-  Handover: {
-    lotId?: string;
-    material?: Material;
-    weightKg?: number;
-    netAmount?: number;
-  } | undefined;
 };
 
 export type RootStackParamList = {
+  Onboarding: undefined;
+  Kyc: undefined;
   Tabs: undefined;
   Handover: {
     lotId?: string;
@@ -29,5 +26,5 @@ export type RootStackParamList = {
     netAmount?: number;
   } | undefined;
   BazarBhav: undefined;
+  Accessibility: undefined;
 };
-

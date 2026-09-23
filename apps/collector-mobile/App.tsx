@@ -1,23 +1,30 @@
+// App.tsx
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { ActivityIndicator, AppState, type AppStateStatus, StatusBar, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StatusBar, StyleSheet, Text, View } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
-import { config } from "./src/constants/config";
 import { colors, paperTheme } from "./src/constants/theme";
+import { FloatingVoiceButton } from "./src/components/FloatingVoiceButton";
 import type { RootStackParamList, RootTabParamList } from "./src/navigation/types";
+import { AccessibilitySettingsScreen } from "./src/screens/AccessibilitySettingsScreen";
 import { BazarBhavScreen } from "./src/screens/BazarBhavScreen";
 import { CollectScreen } from "./src/screens/CollectScreen";
+import { DemandsScreen } from "./src/screens/DemandsScreen";
 import { EarningsScreen } from "./src/screens/EarningsScreen";
 import { HandoverScreen } from "./src/screens/HandoverScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
+import { KycScreen } from "./src/screens/KycScreen";
 import { MarketScreen } from "./src/screens/MarketScreen";
+import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import { OpportunityScreen } from "./src/screens/OpportunityScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
-import { syncPendingLots } from "./src/services/sync/syncService";
+import { useAccessibilityStore } from "./src/store/accessibilityStore";
 import { useAppStore } from "./src/store/appStore";
+import { useAuthStore } from "./src/store/authStore";
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -30,16 +37,20 @@ function MainTabNavigator() {
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: "#87988F",
         tabBarStyle: {
-          height: 65,
+          height: 68,
           paddingTop: 6,
           borderTopColor: "#E5EAE5",
-          backgroundColor: colors.white
+          backgroundColor: colors.white,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
-        tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>{iconFor(route.name)}</Text>
+        tabBarLabelStyle: { fontSize: 9, fontWeight: "700" },
+        tabBarIcon: ({ color }) => (
+          <Text style={[styles.tabIcon, { color }]}>{iconFor(route.name)}</Text>
+        ),
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Home" }} />
+      <Tab.Screen name="Opportunity" component={OpportunityScreen} options={{ title: "Opportunity" }} />
+      <Tab.Screen name="Demands" component={DemandsScreen} options={{ title: "Demands" }} />
       <Tab.Screen name="Collect" component={CollectScreen} options={{ title: "Collect" }} />
       <Tab.Screen name="Market" component={MarketScreen} options={{ title: "Market" }} />
       <Tab.Screen name="BazarBhav" component={BazarBhavScreen} options={{ title: "Bhav" }} />
@@ -50,52 +61,21 @@ function MainTabNavigator() {
 }
 
 function AppNavigator() {
-  const hydrate = useAppStore((state) => state.hydrate);
-  const isHydrated = useAppStore((state) => state.isHydrated);
-  const refreshLots = useAppStore((state) => state.refreshLots);
+  const hydrateApp = useAppStore((s) => s.hydrate);
+  const isAppHydrated = useAppStore((s) => s.isHydrated);
 
-  useEffect(() => {
-    void hydrate();
-  }, [hydrate]);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
+  const isAuthHydrated = useAuthStore((s) => s.isHydrated);
+  const collector = useAuthStore((s) => s.collector);
 
-  // Wire sync service to app lifecycle (foreground resume + periodic interval)
-  useEffect(() => {
-    const triggerSync = async () => {
-      try {
-        await syncPendingLots(async (lotId) => {
-          // Simulated cloud sync endpoint
-          console.log(`[MHK Sync] Successfully synced lot ${lotId} to cloud.`);
-        });
-        await refreshLots();
-      } catch (error) {
-        console.warn("[MHK Sync] Background sync cycle completed with local fallback:", error);
-      }
-    };
+  const hydrateAccessibility = useAccessibilityStore((s) => s.hydrate);
+  const isAccessibilityHydrated = useAccessibilityStore((s) => s.isHydrated);
 
-    // 1. AppState listener: sync when app returns from background to active
-    const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
-      if (nextState === "active") {
-        console.log("[MHK Lifecycle] App resumed to active. Triggering offline lot sync...");
-        void triggerSync();
-      }
-    });
+  useEffect(() => { void hydrateApp(); }, [hydrateApp]);
+  useEffect(() => { void hydrateAuth(); }, [hydrateAuth]);
+  useEffect(() => { void hydrateAccessibility(); }, [hydrateAccessibility]);
 
-    // 2. Periodic sync interval
-    const intervalTime = Math.max(10000, config.syncIntervalMs || 30000);
-    const syncTimer = setInterval(() => {
-      void triggerSync();
-    }, intervalTime);
-
-    // Initial sync trigger
-    void triggerSync();
-
-    return () => {
-      subscription.remove();
-      clearInterval(syncTimer);
-    };
-  }, [refreshLots]);
-
-  if (!isHydrated) {
+  if (!isAppHydrated || !isAuthHydrated || !isAccessibilityHydrated) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.green} />
@@ -103,14 +83,34 @@ function AppNavigator() {
     );
   }
 
+  const needsOnboarding = !collector;
+  const needsKyc = collector && collector.kyc_status !== "VERIFIED";
+
   return (
     <NavigationContainer>
       <StatusBar barStyle="dark-content" backgroundColor={colors.cream} />
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Tabs" component={MainTabNavigator} />
-        <Stack.Screen name="Handover" component={HandoverScreen} />
-        <Stack.Screen name="BazarBhav" component={BazarBhavScreen} />
-      </Stack.Navigator>
+      <View style={{ flex: 1 }}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {needsOnboarding ? (
+            <Stack.Screen name="Onboarding">
+              {() => <OnboardingScreen onComplete={() => {}} />}
+            </Stack.Screen>
+          ) : needsKyc ? (
+            <Stack.Screen name="Kyc">
+              {() => <KycScreen onComplete={() => {}} />}
+            </Stack.Screen>
+          ) : (
+            <>
+              <Stack.Screen name="Tabs" component={MainTabNavigator} />
+              <Stack.Screen name="Handover" component={HandoverScreen} />
+              <Stack.Screen name="BazarBhav" component={BazarBhavScreen} />
+              <Stack.Screen name="Accessibility" component={AccessibilitySettingsScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+
+        {!needsOnboarding && !needsKyc && <FloatingVoiceButton />}
+      </View>
     </NavigationContainer>
   );
 }
@@ -118,11 +118,13 @@ function AppNavigator() {
 function iconFor(route: keyof RootTabParamList) {
   const icons: Partial<Record<keyof RootTabParamList, string>> = {
     Home: "⌂",
+    Opportunity: "◎",
+    Demands: "◫",
     Collect: "⌑",
     Market: "▱",
     BazarBhav: "₹",
     Earnings: "▥",
-    Profile: "◯"
+    Profile: "◯",
   };
   return icons[route] || "●";
 }
@@ -131,9 +133,7 @@ export default function App() {
   const queryClient = useMemo(
     () =>
       new QueryClient({
-        defaultOptions: {
-          queries: { staleTime: 60_000, retry: 1 }
-        }
+        defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
       }),
     []
   );
@@ -148,7 +148,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.cream },
-  tabIcon: { fontSize: 18, fontWeight: "800" }
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.cream,
+  },
+  tabIcon: { fontSize: 16, fontWeight: "800" },
 });
-

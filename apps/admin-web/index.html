@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Mai Hu Kabadiwala</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary:       #0f3d2e;
+      --primary-mid:   #164e3b;
+      --primary-light: #e8f5ee;
+      --accent:        #d97706;
+      --bg:            #f4f7f4;
+      --card:          #ffffff;
+      --ink:           #0f1c14;
+      --muted:         #5c7469;
+      --line:          #dce5de;
+      --green:         #16a34a;
+      --green-light:   #dcfce7;
+      --red:           #dc2626;
+      --red-light:     #fee2e2;
+      --amber:         #f59e0b;
+      --amber-light:   #fef3c7;
+      --blue:          #2563eb;
+      --blue-light:    #dbeafe;
+      --radius:        14px;
+      --shadow:        0 2px 16px rgba(15,60,46,.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+      display: flex;
+      justify-content: center;
+    }
+    .wrap { width: 100%; max-width: 1100px; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-mid) 100%);
+      border-radius: 20px;
+      padding: 22px 26px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 24px rgba(15,61,46,.2);
+    }
+    .brand-name { font-size: 20px; font-weight: 900; color: #fff; letter-spacing: -.3px; }
+    .brand-sub  { font-size: 10px; color: rgba(255,255,255,.6); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+    .header-right { display: flex; gap: 10px; align-items: center; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      color: #a7f3cc; font-size: 10px; font-weight: 700;
+      padding: 6px 12px; border-radius: 50px; letter-spacing: .5px;
+    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+    .refresh-btn {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .refresh-btn:hover { background: rgba(255,255,255,.22); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 6px; margin-bottom: 16px;
+      padding: 5px; background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; box-shadow: var(--shadow);
+    }
+    .tab {
+      flex: 1; padding: 10px 14px;
+      font-size: 12px; font-weight: 800;
+      color: var(--muted); background: none; border: none;
+      border-radius: 10px; cursor: pointer; font-family: inherit;
+      transition: background .15s, color .15s;
+    }
+    .tab:hover { background: #f5f8f5; }
+    .tab.active { background: var(--primary); color: #fff; }
+
+    /* ── Sections ── */
+    .section-title {
+      font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--muted);
+      margin: 24px 0 10px;
+    }
+
+    /* ── KPI Grid ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-left-width: 4px;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .kpi-icon { font-size: 20px; margin-bottom: 6px; }
+    .kpi-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .4px; text-transform: uppercase; }
+    .kpi-value { font-size: 22px; font-weight: 900; color: var(--ink); margin-top: 6px; letter-spacing: -.5px; }
+    .kpi-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Panels ── */
+    .panels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .panel-title {
+      font-size: 13px; font-weight: 800; color: var(--ink);
+      margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-title span:last-child {
+      font-size: 10px; color: var(--muted); font-weight: 700;
+    }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 10px 12px; border-radius: 10px; font-size: 11px;
+      display: flex; align-items: flex-start; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .alert-high   { background: var(--red-light); color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-medium { background: var(--amber-light); color: #92400e; border: 1px solid #fcd34d; }
+    .alert-low    { background: var(--blue-light); color: #1e40af; border: 1px solid #93c5fd; }
+    .alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      background: #f8faf9; color: var(--ink);
+      font-weight: 800; font-size: 9px; letter-spacing: .5px; text-transform: uppercase;
+      padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    th:first-child { border-radius: 8px 0 0 0; }
+    th:last-child  { border-radius: 0 8px 0 0; }
+    td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tr:last-child td { border: none; }
+    tr:hover td { background: #fafdfa; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; padding: 3px 8px; border-radius: 50px;
+      font-size: 9px; font-weight: 800; letter-spacing: .3px;
+    }
+    .badge-green  { background: var(--green-light); color: #15803d; }
+    .badge-amber  { background: var(--amber-light); color: #92400e; }
+    .badge-red    { background: var(--red-light); color: #991b1b; }
+    .badge-gray   { background: #f3f4f6; color: #374151; }
+    .badge-blue   { background: var(--blue-light); color: #1e40af; }
+    .badge-gold   { background: #fef3c7; color: #b45309; }
+
+    /* ── Bar chart ── */
+    .bar-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+    .bar-label { flex: 1; font-size: 11px; font-weight: 700; color: var(--ink); }
+    .bar-track { flex: 2; height: 8px; border-radius: 4px; background: #eef2ee; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 4px; background: var(--primary); }
+    .bar-value { font-size: 10px; font-weight: 800; color: var(--muted); min-width: 60px; text-align: right; }
+
+    /* ── Misc ── */
+    .loading { text-align: center; color: var(--muted); font-size: 12px; padding: 40px; }
+    .error   { text-align: center; color: var(--red); font-size: 12px; padding: 40px; }
+
+    @media (max-width: 600px) {
+      .panels-grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; gap: 14px; align-items: flex-start; }
+      .tabs { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand-name">🛡 Mai Hu Kabadiwala</div>
+      <div class="brand-sub">Authority Dashboard</div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+      <button class="refresh-btn" onclick="refreshAll()">⟳ Refresh</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</button>
+    <button class="tab" data-tab="risk" onclick="switchTab('risk')">🚨 Risk Alerts</button>
+  </div>
+
+  <div id="content">
+    <div class="loading">Loading dashboard…</div>
+  </div>
+
+</div>
+
+<script>
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADMIN DASHBOARD — talks to backend at /api/v1/admin/* and /api/v1/risk/*
+  // ─────────────────────────────────────────────────────────────────────────
+  const API_BASE = "http://localhost:8000";
+
+  let currentTab = "overview";
+
+  // ─── Utilities ────────────────────────────────────────────────────────────
+  function money(n) {
+    if (n >= 1_00_00_000) return "₹" + (n / 1_00_00_000).toFixed(2) + " Cr";
+    if (n >= 1_00_000) return "₹" + (n / 1_00_000).toFixed(2) + " L";
+    if (n >= 1_000) return "₹" + (n / 1_000).toFixed(1) + "K";
+    return "₹" + Math.round(n).toLocaleString("en-IN");
+  }
+  function kg(n) {
+    if (n >= 1000) return (n / 1000).toFixed(2) + " T";
+    return n.toFixed(1) + " kg";
+  }
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+  async function api(path, opts) {
+    const res = await fetch(`${API_BASE}${path}`, opts);
+    if (!res.ok) throw new Error(`${path} → ${res.status}`);
+    return res.json();
+  }
+
+  // ─── Tab switching ────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll(".tab").forEach(t =>
+      t.classList.toggle("active", t.dataset.tab === tab)
+    );
+    refreshAll();
+  }
+
+  // ─── Overview renderers ───────────────────────────────────────────────────
+  function renderKPIs(totals, today, pending) {
+    const kpis = [
+      { icon: "👥", label: "Collectors",      value: totals.collectors,             sub: `${pending.unverified_kyc} unverified KYC`, color: "#3b82f6" },
+      { icon: "🏭", label: "Recyclers",       value: totals.recyclers,              sub: "Active CPCB-licensed",                     color: "#16a34a" },
+      { icon: "📦", label: "Total Lots",      value: totals.lots,                   sub: `${today.lots} today`,                      color: "#8b5cf6" },
+      { icon: "⚖️", label: "Weight",          value: kg(totals.weight_kg),          sub: `${kg(today.weight_kg)} today`,             color: "#f59e0b" },
+      { icon: "💰", label: "Payout Volume",   value: money(totals.payout_inr),      sub: `${money(today.payout_inr)} today`,         color: "#059669" },
+      { icon: "📢", label: "Open Demands",    value: pending.open_demands,          sub: "From recyclers",                           color: "#d97706" },
+      { icon: "⏳", label: "Pending Payouts", value: pending.pending_payouts,       sub: "Awaiting settlement",                      color: "#dc2626" },
+    ];
+    return `
+      <div class="kpi-grid">
+        ${kpis.map(k => `
+          <div class="kpi" style="border-left-color:${k.color}">
+            <div class="kpi-icon">${k.icon}</div>
+            <div class="kpi-label">${k.label}</div>
+            <div class="kpi-value">${k.value}</div>
+            <div class="kpi-sub">${k.sub}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderTopMaterials(rows) {
+    if (!rows || rows.length === 0) return `<div class="loading">No material data yet.</div>`;
+    const max = Math.max(...rows.map(r => r.kg)) || 1;
+    return rows.map(r => `
+      <div class="bar-row">
+        <div class="bar-label">${esc(r.material)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(r.kg / max) * 100}%"></div></div>
+        <div class="bar-value">${kg(r.kg)}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderTopRecyclers(rows) {
+    if (!rows || rows.length === 0) return `<div class="loading">No handover data yet.</div>`;
+    return `
+      <table>
+        <thead><tr><th>Recycler ID</th><th>Lots</th><th>Weight</th><th>Volume</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><strong>${esc(r.recycler_id)}</strong></td>
+              <td>${r.lots}</td>
+              <td>${kg(r.kg)}</td>
+              <td>${money(r.inr)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderCollectors(rows) {
+    if (!rows || rows.length === 0) return `<div class="loading">No collectors yet.</div>`;
+    return `
+      <table>
+        <thead><tr><th>Name</th><th>Phone</th><th>Area</th><th>KYC</th><th>Tier</th><th>Lots</th><th>Earned</th></tr></thead>
+        <tbody>
+          ${rows.map(c => {
+            const kycClass = c.kyc_status === "VERIFIED" ? "badge-green"
+                          : c.kyc_status === "IN_PROGRESS" ? "badge-amber"
+                          : c.kyc_status === "REJECTED" ? "badge-red" : "badge-gray";
+            const tierClass = { gold: "badge-gold", platinum: "badge-blue", silver: "badge-gray", bronze: "badge-gray" }[c.tier] || "badge-gray";
+            return `
+              <tr>
+                <td><strong>${esc(c.name)}</strong></td>
+                <td style="font-family:monospace;font-size:10px">${esc(c.phone)}</td>
+                <td>${esc(c.operating_area ?? "—")}</td>
+                <td><span class="badge ${kycClass}">${esc(c.kyc_status)}</span></td>
+                <td><span class="badge ${tierClass}">${esc(c.tier.toUpperCase())}</span></td>
+                <td>${c.total_lots}</td>
+                <td>${money(c.total_earnings)}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderRecyclers(rows) {
+    if (!rows || rows.length === 0) return `<div class="loading">No recyclers yet.</div>`;
+    return `
+      <table>
+        <thead><tr><th>Recycler</th><th>CPCB License</th><th>Cluster</th><th>Rating</th><th>Reliability</th><th>Status</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><strong>${esc(r.recycler_name)}</strong></td>
+              <td style="font-family:monospace;font-size:9px">${esc(r.cpcb_license)}</td>
+              <td>${esc(r.cluster ?? "—")}</td>
+              <td>★ ${r.rating.toFixed(1)}</td>
+              <td>${r.payment_reliability}%</td>
+              <td><span class="badge ${r.is_active ? "badge-green" : "badge-gray"}">${r.is_active ? "ACTIVE" : "INACTIVE"}</span></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderMaterialFlow(rows) {
+    if (!rows || rows.length === 0) return `<div class="loading">No flow data.</div>`;
+    return `
+      <table>
+        <thead><tr><th>Material</th><th>Lots</th><th>Weight</th><th>Payout</th><th>Avg ₹/kg</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><strong>${esc(r.material)}</strong></td>
+              <td>${r.lots}</td>
+              <td>${kg(r.weight_kg)}</td>
+              <td>${money(r.payout_inr)}</td>
+              <td>${money(r.avg_price_per_kg)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderAnomalies(rows) {
+    if (!rows || rows.length === 0) {
+      return `<div class="alert alert-low"><span class="alert-icon">✓</span> No basic anomalies detected.</div>`;
+    }
+    return rows.map(a => {
+      const cls = a.severity === "high" ? "alert-high"
+                : a.severity === "medium" ? "alert-medium" : "alert-low";
+      const icon = a.severity === "high" ? "🚨" : a.severity === "medium" ? "⚠️" : "ℹ️";
+      return `
+        <div class="alert ${cls}">
+          <span class="alert-icon">${icon}</span>
+          <div style="flex:1">
+            <strong>${esc(a.type)}</strong><br>
+            <span style="font-size:10px;opacity:.8">${esc(a.message)}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ─── Risk tab renderer ────────────────────────────────────────────────────
+  function renderRiskAlerts(payload) {
+    const { total_alerts, by_severity, alerts } = payload;
+
+    const summaryCards = [
+      { label: "Critical", value: by_severity.critical || 0, color: "#dc2626" },
+      { label: "High",     value: by_severity.high || 0,     color: "#ea580c" },
+      { label: "Medium",   value: by_severity.medium || 0,   color: "#d97706" },
+      { label: "Low",      value: by_severity.low || 0,      color: "#2563eb" },
+    ];
+
+    const kpiHtml = `
+      <div class="kpi-grid">
+        ${summaryCards.map(c => `
+          <div class="kpi" style="border-left-color:${c.color}">
+            <div class="kpi-label">${c.label}</div>
+            <div class="kpi-value">${c.value}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+
+    const alertsHtml = alerts.length === 0
+      ? `<div class="alert alert-low"><span class="alert-icon">✓</span> No anomalies detected.</div>`
+      : alerts.map(a => {
+          const cls = (a.severity === "critical" || a.severity === "high") ? "alert-high"
+                    : a.severity === "medium" ? "alert-medium" : "alert-low";
+          const icon = a.severity === "critical" ? "🚨"
+                     : a.severity === "high" ? "🔥"
+                     : a.severity === "medium" ? "⚠️" : "ℹ️";
+          return `
+            <div class="alert ${cls}">
+              <span class="alert-icon">${icon}</span>
+              <div style="flex:1">
+                <strong>${esc(a.type.replace(/_/g, " "))} · score ${a.risk_score}</strong><br>
+                <span style="font-size:11px;opacity:.85">${esc(a.message)}</span>
+                ${a.lot_id ? `<br><span style="font-size:10px;opacity:.7">Lot: <code>${esc(a.lot_id)}</code></span>` : ""}
+                ${a.collector_id ? `<br><span style="font-size:10px;opacity:.7">Collector: <code>${esc(a.collector_id)}</code></span>` : ""}
+                ${a.recycler_id ? `<br><span style="font-size:10px;opacity:.7">Recycler: <code>${esc(a.recycler_id)}</code></span>` : ""}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+    return `
+      <div class="section-title">Risk Engine · Live Scan</div>
+      ${kpiHtml}
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-title">
+          <span>🚨 All Alerts (${total_alerts})</span>
+          <span>sorted by score</span>
+        </div>
+        ${alertsHtml}
+      </div>
+    `;
+  }
+
+  // ─── Main refresh ─────────────────────────────────────────────────────────
+  async function refreshAll() {
+    const el = document.getElementById("content");
+    el.innerHTML = `<div class="loading">Refreshing…</div>`;
+
+    try {
+      if (currentTab === "risk") {
+        const risk = await api("/api/v1/risk/scan", { method: "POST" });
+        el.innerHTML = renderRiskAlerts(risk);
+        return;
+      }
+
+      // Overview tab
+      const [overview, collectors, recyclers, flow, anomalies] = await Promise.all([
+        api("/api/v1/admin/overview"),
+        api("/api/v1/admin/collectors"),
+        api("/api/v1/admin/recyclers"),
+        api("/api/v1/admin/material-flow"),
+        api("/api/v1/admin/anomalies"),
+      ]);
+
+      el.innerHTML = `
+        <div class="section-title">Platform KPIs</div>
+        ${renderKPIs(overview.totals, overview.today, overview.pending_actions)}
+
+        <div class="panels-grid" style="margin-top:20px">
+          <div class="panel">
+            <div class="panel-title"><span>🏆 Top Materials by Weight</span><span>All time</span></div>
+            ${renderTopMaterials(overview.top_materials)}
+          </div>
+          <div class="panel">
+            <div class="panel-title"><span>🎯 Top Recyclers by Volume</span><span>All time</span></div>
+            ${renderTopRecyclers(overview.top_recyclers)}
+          </div>
+        </div>
+
+        <div class="panels-grid" style="margin-top:14px">
+          <div class="panel">
+            <div class="panel-title"><span>🚨 Basic Anomalies</span><span>${anomalies.length} item(s)</span></div>
+            ${renderAnomalies(anomalies)}
+          </div>
+          <div class="panel">
+            <div class="panel-title"><span>📊 Material Flow</span><span>${flow.length} materials</span></div>
+            <div style="max-height:340px;overflow-y:auto">
+              ${renderMaterialFlow(flow)}
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Collector Registry</div>
+        <div class="panel">${renderCollectors(collectors)}</div>
+
+        <div class="section-title">Recycler Registry</div>
+        <div class="panel">${renderRecyclers(recyclers)}</div>
+
+        <div style="text-align:center;margin-top:30px;font-size:10px;color:var(--muted)">
+          Last refreshed ${new Date().toLocaleString("en-IN")}
+        </div>
+      `;
+    } catch (err) {
+      console.error(err);
+      el.innerHTML = `<div class="error">
+        ❌ Could not reach the backend.<br>
+        <span style="font-size:10px">Make sure the server is running at ${API_BASE}</span>
+      </div>`;
+    }
+  }
+
+  // ─── Boot ─────────────────────────────────────────────────────────────────
+  window.addEventListener("DOMContentLoaded", () => {
+    refreshAll();
+    // Auto-refresh every 30s
+    setInterval(refreshAll, 30_000);
+  });
+</script>
+</body>
+</html>

@@ -6,3 +6,21 @@ dist/
 .env
 .env.*
 !.env.example
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# SQLite database (regenerated on first run)
+data/
+*.db
+
+# Env
+.env
+
+# IDE
+.vscode/
+.idea/

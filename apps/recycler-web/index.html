@@ -1,750 +1,463 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recycler Lot Verification & Settlement Portal | Mai Hu Kabadiwala</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recycler Console | Mai Hu Kabadiwala</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --primary:       #0f3d2e;
-      --primary-mid:   #164e3b;
-      --primary-light: #e8f5ee;
-      --accent:        #d97706;
-      --accent-light:  #fef3c7;
-      --bg:            #f4f7f4;
-      --card:          #ffffff;
-      --ink:           #0f1c14;
-      --muted:         #5c7469;
-      --line:          #dce5de;
-      --green:         #16a34a;
-      --green-light:   #dcfce7;
-      --red:           #dc2626;
-      --red-light:     #fee2e2;
-      --amber:         #f59e0b;
-      --blue:          #2563eb;
-      --radius:        14px;
-      --shadow:        0 2px 16px rgba(15,60,46,.08);
+      --primary:#0f3d2e; --primary-mid:#164e3b; --primary-light:#e8f5ee;
+      --accent:#d97706; --bg:#f4f7f4; --card:#fff; --ink:#0f1c14;
+      --muted:#5c7469; --line:#dce5de; --green:#16a34a;
+      --green-light:#dcfce7; --red:#dc2626; --red-light:#fee2e2;
+      --amber:#f59e0b; --amber-light:#fef3c7; --radius:14px;
+      --shadow:0 2px 16px rgba(15,60,46,.08);
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      min-height: 100vh;
-      padding: 20px 16px 60px;
-      display: flex;
-      justify-content: center;
-    }
-    .wrap { width: 100%; max-width: 680px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Plus Jakarta Sans',-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:20px 16px 60px;display:flex;justify-content:center}
+    .wrap{width:100%;max-width:900px}
+    header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-mid) 100%);border-radius:20px;padding:20px 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 24px rgba(15,61,46,.2)}
+    .brand-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.3px}
+    .brand-sub{font-size:10px;color:rgba(255,255,255,.55);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+    .header-right{display:flex;gap:10px;align-items:center}
+    .live-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#a7f3cc;font-size:10px;font-weight:700;padding:6px 12px;border-radius:50px;letter-spacing:.5px}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 1.6s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-    /* ── HEADER ── */
-    header {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-mid) 100%);
-      border-radius: 20px;
-      padding: 22px 24px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 24px rgba(15,61,46,.2);
-    }
-    .brand-name { font-size: 18px; font-weight: 900; color: #fff; letter-spacing: -.3px; }
-    .brand-sub  { font-size: 10px; color: rgba(255,255,255,.55); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
-    .recycler-badge {
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.2);
-      color: #a7f3cc;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 6px 12px;
-      border-radius: 50px;
-      letter-spacing: .5px;
-    }
+    /* Tabs */
+    .tabs{display:flex;gap:6px;margin-bottom:16px;padding:5px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow-x:auto}
+    .tab{flex:1;min-width:100px;padding:9px 14px;font-size:11px;font-weight:800;color:var(--muted);background:none;border:none;border-radius:10px;cursor:pointer;font-family:inherit;letter-spacing:.2px;white-space:nowrap}
+    .tab.active{background:var(--primary);color:#fff}
 
-    /* ── KICKER / SECTION LABELS ── */
-    .kicker {
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-    h2 { font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.5px; margin-bottom: 14px; }
+    /* Card */
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+    .kicker{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+    h2{font-size:20px;font-weight:900;color:var(--ink);letter-spacing:-.4px;margin-bottom:14px}
+    h3{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:10px}
 
-    /* ── CARDS ── */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 20px 22px;
-      margin-bottom: 14px;
-      box-shadow: var(--shadow);
-    }
+    /* Inputs */
+    .field-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+    .field-label{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+    input,select{font-family:inherit;font-size:14px;font-weight:700;padding:12px 14px;border:2px solid var(--line);border-radius:11px;background:#f8faf9;color:var(--ink);outline:none;transition:border-color .2s;width:100%}
+    input:focus,select:focus{border-color:var(--primary);background:#fff}
 
-    /* ── PIN ENTRY ── */
-    .pin-area { display: flex; flex-direction: column; gap: 14px; }
-    .pin-row { display: flex; gap: 10px; align-items: stretch; }
-    .pin-input {
-      flex: 1;
-      font-family: 'Plus Jakarta Sans', monospace;
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 18px;
-      padding: 14px 20px;
-      border: 2px solid var(--line);
-      border-radius: 12px;
-      background: #f8faf9;
-      color: var(--primary);
-      outline: none;
-      transition: border-color .2s;
-    }
-    .pin-input:focus { border-color: var(--primary); background: #fff; }
-    .pin-input::placeholder { color: #c5d0c7; letter-spacing: 4px; font-size: 16px; }
-    .verify-btn {
-      padding: 0 22px;
-      background: var(--primary);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background .18s, transform .1s;
-      white-space: nowrap;
-    }
-    .verify-btn:hover  { background: var(--primary-mid); }
-    .verify-btn:active { transform: scale(.97); }
-    .verify-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+    button{font-family:inherit;font-size:13px;font-weight:800;padding:12px 20px;border:none;border-radius:11px;cursor:pointer;transition:background .15s,transform .08s;background:var(--primary);color:#fff;letter-spacing:.2px}
+    button:hover{background:var(--primary-mid)}
+    button:active{transform:scale(.98)}
+    button:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+    button.secondary{background:var(--primary-light);color:var(--primary)}
+    button.secondary:hover{background:#d3ebdc}
+    button.danger{background:var(--red-light);color:var(--red)}
+    button.small{padding:8px 14px;font-size:11px}
 
-    .or-divider { text-align: center; color: var(--muted); font-size: 11px; font-weight: 700; position: relative; }
-    .or-divider::before, .or-divider::after {
-      content: '';
-      position: absolute; top: 50%; width: 42%;
-      height: 1px; background: var(--line);
-    }
-    .or-divider::before { left: 0; }
-    .or-divider::after  { right: 0; }
+    .btn-row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+    .btn-row button{flex:1}
 
-    .lot-id-row { display: flex; gap: 8px; }
-    .lot-id-input {
-      flex: 1; padding: 11px 14px;
-      border: 1px solid var(--line); border-radius: 10px;
-      font-size: 13px; font-weight: 600; color: var(--ink); background: #f8faf9;
-      outline: none; transition: border-color .18s;
-    }
-    .lot-id-input:focus { border-color: var(--primary); background: #fff; }
+    /* Alerts */
+    .alert{padding:12px 14px;border-radius:10px;font-size:12px;font-weight:600;margin-bottom:12px}
+    .alert.error{background:var(--red-light);color:#991b1b;border:1px solid #fca5a5}
+    .alert.info{background:var(--primary-light);color:var(--primary);border:1px solid #b6dcc7}
+    .alert.warning{background:var(--amber-light);color:#92400e;border:1px solid #fcd34d}
+    .alert.success{background:var(--green-light);color:#15803d;border:1px solid #86efac}
 
-    /* ── LOT DETAILS PANEL ── */
-    #lot-panel { display: none; }
-    #lot-panel.visible { display: block; }
+    /* Tables */
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:#f8faf9;color:var(--ink);font-weight:800;font-size:9px;letter-spacing:.5px;text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}
+    th:first-child{border-radius:8px 0 0 0}
+    th:last-child{border-radius:0 8px 0 0}
+    td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+    tr:last-child td{border:none}
+    tr:hover td{background:#fafdfa}
 
-    .lot-header {
-      background: linear-gradient(135deg, var(--primary) 0%, #215c45 100%);
-      border-radius: var(--radius);
-      padding: 20px 22px;
-      margin-bottom: 14px;
-      color: #fff;
-    }
-    .lot-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-    .lot-brand { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: rgba(255,255,255,.55); text-transform: uppercase; }
-    .lot-id-text { font-size: 13px; font-weight: 800; color: #fff; margin-top: 3px; }
-    .lot-status-pill {
-      font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
-      padding: 5px 10px; border-radius: 50px;
-      border: 1px solid rgba(255,255,255,.25);
-      color: rgba(255,255,255,.8);
-    }
-    .lot-status-pill.paid { background: rgba(22,163,74,.25); border-color: #86efac; color: #bbf7d0; }
+    /* Badges */
+    .badge{display:inline-flex;padding:3px 8px;border-radius:50px;font-size:9px;font-weight:800;letter-spacing:.3px}
+    .badge-green{background:var(--green-light);color:#15803d}
+    .badge-amber{background:var(--amber-light);color:#92400e}
+    .badge-red{background:var(--red-light);color:#991b1b}
+    .badge-gray{background:#f3f4f6;color:#374151}
+    .badge-blue{background:#dbeafe;color:#1e40af}
 
-    .lot-detail-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-      margin-top: 14px; padding-top: 14px;
-      border-top: 1px solid rgba(255,255,255,.15);
-    }
-    .lot-detail-item label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .8px; }
-    .lot-detail-item .val  { font-size: 16px; font-weight: 800; color: #fff; margin-top: 3px; }
-    .lot-detail-item .val.green { color: #86efac; }
+    /* KPI */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+    .kpi{background:#fff;border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:12px 14px}
+    .kpi-icon{font-size:18px;margin-bottom:4px}
+    .kpi-label{font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+    .kpi-value{font-size:19px;font-weight:900;color:var(--ink);margin-top:5px;letter-spacing:-.4px}
+    .kpi-sub{font-size:10px;color:var(--muted);margin-top:2px}
 
-    /* QR Area */
-    .qr-area {
-      display: flex; gap: 18px; align-items: center;
-      background: #f8faf9; border: 1px solid var(--line);
-      border-radius: 12px; padding: 16px;
-      margin-bottom: 14px;
-    }
-    .qr-placeholder {
-      width: 100px; height: 100px; border-radius: 10px;
-      background: var(--ink); display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; position: relative; overflow: hidden;
-    }
-    .qr-grid {
-      position: absolute; inset: 6px;
-      display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px;
-    }
-    .qr-cell { border-radius: 1px; }
-    .qr-dark  { background: var(--ink); }
-    .qr-light { background: #fff; }
-    .qr-logo {
-      position: absolute; width: 22px; height: 22px;
-      background: var(--primary); border-radius: 4px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; border: 2px solid #fff;
-    }
-    .qr-copy h3 { font-size: 14px; font-weight: 800; color: var(--ink); }
-    .qr-copy p  { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    /* Detail grid */
+    .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .detail-item label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase}
+    .detail-item .val{font-size:14px;font-weight:800;color:var(--ink);margin-top:3px}
+    .detail-item .val.green{color:var(--green)}
+    .detail-item .val.mono{font-family:monospace;font-size:12px}
 
-    /* Checklist */
-    .checklist { list-style: none; }
-    .checklist li {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 9px 0; border-bottom: 1px solid var(--line);
-      font-size: 12px; color: var(--ink);
-    }
-    .checklist li:last-child { border: none; }
-    .check-icon {
-      width: 22px; height: 22px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 900; flex-shrink: 0; margin-top: 1px;
-    }
-    .check-icon.done { background: var(--green-light); color: var(--green); }
-    .check-icon.todo { background: #f3f4f6; color: var(--muted); border: 1px solid var(--line); }
+    .hidden{display:none !important}
+    .loading{text-align:center;color:var(--muted);font-size:12px;padding:30px}
+    .error-msg{text-align:center;color:var(--red);font-size:12px;padding:30px}
 
-    /* Confirm section */
-    .weight-verify { display: flex; gap: 10px; align-items: center; }
-    .weight-verify input {
-      flex: 1; padding: 12px 16px;
-      border: 2px solid var(--line); border-radius: 10px;
-      font-size: 20px; font-weight: 900; color: var(--primary);
-      outline: none; transition: border-color .18s;
-      text-align: center;
-    }
-    .weight-verify input:focus { border-color: var(--primary); }
-    .weight-unit {
-      font-size: 14px; font-weight: 700; color: var(--muted); padding: 0 8px;
-    }
-    .weight-diff {
-      font-size: 11px; font-weight: 700; padding: 5px 10px;
-      border-radius: 6px; display: none;
-    }
-    .weight-diff.ok      { background: var(--green-light); color: var(--green); display: inline-flex; }
-    .weight-diff.warning { background: #fff7ed; color: var(--accent); display: inline-flex; }
-    .weight-diff.over    { background: var(--red-light); color: var(--red); display: inline-flex; }
-
-    .confirm-btn {
-      width: 100%; padding: 16px;
-      background: var(--primary);
-      color: #fff; border: none;
-      border-radius: 14px; font-size: 15px; font-weight: 900;
-      cursor: pointer; transition: background .18s, transform .1s;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-    }
-    .confirm-btn:hover  { background: var(--primary-mid); }
-    .confirm-btn:active { transform: scale(.98); }
-    .confirm-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
-
-    /* ── SUCCESS STATE ── */
-    #success-panel { display: none; }
-    #success-panel.visible { display: block; }
-
-    .success-card {
-      background: linear-gradient(135deg, #0a3d26 0%, #1a6b45 100%);
-      border-radius: 20px;
-      padding: 30px 24px;
-      text-align: center;
-      color: #fff;
-    }
-    .success-icon-wrap {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: rgba(255,255,255,.15);
-      margin: 0 auto 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 36px;
-    }
-    .success-title { font-size: 24px; font-weight: 900; letter-spacing: -.5px; }
-    .success-sub   { font-size: 13px; color: rgba(255,255,255,.65); margin-top: 6px; }
-    .utr-box {
-      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
-      border-radius: 12px; padding: 16px 20px; margin: 20px 0;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .utr-row { display: flex; justify-content: space-between; font-size: 12px; }
-    .utr-label { color: rgba(255,255,255,.5); font-weight: 600; }
-    .utr-val   { color: #fff; font-weight: 800; }
-    .epr-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(22,163,74,.2); border: 1px solid rgba(134,239,172,.3);
-      color: #a7f3cc; font-size: 11px; font-weight: 700;
-      padding: 8px 16px; border-radius: 50px;
-      margin-top: 8px;
-    }
-    .back-btn {
-      display: inline-block; margin-top: 18px; padding: 11px 24px;
-      border: 1px solid rgba(255,255,255,.25);
-      border-radius: 10px; color: rgba(255,255,255,.75);
-      font-size: 12px; font-weight: 700;
-      cursor: pointer; background: none;
-      transition: background .18s;
-    }
-    .back-btn:hover { background: rgba(255,255,255,.1); }
-
-    /* ── RECENT LOTS TABLE ── */
-    .lot-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .lot-table th {
-      background: var(--ink); color: #fff; font-weight: 700;
-      font-size: 10px; letter-spacing: .5px; text-transform: uppercase;
-      padding: 9px 12px; text-align: left;
-    }
-    .lot-table th:first-child { border-radius: 8px 0 0 0; }
-    .lot-table th:last-child  { border-radius: 0 8px 0 0; }
-    .lot-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-    .lot-table tr:nth-child(even) td { background: #f9fbf9; }
-    .lot-table tr:last-child td { border: none; }
-    .badge {
-      display: inline-flex; padding: 3px 8px; border-radius: 50px;
-      font-size: 9px; font-weight: 700; letter-spacing: .3px;
-    }
-    .badge-green  { background: var(--green-light); color: #15803d; }
-    .badge-amber  { background: var(--accent-light); color: #92400e; }
-    .badge-gray   { background: #f3f4f6; color: #374151; }
-
-    @media (max-width: 500px) {
-      .lot-detail-grid { grid-template-columns: 1fr; }
-      .pin-row { flex-direction: column; }
-      .qr-area { flex-direction: column; }
+    @media(max-width:600px){
+      .detail-grid{grid-template-columns:1fr}
+      .btn-row{flex-direction:column}
+      .tabs{flex-wrap:nowrap}
     }
   </style>
 </head>
 <body>
 <div class="wrap">
-
   <header>
     <div>
       <div class="brand-name">♻ Mai Hu Kabadiwala</div>
-      <div class="brand-sub">Recycler Verification Portal</div>
+      <div class="brand-sub">Recycler Console</div>
     </div>
-    <div class="recycler-badge">🏭 AUTHORIZED RECYCLER</div>
+    <div class="header-right">
+      <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+    </div>
   </header>
 
-  <!-- PIN / LOT ID Entry -->
-  <div class="card" id="entry-panel">
-    <p class="kicker">Verify Incoming Lot</p>
-    <h2>Enter Lot PIN or ID</h2>
-
-    <div class="pin-area">
-      <div class="pin-row">
-        <input
-          type="number"
-          class="pin-input"
-          id="pinInput"
-          placeholder="• • • •"
-          maxlength="4"
-          oninput="this.value = this.value.slice(0,4)"
-        >
-        <button class="verify-btn" onclick="verifyByPin()" id="verifyPinBtn">Verify PIN →</button>
-      </div>
-
-      <div class="or-divider">OR</div>
-
-      <div class="lot-id-row">
-        <input type="text" class="lot-id-input" id="lotIdInput" placeholder="Lot ID (e.g. lot_1753278312847_ab3f9c)">
-        <button class="verify-btn" onclick="verifyByLotId()" style="padding:0 16px;font-size:12px">Look up →</button>
-      </div>
+  <!-- Recycler selector -->
+  <div class="card" style="padding:14px 18px">
+    <div class="field-row" style="margin-bottom:0">
+      <label class="field-label">Active Recycler ID</label>
+      <input id="recyclerId" value="eco-cycle" onchange="onRecyclerChange()" />
     </div>
   </div>
 
-  <!-- Lot Details Panel (shown after verification) -->
-  <div id="lot-panel">
-    <div class="lot-header">
-      <div class="lot-header-top">
-        <div>
-          <div class="lot-brand">Mai Hu Kabadiwala · Lot</div>
-          <div class="lot-id-text" id="disp-lot-id">—</div>
-        </div>
-        <div class="lot-status-pill" id="disp-status">AWAITING VERIFICATION</div>
-      </div>
-      <div class="lot-detail-grid">
-        <div class="lot-detail-item">
-          <label>Material</label>
-          <div class="val" id="disp-material">—</div>
-        </div>
-        <div class="lot-detail-item">
-          <label>Collector</label>
-          <div class="val" id="disp-collector">—</div>
-        </div>
-        <div class="lot-detail-item">
-          <label>Declared Weight</label>
-          <div class="val" id="disp-weight">—</div>
-        </div>
-        <div class="lot-detail-item">
-          <label>Net Payout</label>
-          <div class="val green" id="disp-amount">—</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- QR Info -->
-    <div class="qr-area">
-      <div class="qr-placeholder">
-        <div class="qr-grid" id="qr-grid"></div>
-        <div class="qr-logo">⚡</div>
-      </div>
-      <div class="qr-copy">
-        <h3>QR Authenticated</h3>
-        <p>This lot's QR code has been cryptographically signed by the platform. The PIN and lot data match.</p>
-        <p style="margin-top:8px;font-size:10px;color:#7a8f83;">Cluster: <span id="disp-hub" style="font-weight:700;color:#0f3d2e">—</span></p>
-      </div>
-    </div>
-
-    <!-- Recycler Verification Checklist -->
-    <div class="card">
-      <p class="kicker">Verification Checklist</p>
-      <ul class="checklist">
-        <li>
-          <div class="check-icon done">✓</div>
-          <span><strong>Identity & PIN verified</strong> — Collector ID and pickup PIN match platform record.</span>
-        </li>
-        <li>
-          <div class="check-icon done">✓</div>
-          <span><strong>Material classification confirmed</strong> — Category and hazard status verified.</span>
-        </li>
-        <li>
-          <div class="check-icon todo" id="weight-check-icon">○</div>
-          <span><strong>Physical weight verification</strong> — Weigh on calibrated scale and enter below.</span>
-        </li>
-        <li>
-          <div class="check-icon todo" id="receipt-check-icon">○</div>
-          <span><strong>Receipt confirmation</strong> — Confirm receipt and release payment to collector.</span>
-        </li>
-      </ul>
-    </div>
-
-    <!-- Weight Verification -->
-    <div class="card">
-      <p class="kicker">Step 1 — Weigh the Material</p>
-      <h2 style="font-size:18px;margin-bottom:12px">Enter Verified Weight</h2>
-      <div class="weight-verify">
-        <input type="number" id="actualWeight" placeholder="0.0" step="0.1" min="0" oninput="checkWeightDiff()">
-        <div class="weight-unit">kg</div>
-        <span class="weight-diff" id="weightDiffBadge"></span>
-      </div>
-      <p style="font-size:10px;color:var(--muted);margin-top:8px;">Collector declared: <strong id="declared-weight-hint">—</strong>. A discrepancy of more than 5% will be flagged.</p>
-    </div>
-
-    <!-- Confirm Handover -->
-    <div class="card">
-      <p class="kicker">Step 2 — Release Payment</p>
-      <h2 style="font-size:18px;margin-bottom:6px">Confirm Receipt & Release</h2>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">By clicking below, you confirm the material has been physically received and weighed. This action triggers instant payment to the collector's UPI/bank account.</p>
-      <button class="confirm-btn" onclick="confirmHandover()" id="confirmBtn">
-        🤝 Confirm Receipt & Release ₹<span id="confirm-amount">—</span>
-      </button>
-    </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="verify" onclick="switchTab('verify')">✓ Verify</button>
+    <button class="tab" data-tab="incoming" onclick="switchTab('incoming')">📥 Incoming</button>
+    <button class="tab" data-tab="offers" onclick="switchTab('offers')">💰 Offers</button>
+    <button class="tab" data-tab="history" onclick="switchTab('history')">📜 History</button>
+    <button class="tab" data-tab="analytics" onclick="switchTab('analytics')">📊 Analytics</button>
   </div>
 
-  <!-- Success State -->
-  <div id="success-panel">
-    <div class="success-card">
-      <div class="success-icon-wrap">✓</div>
-      <div class="success-title">Handover Complete!</div>
-      <div class="success-sub">Payment released · EPR credit generated · Chain of custody sealed</div>
-      <div class="utr-box">
-        <div class="utr-row"><span class="utr-label">UTR / Transaction ID</span><span class="utr-val" id="utr-display">—</span></div>
-        <div class="utr-row"><span class="utr-label">Beneficiary</span><span class="utr-val" id="beneficiary-display">—</span></div>
-        <div class="utr-row"><span class="utr-label">Amount</span><span class="utr-val" id="amount-display">—</span></div>
-        <div class="utr-row"><span class="utr-label">Verified Weight</span><span class="utr-val" id="verified-weight-display">—</span></div>
-        <div class="utr-row"><span class="utr-label">Lot ID</span><span class="utr-val" id="lot-id-display">—</span></div>
-        <div class="utr-row"><span class="utr-label">EPR Credit</span><span class="utr-val" style="color:#a7f3cc">✓ Generated</span></div>
-      </div>
-      <div class="epr-badge">🌱 Green EPR Credit Recorded — CPCB Compliant</div>
-      <br>
-      <button class="back-btn" onclick="resetPortal()">← Verify Another Lot</button>
-    </div>
+  <div id="content">
+    <div class="loading">Loading…</div>
   </div>
-
-  <!-- Recent Verified Lots -->
-  <div class="card" style="margin-top:8px;">
-    <p class="kicker">Recent Activity</p>
-    <h2 style="font-size:18px;margin-bottom:12px">Verified Lots Today</h2>
-    <table class="lot-table">
-      <thead>
-        <tr>
-          <th>Lot ID</th>
-          <th>Material</th>
-          <th>Weight</th>
-          <th>Amount</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="recent-lots-body">
-        <tr>
-          <td style="font-family:monospace;font-size:10px">lot_demo_copper_01</td>
-          <td>Copper cable</td>
-          <td>35 kg</td>
-          <td>₹18,450</td>
-          <td><span class="badge badge-green">PAID</span></td>
-        </tr>
-        <tr>
-          <td style="font-family:monospace;font-size:10px">lot_demo_server_02</td>
-          <td>Server boards</td>
-          <td>22.5 kg</td>
-          <td>₹11,475</td>
-          <td><span class="badge badge-green">PAID</span></td>
-        </tr>
-        <tr>
-          <td style="font-family:monospace;font-size:10px">lot_demo_battery_03</td>
-          <td>Lithium-ion batteries</td>
-          <td>18 kg</td>
-          <td>₹5,040</td>
-          <td><span class="badge badge-amber">PENDING</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
 </div>
 
 <script>
-  // ── Demo lot database (mirrors app demo data) ──────────────────────────────
-  const DEMO_LOTS = {
-    "lot_demo_copper_01": {
-      id: "lot_demo_copper_01",
-      material: "Copper cable",
-      collectorId: "CLT-4218",
-      collectorName: "Ramesh Kumar",
-      weightKg: 35,
-      amount: 18450,
-      hub: "Pune Bhosari Cluster",
-      status: "AVAILABLE"
-    },
-    "lot_demo_server_02": {
-      id: "lot_demo_server_02",
-      material: "Server boards",
-      collectorId: "CLT-4218",
-      collectorName: "Ramesh Kumar",
-      weightKg: 22.5,
-      amount: 11475,
-      hub: "Pune Bhosari Cluster",
-      status: "PICKUP_SCHEDULED"
-    },
-    "lot_demo_battery_03": {
-      id: "lot_demo_battery_03",
-      material: "Lithium-ion batteries",
-      collectorId: "CLT-4218",
-      collectorName: "Ramesh Kumar",
-      weightKg: 18,
-      amount: 5040,
-      hub: "Pune Bhosari Cluster",
-      status: "IDENTIFIED"
-    }
-  };
-
-  // PIN to lot mapping (demo: PIN 1234 → copper)
-  const PIN_MAP = { "1234": "lot_demo_copper_01", "5678": "lot_demo_server_02", "9012": "lot_demo_battery_03" };
-
+  const API_BASE = "http://localhost:8000";
+  let currentTab = "verify";
   let currentLot = null;
 
-  // ── On load: check URL params ──────────────────────────────────────────────
-  window.addEventListener('DOMContentLoaded', () => {
-    const params = new URLSearchParams(window.location.search);
-    const pin    = params.get('pin');
-    const lotId  = params.get('lotId');
-    const material = params.get('material');
-    const weight   = params.get('weight');
-    const amount   = params.get('amount');
-    const collector = params.get('collector');
+  function money(n) {
+    if (n >= 1_00_00_000) return "₹" + (n / 1_00_00_000).toFixed(2) + " Cr";
+    if (n >= 1_00_000) return "₹" + (n / 1_00_000).toFixed(2) + " L";
+    return "₹" + Math.round(n).toLocaleString("en-IN");
+  }
+  function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  async function api(path, opts) {
+    const res = await fetch(`${API_BASE}${path}`, opts);
+    if (!res.ok) throw new Error(`${res.status} ${path}`);
+    return res.json();
+  }
+  function getRecyclerId() { return document.getElementById("recyclerId").value.trim() || "eco-cycle"; }
 
-    if (lotId || pin) {
-      // Build a lot from URL params (from QR scan)
-      if (lotId) {
-        const lot = DEMO_LOTS[lotId] || {
-          id:           lotId,
-          material:     material || "E-waste material",
-          collectorId:  "CLT-XXXX",
-          collectorName: collector || "Collector",
-          weightKg:     parseFloat(weight) || 10,
-          amount:       parseFloat(amount) || 0,
-          hub:          "Pune Cluster",
-          status:       "PICKUP_SCHEDULED"
-        };
-        showLotPanel(lot, pin || "----");
-      } else if (pin) {
-        document.getElementById('pinInput').value = pin;
-        verifyByPin();
-      }
-    }
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    render();
+  }
+  function onRecyclerChange() { render(); }
 
-    // Render QR visual
-    renderQrGrid('qr-grid');
-  });
+  // ─── VERIFY TAB ──────────────────────────────────────────────────────────
+  function renderVerify() {
+    return `
+      <div class="card">
+        <p class="kicker">Verify Incoming Lot</p>
+        <h2>Enter Lot ID & PIN</h2>
+        <div id="verify-error" class="alert error hidden"></div>
+        <div class="field-row">
+          <label class="field-label">Lot ID</label>
+          <input id="lotIdInput" placeholder="e.g. lot_demo_copper_01" autocomplete="off" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">4-Digit Pickup PIN</label>
+          <input id="pinInput" placeholder="• • • •" maxlength="4" inputmode="numeric" autocomplete="off" />
+        </div>
+        <button id="btn-verify" onclick="verifyLot()">Verify PIN →</button>
+      </div>
+      <div id="settle-section"></div>
+      <div id="success-section"></div>
+    `;
+  }
 
-  function renderQrGrid(containerId) {
-    const grid = document.getElementById(containerId);
-    if (!grid) return;
-    // 9×9 simplified QR-like pattern
-    const pattern = [
-      [1,1,1,1,1,1,1,0,0],
-      [1,0,0,0,0,0,1,0,1],
-      [1,0,1,1,1,0,1,0,0],
-      [1,0,1,1,1,0,1,0,1],
-      [1,0,1,1,1,0,1,0,0],
-      [1,0,0,0,0,0,1,0,1],
-      [1,1,1,1,1,1,1,0,0],
-      [0,0,0,0,0,0,0,0,1],
-      [0,1,0,1,1,0,0,1,0]
-    ];
-    pattern.forEach(row => {
-      row.forEach(cell => {
-        const div = document.createElement('div');
-        div.className = 'qr-cell ' + (cell ? 'qr-dark' : 'qr-light');
-        grid.appendChild(div);
+  async function verifyLot() {
+    const el = document.getElementById("verify-error");
+    el.classList.add("hidden");
+    const lotId = document.getElementById("lotIdInput").value.trim();
+    const pin = document.getElementById("pinInput").value.trim();
+    if (!lotId) { el.textContent = "Enter a Lot ID."; el.classList.remove("hidden"); return; }
+    if (!/^\d{4}$/.test(pin)) { el.textContent = "PIN must be 4 digits."; el.classList.remove("hidden"); return; }
+    const btn = document.getElementById("btn-verify"); btn.disabled = true; btn.textContent = "Verifying…";
+    try {
+      const data = await api("/api/v1/handover/verify", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lot_id: lotId, pickup_pin: pin }),
       });
-    });
+      currentLot = { ...data, pin };
+      document.getElementById("settle-section").innerHTML = renderSettle();
+      document.getElementById("success-section").innerHTML = "";
+    } catch (err) {
+      el.textContent = err.message.includes("401") ? "❌ Invalid PIN" : "❌ " + err.message;
+      el.classList.remove("hidden");
+    } finally { btn.disabled = false; btn.textContent = "Verify PIN →"; }
   }
 
-  function verifyByPin() {
-    const pin = document.getElementById('pinInput').value.trim();
-    if (pin.length < 4) {
-      alert('Please enter a 4-digit pickup PIN.');
-      return;
-    }
-    const lotId = PIN_MAP[pin];
-    if (!lotId) {
-      // Build a generic lot from the PIN for demo
-      const fakeLot = {
-        id: `lot_${Date.now()}_mhk`,
-        material: "Copper cable",
-        collectorId: "CLT-4218",
-        collectorName: "Ramesh Kumar",
-        weightKg: 35,
-        amount: 18450,
-        hub: "Pune Bhosari Cluster",
-        status: "PICKUP_SCHEDULED"
-      };
-      showLotPanel(fakeLot, pin);
-      return;
-    }
-    showLotPanel(DEMO_LOTS[lotId], pin);
+  function renderSettle() {
+    const d = currentLot;
+    return `
+      <div class="card">
+        <p class="kicker">Verified Lot</p>
+        <h2>${esc(d.lot_id)}</h2>
+        <div class="detail-grid">
+          <div class="detail-item"><label>Material</label><div class="val">${esc(d.material)}</div></div>
+          <div class="detail-item"><label>Collector</label><div class="val">${esc(d.collector_name)}</div></div>
+          <div class="detail-item"><label>Declared Weight</label><div class="val">${d.declared_weight_kg} kg</div></div>
+          <div class="detail-item"><label>Expected Payout</label><div class="val green">${money(d.expected_net_earnings)}</div></div>
+          <div class="detail-item"><label>Status</label><div class="val">${esc(d.status)}</div></div>
+          <div class="detail-item"><label>Collector ID</label><div class="val mono">${esc(d.collector_id)}</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="kicker">Physical Audit</p>
+        <h2>Enter Verified Weight</h2>
+        <div id="audit-error" class="alert error hidden"></div>
+        <div class="field-row">
+          <label class="field-label">Verified Weight (kg)</label>
+          <input id="weightInput" type="number" step="0.1" min="0.1" value="${d.declared_weight_kg}" />
+        </div>
+        <button id="btn-confirm" onclick="confirmSettle()">✓ Confirm Receipt & Release Payment</button>
+      </div>
+    `;
   }
 
-  function verifyByLotId() {
-    const id = document.getElementById('lotIdInput').value.trim();
-    if (!id) { alert('Please enter a Lot ID.'); return; }
-    const lot = DEMO_LOTS[id] || {
-      id,
-      material: "Mixed e-waste",
-      collectorId: "CLT-4218",
-      collectorName: "Ramesh Kumar",
-      weightKg: 20,
-      amount: 1700,
-      hub: "Pune Bhosari Cluster",
-      status: "PICKUP_SCHEDULED"
-    };
-    showLotPanel(lot, '----');
-  }
-
-  function showLotPanel(lot, pin) {
-    currentLot = lot;
-    document.getElementById('disp-lot-id').textContent   = lot.id;
-    document.getElementById('disp-material').textContent = lot.material;
-    document.getElementById('disp-collector').textContent = `${lot.collectorName} · ${lot.collectorId}`;
-    document.getElementById('disp-weight').textContent   = `${lot.weightKg} kg`;
-    document.getElementById('disp-amount').textContent   = `₹${lot.amount.toLocaleString('en-IN')}`;
-    document.getElementById('disp-hub').textContent      = lot.hub;
-    document.getElementById('disp-status').textContent   = 'PIN VERIFIED ✓';
-    document.getElementById('disp-status').classList.add('paid');
-    document.getElementById('declared-weight-hint').textContent = `${lot.weightKg} kg`;
-    document.getElementById('confirm-amount').textContent = lot.amount.toLocaleString('en-IN');
-
-    document.getElementById('lot-panel').classList.add('visible');
-    document.getElementById('lot-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function checkWeightDiff() {
+  async function confirmSettle() {
     if (!currentLot) return;
-    const actual    = parseFloat(document.getElementById('actualWeight').value) || 0;
-    const declared  = currentLot.weightKg;
-    const diffPct   = Math.abs((actual - declared) / declared * 100);
-    const badge     = document.getElementById('weightDiffBadge');
-    const weightIcon = document.getElementById('weight-check-icon');
-
-    if (actual === 0) { badge.className = 'weight-diff'; return; }
-
-    if (diffPct <= 2) {
-      badge.className = 'weight-diff ok';
-      badge.textContent = '✓ Within tolerance';
-      weightIcon.textContent = '✓';
-      weightIcon.className = 'check-icon done';
-    } else if (diffPct <= 5) {
-      badge.className = 'weight-diff warning';
-      badge.textContent = `⚠ ${diffPct.toFixed(1)}% difference`;
-      weightIcon.textContent = '~';
-      weightIcon.className = 'check-icon todo';
-    } else {
-      badge.className = 'weight-diff over';
-      badge.textContent = `✗ ${diffPct.toFixed(1)}% — Flag`;
-      weightIcon.textContent = '!';
-      weightIcon.className = 'check-icon todo';
+    const el = document.getElementById("audit-error");
+    el.classList.add("hidden");
+    const weight = parseFloat(document.getElementById("weightInput").value);
+    if (!weight || weight <= 0) { el.textContent = "Enter a valid weight."; el.classList.remove("hidden"); return; }
+    const btn = document.getElementById("btn-confirm"); btn.disabled = true; btn.textContent = "Releasing…";
+    try {
+      const receipt = await api("/api/v1/handover/confirm", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lot_id: currentLot.lot_id,
+          pickup_pin: currentLot.pin,
+          recycler_id: getRecyclerId(),
+          recycler_name: "EcoCycle Recyclers Pvt Ltd",
+          audited_weight_kg: weight,
+          agreed_payout: currentLot.expected_net_earnings || 0,
+          payment_mode: "UPI",
+        }),
+      });
+      document.getElementById("settle-section").innerHTML = "";
+      document.getElementById("success-section").innerHTML = renderSuccess(receipt);
+      currentLot = null;
+    } catch (err) {
+      el.textContent = "❌ " + err.message;
+      el.classList.remove("hidden");
+      btn.disabled = false; btn.textContent = "✓ Confirm Receipt & Release Payment";
     }
   }
 
-  function confirmHandover() {
-    if (!currentLot) return;
-    const actualWeight = parseFloat(document.getElementById('actualWeight').value);
-    if (!actualWeight || actualWeight <= 0) {
-      alert('Please enter the verified weight before confirming.');
-      return;
-    }
+  function renderSuccess(r) {
+    return `
+      <div class="card" style="background:linear-gradient(135deg,#0a3d26 0%,#1a6b45 100%);color:#fff;text-align:center">
+        <div style="font-size:44px;margin-bottom:8px">✓</div>
+        <div style="font-size:22px;font-weight:900;letter-spacing:-.4px">Handover Complete</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:6px">Payment released · EPR credit generated</div>
+        <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:16px 20px;margin-top:20px;text-align:left;font-size:12px">
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:rgba(255,255,255,.55);font-weight:600">UTR</span><span style="font-family:monospace;font-weight:800">${esc(r.utr_number)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:rgba(255,255,255,.55);font-weight:600">Amount</span><span style="font-weight:800">${money(r.amount_paid)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:rgba(255,255,255,.55);font-weight:600">EPR</span><span style="font-family:monospace;font-weight:800;font-size:10px">${esc(r.epr_certificate_id)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:rgba(255,255,255,.55);font-weight:600">Carbon Offset</span><span style="font-weight:800">${r.carbon_offset_kg} kg</span></div>
+        </div>
+        <button class="secondary" style="margin-top:18px" onclick="switchTab('verify')">Verify Another Lot</button>
+      </div>
+    `;
+  }
 
-    const btn = document.getElementById('confirmBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Processing payment…';
-
-    setTimeout(() => {
-      const utr = `UTR-MHK-${Math.floor(10000000 + Math.random() * 90000000)}`;
-      document.getElementById('utr-display').textContent           = utr;
-      document.getElementById('beneficiary-display').textContent   = `${currentLot.collectorName} (${currentLot.collectorId})`;
-      document.getElementById('amount-display').textContent        = `₹${currentLot.amount.toLocaleString('en-IN')}`;
-      document.getElementById('verified-weight-display').textContent = `${actualWeight} kg`;
-      document.getElementById('lot-id-display').textContent        = currentLot.id;
-
-      // Add to recent lots table
-      const tbody = document.getElementById('recent-lots-body');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="font-family:monospace;font-size:10px">${currentLot.id.slice(-18)}</td>
-        <td>${currentLot.material}</td>
-        <td>${actualWeight} kg</td>
-        <td>₹${currentLot.amount.toLocaleString('en-IN')}</td>
-        <td><span class="badge badge-green">PAID</span></td>
+  // ─── INCOMING TAB ────────────────────────────────────────────────────────
+  async function renderIncoming() {
+    try {
+      const lots = await api(`/api/v1/recycler/${getRecyclerId()}/incoming-lots`);
+      if (lots.length === 0) return `<div class="card"><p class="loading">No incoming lots available</p></div>`;
+      return `
+        <div class="card">
+          <p class="kicker">Incoming Lots</p>
+          <h2>${lots.length} available lots</h2>
+          <table>
+            <thead><tr><th>Lot ID</th><th>Material</th><th>Weight</th><th>Distance</th><th>Collector</th><th>Action</th></tr></thead>
+            <tbody>
+              ${lots.map(l => `
+                <tr>
+                  <td style="font-family:monospace;font-size:10px">${esc(l.id)}</td>
+                  <td><strong>${esc(l.material)}</strong><br><span style="font-size:9px;color:var(--muted)">${esc(l.quality)}</span></td>
+                  <td>${l.weight_kg} kg</td>
+                  <td>${l.distance_km != null ? l.distance_km + " km" : "—"}</td>
+                  <td>${esc(l.collector_name)}<br><span style="font-size:9px;color:var(--muted);font-family:monospace">${esc(l.collector_id)}</span></td>
+                  <td>
+                    <button class="small secondary" onclick="quickOffer('${esc(l.id)}')">Make Offer</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
       `;
-      tbody.prepend(tr);
-
-      document.getElementById('lot-panel').classList.remove('visible');
-      document.getElementById('success-panel').classList.add('visible');
-      document.getElementById('success-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 1800);
+    } catch (err) {
+      return `<div class="card"><p class="error-msg">Could not load: ${esc(err.message)}</p></div>`;
+    }
   }
 
-  function resetPortal() {
-    currentLot = null;
-    document.getElementById('pinInput').value       = '';
-    document.getElementById('lotIdInput').value     = '';
-    document.getElementById('actualWeight').value   = '';
-    document.getElementById('weightDiffBadge').className = 'weight-diff';
-    document.getElementById('lot-panel').classList.remove('visible');
-    document.getElementById('success-panel').classList.remove('visible');
-    document.getElementById('confirmBtn').disabled  = false;
-    document.getElementById('confirmBtn').innerHTML = '🤝 Confirm Receipt & Release ₹<span id="confirm-amount">—</span>';
-    document.getElementById('weight-check-icon').textContent  = '○';
-    document.getElementById('weight-check-icon').className    = 'check-icon todo';
-    document.getElementById('receipt-check-icon').textContent = '○';
-    document.getElementById('receipt-check-icon').className   = 'check-icon todo';
-    document.getElementById('entry-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  async function quickOffer(lotId) {
+    const priceStr = prompt("Offer price per kg (₹):", "620");
+    if (!priceStr) return;
+    const price = parseFloat(priceStr);
+    if (!price || price <= 0) return alert("Invalid price");
+    try {
+      await api("/api/v1/recycler/offers", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recycler_id: getRecyclerId(),
+          lot_id: lotId,
+          offered_price_per_kg: price,
+          pickup_cost: 180, handling_cost: 70, platform_fee: 120,
+          expires_in_hours: 48,
+        }),
+      });
+      alert("Offer sent!");
+      render();
+    } catch (err) { alert("Failed: " + err.message); }
   }
+
+  // ─── OFFERS TAB ──────────────────────────────────────────────────────────
+  async function renderOffers() {
+    try {
+      const offers = await api(`/api/v1/recycler/${getRecyclerId()}/offers`);
+      if (offers.length === 0) return `<div class="card"><p class="loading">No offers yet — create one from the Incoming tab</p></div>`;
+      return `
+        <div class="card">
+          <p class="kicker">My Offers</p>
+          <h2>${offers.length} total</h2>
+          <table>
+            <thead><tr><th>Offer ID</th><th>Lot</th><th>₹/kg</th><th>Net</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              ${offers.map(o => `
+                <tr>
+                  <td style="font-family:monospace;font-size:10px">${esc(o.id)}</td>
+                  <td style="font-family:monospace;font-size:10px">${esc(o.lot_id)}</td>
+                  <td>${money(o.offered_price_per_kg)}</td>
+                  <td>${money(o.net_earnings)}</td>
+                  <td><span class="badge ${
+                    o.status === "ACCEPTED" ? "badge-green" :
+                    o.status === "REJECTED" ? "badge-red" :
+                    o.status === "EXPIRED"  ? "badge-gray"  : "badge-amber"
+                  }">${esc(o.status)}</span></td>
+                  <td>
+                    ${o.status === "PENDING" ? `
+                      <button class="small" onclick="setOffer('${o.id}','accept')">Accept</button>
+                      <button class="small danger" onclick="setOffer('${o.id}','reject')">Reject</button>
+                    ` : "—"}
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      return `<div class="card"><p class="error-msg">Could not load: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  async function setOffer(offerId, action) {
+    try {
+      await api(`/api/v1/recycler/offers/${offerId}/${action}`, { method: "PATCH" });
+      render();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
+  // ─── HISTORY TAB ─────────────────────────────────────────────────────────
+  async function renderHistory() {
+    try {
+      const tx = await api(`/api/v1/recycler/${getRecyclerId()}/transactions`);
+      if (tx.length === 0) return `<div class="card"><p class="loading">No settled handovers yet</p></div>`;
+      return `
+        <div class="card">
+          <p class="kicker">Transaction History</p>
+          <h2>${tx.length} settled lot${tx.length > 1 ? "s" : ""}</h2>
+          <table>
+            <thead><tr><th>UTR</th><th>Lot</th><th>Weight</th><th>Amount</th><th>EPR Cert</th><th>Mode</th><th>Date</th></tr></thead>
+            <tbody>
+              ${tx.map(t => `
+                <tr>
+                  <td style="font-family:monospace;font-size:10px">${esc(t.utr_number)}</td>
+                  <td style="font-family:monospace;font-size:10px">${esc(t.lot_id)}</td>
+                  <td>${t.audited_weight_kg} kg</td>
+                  <td><strong>${money(t.amount_paid)}</strong></td>
+                  <td style="font-family:monospace;font-size:9px">${esc(t.epr_certificate_id || "—")}</td>
+                  <td>${esc(t.payment_mode)}</td>
+                  <td>${new Date(t.created_at).toLocaleDateString("en-IN")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      return `<div class="card"><p class="error-msg">Could not load: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  // ─── ANALYTICS TAB ───────────────────────────────────────────────────────
+  async function renderAnalytics() {
+    try {
+      const a = await api(`/api/v1/recycler/${getRecyclerId()}/analytics`);
+      return `
+        <div class="kpi-grid">
+          <div class="kpi" style="border-left-color:#16a34a"><div class="kpi-icon">📦</div><div class="kpi-label">Handovers</div><div class="kpi-value">${a.total_handovers}</div></div>
+          <div class="kpi" style="border-left-color:#f59e0b"><div class="kpi-icon">⚖️</div><div class="kpi-label">Total Weight</div><div class="kpi-value">${a.total_kg} kg</div></div>
+          <div class="kpi" style="border-left-color:#059669"><div class="kpi-icon">💰</div><div class="kpi-label">Paid Volume</div><div class="kpi-value">${money(a.total_paid_inr)}</div></div>
+          <div class="kpi" style="border-left-color:#8b5cf6"><div class="kpi-icon">📊</div><div class="kpi-label">Avg ₹/kg</div><div class="kpi-value">${money(a.avg_price_per_kg)}</div></div>
+          <div class="kpi" style="border-left-color:#3b82f6"><div class="kpi-icon">💼</div><div class="kpi-label">Open Offers</div><div class="kpi-value">${a.open_offers}</div><div class="kpi-sub">${a.accepted_offers} accepted</div></div>
+          <div class="kpi" style="border-left-color:#f97316"><div class="kpi-icon">📥</div><div class="kpi-label">Incoming</div><div class="kpi-value">${a.incoming_lots_pending}</div><div class="kpi-sub">available lots</div></div>
+        </div>
+        <div class="card">
+          <p class="kicker">Top Material</p>
+          <h2>${esc(a.top_material || "—")}</h2>
+          <p style="font-size:11px;color:var(--muted)">Highest lifetime intake by weight</p>
+        </div>
+      `;
+    } catch (err) {
+      return `<div class="card"><p class="error-msg">Could not load: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────
+  async function render() {
+    const el = document.getElementById("content");
+    el.innerHTML = `<div class="loading">Loading…</div>`;
+    let html = "";
+    try {
+      if (currentTab === "verify") html = renderVerify();
+      else if (currentTab === "incoming") html = await renderIncoming();
+      else if (currentTab === "offers") html = await renderOffers();
+      else if (currentTab === "history") html = await renderHistory();
+      else if (currentTab === "analytics") html = await renderAnalytics();
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = `<div class="card"><p class="error-msg">Error: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => render());
 </script>
 </body>
 </html>

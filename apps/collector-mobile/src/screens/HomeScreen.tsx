@@ -1,212 +1,165 @@
+// src/screens/HomeScreen.tsx
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import { LotCard } from "../components/LotCard";
 import { MaterialCard } from "../components/MaterialCard";
 import { VoiceButton } from "../components/VoiceButton";
 import { colors } from "../constants/theme";
-import { getAllBazarPrices } from "../data/prices";
 import { useTranslation } from "../hooks/useTranslation";
 import type { RootTabParamList } from "../navigation/types";
+import { getCollectorStats, type CollectorStats } from "../services/api/client";
 import { speak } from "../services/voice/speech";
+import { useAuthStore } from "../store/authStore";
 import { useAppStore } from "../store/appStore";
-import { MATERIAL_METADATA } from "../types/domain";
 import { currency } from "../utils/format";
 
 type Props = BottomTabScreenProps<RootTabParamList, "Home">;
+
+const TIER_COLORS: Record<string, string> = {
+  bronze:   "#A96532",
+  silver:   "#8897A2",
+  gold:     "#D97706",
+  platinum: "#4C51BF",
+};
 
 export function HomeScreen({ navigation }: Props) {
   const { language, t } = useTranslation();
   const lots = useAppStore((s) => s.lots);
   const isOnline = useAppStore((s) => s.isOnline);
-  const profile = useAppStore((s) => s.profile);
-  const role = useAppStore((s) => s.role);
-  const weeklyEarnings = useAppStore((s) => s.weeklyEarnings);
-  const weeklyWeight = useAppStore((s) => s.weeklyWeight);
-  const weeklyGoalProgress = useAppStore((s) => s.weeklyGoalProgress);
-  const adminStats = useAppStore((s) => s.adminStats);
+  const collector = useAuthStore((s) => s.collector);
+  const refreshAuth = useAuthStore((s) => s.refresh);
 
-  // ── Live Opportunity Pulse from BAZAR_PRICES ───────────────────────────────
-  const bazarPrices = getAllBazarPrices();
-  const topOpportunity = bazarPrices
-    .filter((p) => p.trend === "up" && p.demand === "HIGH")
-    .sort((a, b) => b.changePercent - a.changePercent)[0]
-    ?? bazarPrices.sort((a, b) => b.changePercent - a.changePercent)[0]
-    ?? bazarPrices[0]!;
+  const [stats, setStats] = useState<CollectorStats | null>(null);
 
-  const topMeta = MATERIAL_METADATA[topOpportunity?.material];
-  const topMaterialName = topOpportunity
-    ? (language === "hi" ? topMeta?.hindi : language === "mr" ? topMeta?.marathi : topOpportunity.material)
-    : "Copper cable";
-  const topDemandText =
-    language === "hi"
-      ? `${topMaterialName} की आज आपके पास ज़बरदस्त मांग है। भाव ${topOpportunity?.changePercent > 0 ? "+" : ""}${topOpportunity?.changePercent}% ${topOpportunity?.changePercent > 0 ? "ऊपर" : "नीचे"} है।`
-      : language === "mr"
-      ? `${topMaterialName} ला आज तुमच्या जवळ मोठी मागणी आहे. दर ${topOpportunity?.changePercent > 0 ? "+" : ""}${topOpportunity?.changePercent}% ${topOpportunity?.changePercent > 0 ? "वर" : "खाली"} आहे.`
-      : `${topOpportunity?.material} is in high demand near you today. Rate: ${topOpportunity?.changePercent > 0 ? "+" : ""}${topOpportunity?.changePercent}% today.`;
+  // Refresh collector profile + stats on mount
+  useEffect(() => {
+    if (!collector) return;
+    void refreshAuth();
+    getCollectorStats(collector.id)
+      .then(setStats)
+      .catch((err) => console.warn("[home] stats fetch failed:", err));
+  }, [collector?.id]);
 
-  const totalEarnings = weeklyEarnings();
-  const totalWeight = weeklyWeight();
-  const progress = weeklyGoalProgress();
-  const remaining = Math.max(0, (profile.weeklyGoal || 12000) - totalEarnings);
+  if (!collector) {
+    return (
+      <View style={styles.screen}>
+        <Text style={{ padding: 20, color: colors.muted }}>Loading collector…</Text>
+      </View>
+    );
+  }
+
+  const initials = collector.name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const firstName = collector.name.split(" ")[0];
+  const tierColor = TIER_COLORS[collector.tier] ?? TIER_COLORS.bronze;
+
+  // Prefer backend stats; fall back to collector totals
+  const weeklyEarnings = stats?.total_earnings ?? collector.total_earnings;
+  const weeklyWeight = stats?.total_weight_kg ?? collector.total_weight_kg;
+  const totalLots = stats?.total_lots ?? collector.total_lots;
+
+  const weeklyGoal = 12000;
+  const progress = Math.min(100, Math.round((weeklyEarnings / weeklyGoal) * 100));
+  const remaining = Math.max(0, weeklyGoal - weeklyEarnings);
+
   const recentLots = lots.slice(0, 3);
 
-  // ── Derive live admin stats from actual lots ────────────────────────────────
-  const hazardMaterials = new Set(["Lithium-ion batteries", "CRT & monitor glass", "Lead acid batteries"]);
-  const liveHazardOpen = lots.filter((l) => hazardMaterials.has(l.material) && l.status !== "PAID").length;
-  const livePendingSync = lots.filter((l) => l.syncState === "PENDING").length;
-  const derivedAdminStats = {
-    ...adminStats,
-    hazardLotsOpen: liveHazardOpen > 0 ? liveHazardOpen : adminStats.hazardLotsOpen,
-    pendingSyncLots: livePendingSync > 0 ? livePendingSync : adminStats.pendingSyncLots,
-    totalLotsToday: lots.length > 0 ? lots.length : adminStats.totalLotsToday,
-    totalKgToday: totalWeight > 0 && lots.length > 0 ? totalWeight : adminStats.totalKgToday,
-    totalEarningsToday: totalEarnings > 0 && lots.length > 0 ? totalEarnings : adminStats.totalEarningsToday
-  };
-
-  // ── Admin view ─────────────────────────────────────────────────────────────
-  if (role === "admin") {
-    const stats = derivedAdminStats;
-    return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        <View style={styles.topbar}>
-          <View>
-            <Text style={styles.roleTag}>🛡 ADMIN DASHBOARD</Text>
-            <Text style={styles.greeting}>Namaskar, {profile.name}</Text>
-            <Text style={styles.subgreeting}>{profile.jurisdiction}</Text>
-          </View>
-          <TouchableOpacity style={[styles.avatar, styles.avatarAdmin]} onPress={() => navigation.navigate("Profile")}>
-            <Text style={styles.avatarText}>{profile.initials}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.adminGrid}>
-          <AdminTile icon="👷" label="Active Collectors" value={derivedAdminStats.totalCollectors.toLocaleString()} accent="#3B82F6" />
-          <AdminTile icon="📦" label="Lots Today" value={derivedAdminStats.totalLotsToday.toLocaleString()} accent={colors.green} />
-          <AdminTile icon="⚖️" label="kg Today" value={`${derivedAdminStats.totalKgToday.toLocaleString()} kg`} accent="#F59E0B" />
-          <AdminTile icon="💰" label="Flow Today" value={currency(derivedAdminStats.totalEarningsToday)} accent="#8B5CF6" />
-          <AdminTile icon="⚠️" label="Hazard Open" value={derivedAdminStats.hazardLotsOpen.toString()} accent="#EF4444" />
-          <AdminTile icon="🔄" label="Pending Sync" value={derivedAdminStats.pendingSyncLots.toString()} accent="#F97316" />
-          <AdminTile icon="🌿" label="EPR Tonnage/mo" value={`${derivedAdminStats.eprTonnageMonth} T`} accent="#10B981" />
-          <AdminTile icon="📍" label="Top Cluster" value={derivedAdminStats.topCluster.split(",")[0] ?? derivedAdminStats.topCluster} accent="#6366F1" />
-        </View>
-
-        <Text style={styles.sectionTitle}>Live Lot Feed — All Collectors</Text>
-        {lots.length ? lots.map((lot) => (
-          <LotCard key={lot.id} lot={lot} syncedLabel={t("synced")} pendingLabel={t("pendingSync")} />
-        )) : (
-          <View style={styles.emptyLots}>
-            <Text style={styles.emptyText}>No lots collected yet today. Demo lots visible after first sync.</Text>
-          </View>
-        )}
-      </ScrollView>
-    );
-  }
-
-  // ── User (household) view ──────────────────────────────────────────────────
-  if (role === "user") {
-    return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        <View style={styles.topbar}>
-          <View>
-            <Text style={styles.roleTag}>🏠 CITIZEN PORTAL</Text>
-            <Text style={styles.greeting}>Namaskar, {profile.name}</Text>
-            <View style={styles.statusRow}>
-              <View style={[styles.dot, !isOnline && styles.dotOffline]} />
-              <Text style={styles.status}>{isOnline ? "Online" : "Offline"}</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={[styles.avatar, styles.avatarUser]} onPress={() => navigation.navigate("Profile")}>
-            <Text style={styles.avatarText}>{profile.initials}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.hero}>
-          <Text style={styles.eyebrow}>✦ SCHEDULE E-WASTE PICKUP</Text>
-          <Text style={styles.heroTitle}>Dispose responsibly</Text>
-          <Text style={styles.heroDescription}>
-            A verified Kabadiwala will collect your old electronics safely from your doorstep.
-          </Text>
-          <View style={styles.pills}>
-            <Text style={styles.pill}>✓ Free Pickup</Text>
-            <Text style={styles.pill}>● CPCB Certified</Text>
-            <Text style={styles.pill}>🌱 Zero Landfill</Text>
-          </View>
-          <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate("BazarBhav")}>
-            <Text style={styles.heroButtonText}>Check Scrap Rates</Text>
-            <Text style={styles.arrow}>→</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.userCards}>
-          <View style={styles.userCard}>
-            <Text style={styles.userCardIcon}>📅</Text>
-            <Text style={styles.userCardTitle}>Last Pickup</Text>
-            <Text style={styles.userCardValue}>{profile.lastPickupDate ?? "—"}</Text>
-          </View>
-          <View style={styles.userCard}>
-            <Text style={styles.userCardIcon}>🌍</Text>
-            <Text style={styles.userCardTitle}>CO₂ Saved</Text>
-            <Text style={styles.userCardValue}>34 kg</Text>
-          </View>
-          <View style={styles.userCard}>
-            <Text style={styles.userCardIcon}>♻️</Text>
-            <Text style={styles.userCardTitle}>Items Recycled</Text>
-            <Text style={styles.userCardValue}>12 items</Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Nearby Kabadiwala Availability</Text>
-        <MaterialCard material="Copper cable" price="₹612" note="Ramesh Kumar · 1.2 km away" badge="AVAILABLE" />
-        <MaterialCard material="Mixed e-waste" price="₹85" note="Santosh Patil · 2.8 km away" badge="FREE PICKUP" />
-      </ScrollView>
-    );
-  }
-
-  // ── Kabadiwala (collector) view ────────────────────────────────────────────
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Top bar */}
       <View style={styles.topbar}>
         <View>
-          <Text style={styles.roleTag}>♻️ KABADIWALA</Text>
-          <Text style={styles.greeting}>{t("welcome")}, {profile.name.split(" ")[0]}</Text>
+          <Text style={styles.roleTag}>
+            ♻️ KABADIWALA · <Text style={{ color: tierColor }}>{collector.tier.toUpperCase()}</Text>
+          </Text>
+          <Text style={styles.greeting}>
+            {t("welcome")}, {firstName}
+          </Text>
           <View style={styles.statusRow}>
             <View style={[styles.dot, !isOnline && styles.dotOffline]} />
-            <Text style={styles.status}>{isOnline ? t("online") : t("offline")}</Text>
+            <Text style={styles.status}>
+              {isOnline ? t("online") : t("offline")} · {collector.operating_area ?? "Pune"}
+            </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.avatar} accessibilityLabel="Profile" onPress={() => navigation.navigate("Profile")}>
-          <Text style={styles.avatarText}>{profile.initials}</Text>
+        <TouchableOpacity
+          style={styles.avatar}
+          accessibilityLabel="Profile"
+          onPress={() => navigation.navigate("Profile")}
+        >
+          <Text style={styles.avatarText}>{initials}</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Hero card */}
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>✦ {t("opportunity")}</Text>
         <Text style={styles.heroTitle}>{t("collectSmarter")}</Text>
-        <Text style={styles.heroDescription}>{topDemandText}</Text>
+        <Text style={styles.heroDescription}>{t("copperDemand")}</Text>
         <View style={styles.pills}>
-          <Text style={styles.pill}>↗ +{topOpportunity?.changePercent}% today</Text>
-          <Text style={styles.pill}>● {topOpportunity?.demand === "HIGH" ? t("highDemand") : "Active Demand"}</Text>
+          <Text style={styles.pill}>↗ +12% price up</Text>
+          <Text style={styles.pill}>● {t("highDemand")}</Text>
         </View>
-        <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate("Market", { material: topOpportunity?.material ?? "Copper cable", quality: "medium", weightKg: 35 })}>
+        <TouchableOpacity
+          style={styles.heroButton}
+          onPress={() =>
+            navigation.navigate("Market", {
+              material: "Copper cable",
+              quality: "medium",
+              weightKg: 35,
+            })
+          }
+        >
           <Text style={styles.heroButtonText}>{t("viewOpportunities")}</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Actions */}
       <View style={styles.actions}>
-        <TouchableOpacity style={[styles.action, styles.primaryAction]} onPress={() => navigation.navigate("Collect")}>
+        <TouchableOpacity
+          style={[styles.action, styles.primaryAction]}
+          onPress={() => navigation.navigate("Collect")}
+        >
           <Text style={styles.actionIcon}>⌑</Text>
           <Text style={styles.actionText}>{t("sellMaterial")}</Text>
           <Text style={styles.actionHint}>{t("takePhoto")}</Text>
         </TouchableOpacity>
-        <VoiceButton label={t("speakEntry")} onPress={() => speak("Tell me the material and approximate weight.", language)} />
-        <TouchableOpacity style={styles.priceAction} onPress={() => (navigation as any).navigate("BazarBhav")}>
+
+        <VoiceButton
+          label={t("speakEntry")}
+          onPress={() =>
+            speak("Tell me the material and approximate weight.", language)
+          }
+        />
+
+        <TouchableOpacity
+          style={styles.priceAction}
+          onPress={() => (navigation as any).navigate("BazarBhav")}
+        >
           <Text style={styles.rupee}>₹</Text>
           <Text style={styles.priceActionText}>{t("bazarBhav")}</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Nearby demand */}
       <View style={styles.sectionHeading}>
         <View>
           <Text style={styles.kicker}>SMART FOR YOU</Text>
@@ -216,10 +169,24 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.link}>See all</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => navigation.navigate("Market", { material: topOpportunity?.material ?? "Copper cable", quality: "medium", weightKg: 35 })}>
-        <MaterialCard material={topOpportunity?.material ?? "Copper cable"} price={`₹${topOpportunity?.currentPrice ?? 612}`} note={`${topOpportunity?.demand ?? "High"} demand · ${topMaterialName}`} badge={topOpportunity?.demand === "HIGH" ? "HOT OPPORTUNITY" : t("highDemand").toUpperCase()} />
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate("Market", {
+            material: "Copper cable",
+            quality: "medium",
+            weightKg: 35,
+          })
+        }
+      >
+        <MaterialCard
+          material="Copper cable"
+          price="₹612"
+          note="EcoCycle · 2.4 km away"
+          badge={t("highDemand").toUpperCase()}
+        />
       </TouchableOpacity>
 
+      {/* Business stats */}
       <View style={styles.sectionHeading}>
         <View>
           <Text style={styles.kicker}>THIS WEEK</Text>
@@ -233,51 +200,64 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.stats}>
         <View style={[styles.stat, styles.greenStat]}>
           <Text style={styles.statLabel}>{t("earned")}</Text>
-          <Text style={styles.statValue}>{currency(totalEarnings)}</Text>
-          <Text style={styles.statHint}>↑ {lots.length > 0 ? `${lots.length} lots` : "18% vs last week"}</Text>
+          <Text style={styles.statValue}>{currency(weeklyEarnings)}</Text>
+          <Text style={styles.statHint}>
+            ↑ {totalLots} lots lifetime
+          </Text>
         </View>
         <View style={[styles.stat, styles.amberStat]}>
           <Text style={styles.statLabel}>{t("collected")}</Text>
-          <Text style={styles.statValue}>{totalWeight} kg</Text>
-          <Text style={styles.statHint}>Top: {lots[0]?.material ?? "Copper"}</Text>
+          <Text style={styles.statValue}>{weeklyWeight.toFixed(0)} kg</Text>
+          <Text style={styles.statHint}>
+            Top: {lots[0]?.material ?? "Copper"}
+          </Text>
         </View>
       </View>
 
+      {/* Goal */}
       <View style={styles.goal}>
         <View style={styles.goalHeader}>
           <Text style={styles.goalText}>{t("weeklyGoal")}</Text>
-          <Text style={styles.goalAmount}>{currency(totalEarnings)} / {currency(profile.weeklyGoal ?? 12000)}</Text>
+          <Text style={styles.goalAmount}>
+            {currency(weeklyEarnings)} / {currency(weeklyGoal)}
+          </Text>
         </View>
         <View style={styles.track}>
           <View style={[styles.progress, { width: `${progress}%` }]} />
         </View>
         <Text style={styles.goalHint}>
-          {remaining > 0
-            ? <>Just <Text style={styles.goalStrong}>{currency(remaining)}</Text> more to reach your goal!</>
-            : <Text style={styles.goalStrong}>🎉 Weekly goal achieved!</Text>}
+          {remaining > 0 ? (
+            <>
+              Just <Text style={styles.goalStrong}>{currency(remaining)}</Text> more to reach your goal!
+            </>
+          ) : (
+            <Text style={styles.goalStrong}>🎉 Weekly goal achieved!</Text>
+          )}
         </Text>
       </View>
 
+      {/* My lots */}
       <View style={styles.sectionHeading}>
         <View>
           <Text style={styles.kicker}>{t("traceability").toUpperCase()}</Text>
           <Text style={styles.sectionTitle}>{t("myLots")}</Text>
         </View>
       </View>
-      {recentLots.length
-        ? recentLots.map((lot) => <LotCard key={lot.id} lot={lot} syncedLabel={t("synced")} pendingLabel={t("pendingSync")} />)
-        : <View style={styles.emptyLots}><Text style={styles.emptyText}>{t("noLots")}</Text></View>}
+      {recentLots.length ? (
+        recentLots.map((lot) => (
+          <LotCard
+            key={lot.id}
+            lot={lot}
+            syncedLabel={t("synced")}
+            pendingLabel={t("pendingSync")}
+          />
+        ))
+      ) : (
+        <View style={styles.emptyLots}>
+          <Text style={styles.emptyText}>{t("noLots")}</Text>
+        </View>
+      )}
     </ScrollView>
-  );
-}
-
-function AdminTile({ icon, label, value, accent }: { icon: string; label: string; value: string; accent: string }) {
-  return (
-    <View style={[styles.adminTile, { borderLeftColor: accent }]}>
-      <Text style={styles.adminTileIcon}>{icon}</Text>
-      <Text style={styles.adminTileLabel}>{label}</Text>
-      <Text style={[styles.adminTileValue, { color: accent }]}>{value}</Text>
-    </View>
   );
 }
 
@@ -288,19 +268,21 @@ const styles = StyleSheet.create({
   topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 17 },
   roleTag: { color: colors.muted, fontSize: 9, fontWeight: "800", letterSpacing: 1, marginBottom: 2 },
   greeting: { color: colors.ink, fontSize: 15, fontWeight: "800" },
-  subgreeting: { color: colors.muted, fontSize: 10, marginTop: 2 },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 4 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#42A866" },
   dotOffline: { backgroundColor: "#D98B38" },
   status: { color: colors.muted, fontSize: 10 },
-  avatar: { width: 42, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 21, backgroundColor: "#9C6A4B", borderWidth: 2, borderColor: colors.white },
-  avatarAdmin: { backgroundColor: "#1E3A8A" },
-  avatarUser: { backgroundColor: "#7C3AED" },
-  avatarText: { color: colors.white, fontSize: 11, fontWeight: "800" },
+  avatar: {
+    width: 42, height: 42,
+    alignItems: "center", justifyContent: "center",
+    borderRadius: 21, backgroundColor: "#9C6A4B",
+    borderWidth: 2, borderColor: colors.white,
+  },
+  avatarText: { color: colors.white, fontSize: 12, fontWeight: "900" },
 
   hero: { padding: 23, borderRadius: 25, backgroundColor: colors.green, overflow: "hidden" },
   eyebrow: { color: "#C2E8CB", fontSize: 10, fontWeight: "800", letterSpacing: 1 },
-  heroTitle: { marginTop: 9, color: colors.white, fontSize: 32, lineHeight: 35, fontWeight: "800", letterSpacing: -1 },
+  heroTitle: { marginTop: 9, color: colors.white, fontSize: 30, lineHeight: 34, fontWeight: "800", letterSpacing: -1 },
   heroDescription: { marginTop: 8, maxWidth: 270, color: "#D0E6D7", fontSize: 13, lineHeight: 19 },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 14 },
   pill: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 7, overflow: "hidden", backgroundColor: "#286652", color: "#F6DE8F", fontSize: 9, fontWeight: "700" },
@@ -342,18 +324,4 @@ const styles = StyleSheet.create({
 
   emptyLots: { padding: 15, borderWidth: 1, borderStyle: "dashed", borderColor: "#C6D8CB", borderRadius: 15 },
   emptyText: { color: colors.muted, fontSize: 11, lineHeight: 16 },
-
-  // Admin styles
-  adminGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  adminTile: { width: "47%", padding: 12, backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.line, borderLeftWidth: 4 },
-  adminTileIcon: { fontSize: 20, marginBottom: 4 },
-  adminTileLabel: { color: colors.muted, fontSize: 9, fontWeight: "700" },
-  adminTileValue: { fontSize: 15, fontWeight: "900", marginTop: 3 },
-
-  // User styles
-  userCards: { flexDirection: "row", gap: 8, marginVertical: 16 },
-  userCard: { flex: 1, padding: 12, backgroundColor: colors.white, borderRadius: 14, borderWidth: 1, borderColor: colors.line, alignItems: "center" },
-  userCardIcon: { fontSize: 22 },
-  userCardTitle: { color: colors.muted, fontSize: 9, fontWeight: "700", marginTop: 4 },
-  userCardValue: { color: colors.ink, fontSize: 12, fontWeight: "800", marginTop: 2 }
 });

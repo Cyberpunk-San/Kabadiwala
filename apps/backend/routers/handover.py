@@ -1,37 +1,46 @@
-import json
+# apps/backend/routers/handover.py
+"""
+Handover verification + settlement.
+
+Uses REAL server-side PIN verification against the SQLite DB.
+"""
+
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from db import get_db, HandoverRow
 from models.domain import (
     HandoverVerificationRequest,
     HandoverConfirmRequest,
     HandoverReceipt,
 )
-from services.storage import store
+from services import lot_service
 from services.epr_service import generate_epr_credit
 
 router = APIRouter(prefix="/api/v1/handover", tags=["Handover & Settlement"])
 
-@router.post("/verify")
-def verify_handover_pass(request: HandoverVerificationRequest):
-    """
-    Verifies collector QR payload or 4-digit PIN against local/cloud records.
-    Ensures zero tampering before recycler accepts the physical scrap lot.
-    """
-    lot = None
-    if request.lot_id:
-        lot = store.get_lot(request.lot_id)
-    elif request.qr_payload:
-        try:
-            data = json.loads(request.qr_payload)
-            if "lotId" in data:
-                lot = store.get_lot(data["lotId"])
-        except Exception:
-            pass
 
+@router.post("/verify")
+def verify_handover_pass(
+    req: HandoverVerificationRequest,
+    db: Session = Depends(get_db),
+):
+    """Recycler submits { lot_id, pickup_pin } and we check against the DB."""
+    if not req.lot_id or not req.pickup_pin:
+        raise HTTPException(
+            status_code=400,
+            detail="Both lot_id and pickup_pin are required.",
+        )
+
+    lot = lot_service.get_lot(db, req.lot_id)
     if not lot:
-        # Fallback to demo lot for testing
-        lot = store.get_lot("lot_demo_copper_01")
+        raise HTTPException(status_code=404, detail=f"Lot {req.lot_id} not found")
+
+    if not lot_service.verify_pin(db, req.lot_id, req.pickup_pin):
+        raise HTTPException(status_code=401, detail="Invalid pickup PIN for this lot")
 
     return {
         "verified": True,
@@ -40,43 +49,61 @@ def verify_handover_pass(request: HandoverVerificationRequest):
         "collector_id": lot.collector_id,
         "material": lot.material,
         "declared_weight_kg": lot.weight_kg,
-        "expected_net_earnings": lot.expected_net_earnings or 18450.0,
+        "expected_net_earnings": lot.expected_net_earnings or 0.0,
         "status": lot.status,
-        "auth_token": f"TOKEN_OK_{uuid.uuid4().hex[:6]}"
     }
 
-@router.post("/confirm", response_model=HandoverReceipt)
-def confirm_handover_settlement(request: HandoverConfirmRequest):
-    """
-    Finalizes handover, updates status to PAID, generates instant UPI UTR,
-    and issues CPCB EPR credit tokens tagged with material tonnage.
-    """
-    lot = store.get_lot(request.lot_id) or store.get_lot("lot_demo_copper_01")
-    if not lot:
-        raise HTTPException(status_code=404, detail="Lot not found")
 
-    # Generate UTR and EPR credits
-    utr_number = f"UTR-MHK-{uuid.uuid4().int % 100000000:08d}"
-    epr_data = generate_epr_credit(
+@router.post("/confirm", response_model=HandoverReceipt)
+def confirm_handover_settlement(
+    req: HandoverConfirmRequest,
+    db: Session = Depends(get_db),
+):
+    """Final step — PIN must match, then persist + settle."""
+    if not lot_service.verify_pin(db, req.lot_id, req.pickup_pin):
+        raise HTTPException(status_code=401, detail="Invalid pickup PIN")
+
+    lot = lot_service.get_lot(db, req.lot_id)
+    if not lot:
+        raise HTTPException(status_code=404, detail=f"Lot {req.lot_id} not found")
+
+    # SIMULATED payment — no real gateway is called.
+    utr_number = f"UTR-MHK-{uuid.uuid4().int % 100_000_000:08d}"
+
+    epr = generate_epr_credit(
         lot_id=lot.id,
         material=lot.material,
-        weight_kg=request.audited_weight_kg,
-        recycler_id=request.recycler_id
+        weight_kg=req.audited_weight_kg,
+        recycler_id=req.recycler_id,
     )
 
-    store.update_status(lot.id, "PAID")
+    handover_row = HandoverRow(
+        id=str(uuid.uuid4()),
+        lot_id=lot.id,
+        utr_number=utr_number,
+        amount_paid=req.agreed_payout,
+        payment_mode=req.payment_mode,
+        recycler_id=req.recycler_id,
+        recycler_name=getattr(req, "recycler_name", None),
+        audited_weight_kg=req.audited_weight_kg,
+        epr_certificate_id=epr["epr_certificate_id"],
+        carbon_offset_kg=epr["carbon_offset_kg"],
+    )
+    db.add(handover_row)
 
-    receipt = HandoverReceipt(
+    lot_service.attach_epr_certificate(db, lot.id, epr["epr_certificate_id"])
+    lot_service.update_status(db, lot.id, "PAID")
+    db.commit()
+
+    return HandoverReceipt(
         status="CONFIRMED",
         lot_id=lot.id,
         utr_number=utr_number,
-        amount_paid=request.agreed_payout,
+        amount_paid=req.agreed_payout,
         beneficiary=f"{lot.collector_name} ({lot.collector_id})",
-        payment_mode=request.payment_mode,
-        timestamp=datetime.now().isoformat(),
-        epr_certificate_id=epr_data["epr_certificate_id"],
-        carbon_offset_kg=epr_data["carbon_offset_kg"],
-        cpcb_compliance_hash=epr_data["cpcb_compliance_hash"]
+        payment_mode=req.payment_mode,
+        timestamp=datetime.utcnow().isoformat(),
+        epr_certificate_id=epr["epr_certificate_id"],
+        carbon_offset_kg=epr["carbon_offset_kg"],
+        cpcb_compliance_hash=epr["cpcb_compliance_hash"],
     )
-    store.handover_receipts.append(receipt.model_dump())
-    return receipt

@@ -1,3 +1,4 @@
+# apps/backend/services/epr_service.py
 import hashlib
 import uuid
 from datetime import datetime
@@ -16,14 +17,20 @@ CARBON_OFFSET_FACTORS: Dict[str, float] = {
     "Lead acid batteries": 2.2,
     "CRT & monitor glass": 0.8,
     "Compressors & cooling units": 4.1,
-    "Mixed e-waste": 3.0
+    "Mixed e-waste": 3.0,
 }
 
-def generate_epr_credit(lot_id: str, material: str, weight_kg: float, recycler_id: str) -> Dict[str, Any]:
+
+def generate_epr_credit(
+    lot_id: str,
+    material: str,
+    weight_kg: float,
+    recycler_id: str,
+) -> Dict[str, Any]:
     """
     Generates verified CPCB EPR (Extended Producer Responsibility) Credit Certificate.
-    Under Indian E-Waste (Management) Rules 2022, dismantlers generate digital credits
-    that electronics brands (Apple, Samsung, Dell, etc.) buy to fulfill annual compliance.
+    Under Indian E-Waste (Management) Rules 2022, dismantlers generate digital
+    credits that electronics brands buy to fulfill annual compliance.
     """
     cert_id = f"EPR-CPCB-{datetime.now().strftime('%Y')}-{uuid.uuid4().hex[:8].upper()}"
     tonnage_mt = round(weight_kg / 1000.0, 4)
@@ -42,5 +49,5 @@ def generate_epr_credit(lot_id: str, material: str, weight_kg: float, recycler_i
         "cpcb_compliance_hash": compliance_hash,
         "recycler_id": recycler_id,
         "status": "CPCB_PORTAL_SYNCED",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
