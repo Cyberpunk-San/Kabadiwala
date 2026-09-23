@@ -20,50 +20,32 @@ type Props = {
   navigation: any;
 };
 
+const GRADE_COLOR: Record<string, string> = {
+  S: "#9333EA",
+  A: "#16A34A",
+  B: "#2563EB",
+  C: "#EAB308",
+  D: "#DC2626",
+};
+
+const GRADE_BG: Record<string, string> = {
+  S: "#F3E8FF",
+  A: "#DCFCE7",
+  B: "#DBEAFE",
+  C: "#FEF9C3",
+  D: "#FEE2E2",
+};
+
 export function OpportunityScreen({ navigation }: Props) {
   const { language, t } = useTranslation();
-  const collector = useAuthStore((s) => s.collector);
 
-  const feedQuery = useQuery({
-    queryKey: ["opportunity-feed", collector?.latitude, collector?.longitude],
-    queryFn: () =>
-      getOpportunityFeed({
-        latitude: collector?.latitude ?? undefined,
-        longitude: collector?.longitude ?? undefined,
-      }),
-  });
+  // Local ML engine score (synchronous, offline, 0ms)
+  const scores = useMemo(() => scoreAllOpportunities(), []);
+  const topItem = scores[0];
 
   const onRefresh = useCallback(() => {
-    feedQuery.refetch();
-  }, [feedQuery]);
-
-  // ─── Loading / error ─────────────────────────────────────────────────────
-  if (feedQuery.isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.green} />
-        <Text style={styles.loadingText}>Analysing live demand…</Text>
-      </View>
-    );
-  }
-
-  if (feedQuery.isError || !feedQuery.data) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorIcon}>⚠</Text>
-        <Text style={styles.errorTitle}>Could not load opportunities</Text>
-        <Text style={styles.errorBody}>
-          Check that the backend is running.
-        </Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const feed = feedQuery.data;
-  const topItem = feed.items[0];
+    // No-op for local ML, but keeping for UX
+  }, []);
 
   const narrateTop = () => {
     if (!topItem) return;
