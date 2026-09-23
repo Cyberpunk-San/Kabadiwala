@@ -3,6 +3,8 @@ import type { Material } from "../types/domain";
 
 export type RootTabParamList = {
   Home: undefined;
+  Opportunity: undefined;
+  Demands: undefined;
   Collect: { prefillWeightKg?: number } | undefined;
   Market: {
     material?: Material;

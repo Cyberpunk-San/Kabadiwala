@@ -18,7 +18,7 @@ class WebMemoryDB {
     const seed: Lot[] = [
       {
         id: "lot_demo_copper_01",
-        material: "Copper",
+        material: "Copper cable",
         quality: "medium",
         weightKg: 35,
         status: "AVAILABLE",
@@ -28,7 +28,7 @@ class WebMemoryDB {
       },
       {
         id: "lot_demo_server_02",
-        material: "PCB / Circuit boards",
+        material: "Printed Circuit Boards (PCB)",
         quality: "high",
         weightKg: 22.5,
         status: "PICKUP_SCHEDULED",
@@ -38,7 +38,7 @@ class WebMemoryDB {
       },
       {
         id: "lot_demo_battery_03",
-        material: "Lithium-ion Battery",
+        material: "Lithium-ion batteries",
         quality: "high",
         weightKg: 18,
         status: "IDENTIFIED",

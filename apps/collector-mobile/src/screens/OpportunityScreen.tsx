@@ -50,7 +50,7 @@ export function OpportunityScreen({ navigation }: Props) {
   const narrateTop = () => {
     if (!topItem) return;
     speak(
-      `Top opportunity: ${topItem.material}. Score ${Math.round(topItem.opportunity_score)}. ${topItem.reasoning}`,
+      `Top opportunity: ${topItem.material}. Score ${Math.round(topItem.score)}. ${topItem.reasoning}`,
       language
     );
   };

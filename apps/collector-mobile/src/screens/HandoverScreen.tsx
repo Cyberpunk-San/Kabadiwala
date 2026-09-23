@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 
 import { RiskBanner } from "../components/RiskBanner";
 import { colors } from "../constants/theme";
@@ -94,45 +95,6 @@ export function HandoverScreen({ navigation, route }: HandoverProps) {
     [currentLot, pickupPin]
   );
 
-  // Pseudo-QR visual grid (deterministic from qrPayload hash)
-  const qrModules = useMemo(() => {
-    const size = 21;
-    const grid: boolean[][] = Array(size)
-      .fill(false)
-      .map(() => Array(size).fill(false));
-
-    const drawFinder = (r: number, c: number) => {
-      for (let i = 0; i < 7; i++) {
-        for (let j = 0; j < 7; j++) {
-          if (
-            i === 0 || i === 6 || j === 0 || j === 6 ||
-            (i >= 2 && i <= 4 && j >= 2 && j <= 4)
-          ) {
-            grid[r + i]![c + j] = true;
-          }
-        }
-      }
-    };
-
-    drawFinder(0, 0);
-    drawFinder(0, 14);
-    drawFinder(14, 0);
-
-    let hash = 0;
-    for (let i = 0; i < qrPayload.length; i++) {
-      hash = (hash * 31 + qrPayload.charCodeAt(i)) % 1000000007;
-    }
-
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        if ((r < 8 && c < 8) || (r < 8 && c >= 13) || (r >= 13 && c < 8)) continue;
-        const bit = ((hash ^ (r * 19 + c * 37)) >> ((r + c) % 16)) & 1;
-        grid[r]![c] = bit === 1;
-      }
-    }
-    return grid;
-  }, [qrPayload]);
-
   // ─── Confirm handover via the backend ────────────────────────────────────
   const confirmHandoverAction = async () => {
     if (!pickupPin) {
@@ -212,21 +174,13 @@ export function HandoverScreen({ navigation, route }: HandoverProps) {
 
         {/* QR */}
         <View style={styles.qrWrapper}>
-          <View style={styles.qrGrid}>
-            {qrModules.map((row, rIdx) => (
-              <View key={`row_${rIdx}`} style={styles.qrRow}>
-                {row.map((active, cIdx) => (
-                  <View
-                    key={`col_${rIdx}_${cIdx}`}
-                    style={[styles.qrCell, active ? styles.qrCellDark : styles.qrCellLight]}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-          <View style={styles.qrOverlayLogo}>
-            <Text style={styles.qrLogoText}>⚡</Text>
-          </View>
+          <QRCode
+            value={qrPayload}
+            size={168}
+            color={colors.ink}
+            backgroundColor={colors.white}
+            quietZone={4}
+          />
         </View>
 
         <Text style={styles.scanHint}>{t("scanQrPrompt")}</Text>
@@ -414,23 +368,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 10,
   },
-  qrGrid: { width: 168, height: 168, flexDirection: "column" },
-  qrRow: { flex: 1, flexDirection: "row" },
-  qrCell: { flex: 1 },
-  qrCellDark: { backgroundColor: colors.ink },
-  qrCellLight: { backgroundColor: colors.white },
-  qrOverlayLogo: {
-    position: "absolute",
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.green,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
-  qrLogoText: { fontSize: 16, color: colors.white },
   scanHint: {
     fontSize: 11,
     color: colors.muted,

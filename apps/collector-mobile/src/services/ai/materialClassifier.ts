@@ -168,7 +168,6 @@ function estimateQuality(features: VisualFeatures, mat: Material): "low" | "medi
   if (features.bright === "bright" && features.metallic) return "high";
   if (features.bright === "dark") return "low";
   // Special cases
-  if (mat === "Lithium-ion batteries" && features.bright === "dark") return "low";
   if (mat === "Copper cable" && features.metallic) return features.bright === "bright" ? "high" : "medium";
   return "medium";
 }

@@ -5,6 +5,7 @@ SQLAlchemy + SQLite persistence layer.
 Tables:
   lots · handovers · aggregator_pools · recyclers · collectors
   demands · demand_matches · risk_alerts · sync_outbox · recycler_offers
+  price_history
 """
 
 from __future__ import annotations
@@ -201,6 +202,17 @@ class RecyclerOfferRow(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class PriceHistoryRow(Base):
+    __tablename__ = "price_history"
+    id = Column(String, primary_key=True)
+    material = Column(String, nullable=False, index=True)
+    zone = Column(String, nullable=False, index=True)
+    price_per_kg = Column(Float, nullable=False)
+    observed_at = Column(DateTime, nullable=False, index=True)
+    source = Column(String, nullable=False, default="seed_demo")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 # ─── Lifecycle ───────────────────────────────────────────────────────────────
 
 def init_db() -> None:
@@ -215,6 +227,8 @@ def init_db() -> None:
             _seed_demo_collector(db)
         if db.query(DemandRow).count() == 0:
             _seed_demo_demands(db)
+        if db.query(PriceHistoryRow).count() == 0:
+            _seed_price_history(db)
     finally:
         db.close()
 
@@ -325,3 +339,27 @@ def _seed_demo_demands(db) -> None:
         db.add(r)
     db.commit()
     print(f"[MHK DB] Seeded {len(rows)} demo demands.")
+
+
+def _seed_price_history(db) -> None:
+    """Create clearly-labelled demo observations for local forecasting tests."""
+    from services.price_forecaster import BASE_PRICES
+    import hashlib
+    rows = []
+    zones = {"Pune MIDC": 1.0, "Mumbai Dharavi": 1.02, "Delhi Mayapuri": 1.03, "Bengaluru Peenya": 0.99}
+    for material, base in BASE_PRICES.items():
+        for zone, zone_factor in zones.items():
+            for days_ago in range(90, -1, -1):
+                seed = int(hashlib.sha256(f"{material}:{zone}:{days_ago}".encode()).hexdigest()[:8], 16)
+                variation = ((seed % 1001) - 500) / 10000
+                trend = (90 - days_ago) * 0.00015
+                price = round(base * zone_factor * (1 + variation + trend), 2)
+                rows.append(PriceHistoryRow(
+                    id=f"ph_{material[:4]}_{zone[:3]}_{days_ago}_{seed % 1000}",
+                    material=material, zone=zone, price_per_kg=price,
+                    observed_at=datetime.utcnow() - timedelta(days=days_ago),
+                    source="seed_demo",
+                ))
+    db.bulk_save_objects(rows)
+    db.commit()
+    print(f"[MHK DB] Seeded {len(rows)} demo price observations.")

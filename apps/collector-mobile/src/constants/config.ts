@@ -1,4 +1,5 @@
 // src/constants/config.ts
+import { Platform } from "react-native";
 // Reads EXPO_PUBLIC_* env vars. If absent, falls back to sensible demo defaults.
 
 export interface AppConfig {
@@ -20,14 +21,22 @@ export interface AppConfig {
   useMockFallbacks: boolean;
   paymentGatewayKey: string;
   smsGatewayUrl: string;
+  recyclerWebUrl: string;
   sentryDsn?: string;
 }
 
 const trimTrailingSlash = (s: string) => s.replace(/\/$/, "");
 
-const baseUrl = trimTrailingSlash(
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api"
-);
+const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+const defaultBaseUrl = Platform.OS === "android"
+  ? "http://10.0.2.2:8000/api"
+  : "http://localhost:8000/api";
+// Android emulator maps the host computer to 10.0.2.2, not localhost.
+const resolvedBaseUrl = configuredBaseUrl
+  ?.replace("http://localhost:", Platform.OS === "android" ? "http://10.0.2.2:" : "http://localhost:")
+  .replace("http://127.0.0.1:", Platform.OS === "android" ? "http://10.0.2.2:" : "http://127.0.0.1:")
+  ?? defaultBaseUrl;
+const baseUrl = trimTrailingSlash(resolvedBaseUrl);
 
 export const config: AppConfig = {
   appEnv: (process.env.EXPO_PUBLIC_APP_ENV as AppConfig["appEnv"]) ?? "development",
@@ -59,5 +68,6 @@ export const config: AppConfig = {
 
   paymentGatewayKey: process.env.EXPO_PUBLIC_PAYMENT_GATEWAY_KEY ?? "",
   smsGatewayUrl: process.env.EXPO_PUBLIC_SMS_GATEWAY_URL ?? "",
+  recyclerWebUrl: process.env.EXPO_PUBLIC_RECYCLER_WEB_URL ?? "http://localhost:3000",
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || undefined,
 };
