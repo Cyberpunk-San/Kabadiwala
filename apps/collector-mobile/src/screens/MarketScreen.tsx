@@ -1,9 +1,7 @@
 // src/screens/MarketScreen.tsx
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -17,9 +15,12 @@ import { PriceCard } from "../components/PriceCard";
 import { colors } from "../constants/theme";
 import { appendLotEvent } from "../database/sqlite";
 import { calculateNetEarnings, sortOffersByNetEarnings } from "../features/lots/lotCalculator";
+import { valuateLot } from "../features/lots/valuationEngine";
 import { useTranslation } from "../hooks/useTranslation";
 import type { RootTabParamList } from "../navigation/types";
-import { createLotRemote, getOffers } from "../services/api/client";
+import { createLotRemote } from "../services/api/client";
+import { localOffers } from "../services/ai/demandOffers";
+import { getTopOpportunities } from "../services/ai/opportunityScorer";
 import { useAuthStore } from "../store/authStore";
 import { useAppStore } from "../store/appStore";
 import { currency } from "../utils/format";
@@ -29,7 +30,7 @@ type Props = BottomTabScreenProps<RootTabParamList, "Market"> & {
 };
 
 export function MarketScreen({ navigation, route }: Props) {
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const addLot = useAppStore((state) => state.addLot);
   const collector = useAuthStore((state) => state.collector);
 
@@ -40,53 +41,37 @@ export function MarketScreen({ navigation, route }: Props) {
 
   const [showLossDetails, setShowLossDetails] = useState(true);
 
-  // ─── Live offers from backend ────────────────────────────────────────────
-  const offersQuery = useQuery({
-    queryKey: ["offers", material, weightKg, collector?.latitude, collector?.longitude],
-    queryFn: () =>
-      getOffers({
-        material,
-        weightKg,
-        latitude: collector?.latitude ?? undefined,
-        longitude: collector?.longitude ?? undefined,
-      }),
-  });
+  // ── Local ML offers (primary — offline, instant) ────────────────────────────
+  const coords = collector?.latitude && collector?.longitude
+    ? { latitude: collector.latitude, longitude: collector.longitude }
+    : undefined;
 
-  // ─── Loading / error states ──────────────────────────────────────────────
-  if (offersQuery.isLoading) {
-    return (
-      <View style={styles.loadingWrap}>
-        <ActivityIndicator size="large" color={colors.green} />
-        <Text style={styles.loadingText}>Fetching live offers…</Text>
-      </View>
-    );
-  }
+  const offers = sortOffersByNetEarnings(
+    localOffers(material as any, weightKg, coords),
+    weightKg
+  );
 
-  if (offersQuery.isError || !offersQuery.data || offersQuery.data.length === 0) {
+  // ── ML Valuation ─────────────────────────────────────────────────────────────
+  const valuation = valuateLot(material as any, quality, weightKg, offers[0]?.listedPricePerKg);
+
+  // ── Next best material from ML scorer ────────────────────────────────────────
+  const nextBestOpps = getTopOpportunities(3).filter(o => o.material !== material);
+  const nextBest = nextBestOpps[0];
+
+  if (offers.length === 0) {
     return (
       <View style={styles.loadingWrap}>
         <Text style={styles.errorIcon}>⚠</Text>
         <Text style={styles.errorTitle}>No offers available</Text>
-        <Text style={styles.errorBody}>
-          {offersQuery.isError
-            ? "Could not reach the backend. Is the server running?"
-            : "No recyclers cover this area yet. Try a different material or check back later."}
-        </Text>
-        <TouchableOpacity
-          style={styles.retryBtn}
-          onPress={() => offersQuery.refetch()}
-        >
-          <Text style={styles.retryBtnText}>Retry</Text>
-        </TouchableOpacity>
+        <Text style={styles.errorBody}>No recyclers cover this material yet.</Text>
       </View>
     );
   }
 
-  const offers = sortOffersByNetEarnings(offersQuery.data, weightKg);
   const bestOffer = offers[0]!;
   const bestNetEarnings = calculateNetEarnings(bestOffer, weightKg).net;
 
-  // Middleman loss calculator
+  // Middleman loss calculator (unchanged)
   const scaleTamperKg = Math.round(weightKg * 0.08 * 10) / 10;
   const scaleTamperLoss = Math.round(scaleTamperKg * bestOffer.listedPricePerKg);
   const middlemanMarginCut = Math.round(weightKg * 35);
@@ -178,6 +163,35 @@ export function MarketScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       </View>
 
+      {/* ML Fair Price Valuation Banner */}
+      <View style={[
+        styles.valuationBanner,
+        valuation.warningBelowFair && styles.valuationBannerWarn
+      ]}>
+        <View style={styles.valuationRow}>
+          <View style={styles.valuationItem}>
+            <Text style={styles.valuationLabel}>ML FAIR PRICE</Text>
+            <Text style={styles.valuationPrice}>₹{valuation.fairPricePerKg}/kg</Text>
+            <Text style={styles.valuationConf}>Confidence: {Math.round(valuation.confidence * 100)}%</Text>
+          </View>
+          <View style={styles.valuationItem}>
+            <Text style={styles.valuationLabel}>BEST OFFER</Text>
+            <Text style={[styles.valuationPrice, { color: colors.green }]}>₹{bestOffer.listedPricePerKg}/kg</Text>
+            <Text style={[styles.valuationConf, { color: valuation.warningBelowFair ? '#DC2626' : colors.muted }]}>
+              {valuation.warningBelowFair ? '⚠ Below fair price' : '✓ Fair'}
+            </Text>
+          </View>
+          <View style={styles.valuationItem}>
+            <Text style={styles.valuationLabel}>FAIR PAYOUT</Text>
+            <Text style={styles.valuationPrice}>{currency(valuation.fairPayout)}</Text>
+            <Text style={styles.valuationConf}>For {weightKg} kg</Text>
+          </View>
+        </View>
+        <Text style={styles.valuationReason} numberOfLines={2}>
+          {language === "hi" ? valuation.reasoningHi : language === "mr" ? valuation.reasoningMr : valuation.reasoning}
+        </Text>
+      </View>
+
       {/* Loss calculator */}
       <View style={styles.lossCard}>
         <View style={styles.lossHeader}>
@@ -267,14 +281,25 @@ export function MarketScreen({ navigation, route }: Props) {
 
       <View style={styles.demand}>
         <Text style={styles.demandTitle}>{t("nearbyDemand")}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Collect")}>
-          <MaterialCard
-            material="Server boards"
-            price="₹510"
-            note={t("highDemand")}
-            badge="ACTIVE DEMAND"
-          />
-        </TouchableOpacity>
+        {nextBest ? (
+          <TouchableOpacity onPress={() => navigation.navigate("Market", { material: nextBest.material, quality: "medium", weightKg: 35 })}>
+            <MaterialCard
+              material={nextBest.material}
+              price={`₹${nextBest.currentPricePerKg}`}
+              note={`Score ${nextBest.score}/100 · ${nextBest.demand} demand · Grade ${nextBest.grade}`}
+              badge={nextBest.grade === "S" || nextBest.grade === "A" ? "HOT DEMAND" : "ACTIVE DEMAND"}
+            />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={() => navigation.navigate("Collect")}>
+            <MaterialCard
+              material="Server boards"
+              price="₹510"
+              note={t("highDemand")}
+              badge="ACTIVE DEMAND"
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -352,4 +377,21 @@ const styles = StyleSheet.create({
 
   demand: { marginTop: 12 },
   demandTitle: { marginBottom: 9, color: colors.ink, fontSize: 17, fontWeight: "800" },
+
+  // ML valuation banner
+  valuationBanner: {
+    padding: 13, borderRadius: 16,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1, borderColor: "#BFDBFE",
+  },
+  valuationBannerWarn: {
+    backgroundColor: "#FFF7ED",
+    borderColor: "#FDBA74",
+  },
+  valuationRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  valuationItem: { flex: 1 },
+  valuationLabel: { fontSize: 8, fontWeight: "800", color: "#3B82F6", letterSpacing: 0.5, marginBottom: 2 },
+  valuationPrice: { fontSize: 14, fontWeight: "900", color: colors.ink },
+  valuationConf: { fontSize: 9, color: colors.muted, marginTop: 2 },
+  valuationReason: { fontSize: 10, color: "#374151", lineHeight: 14, fontStyle: "italic" },
 });

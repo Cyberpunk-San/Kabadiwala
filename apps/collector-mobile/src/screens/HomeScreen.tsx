@@ -1,6 +1,6 @@
 // src/screens/HomeScreen.tsx
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -16,6 +16,8 @@ import { colors } from "../constants/theme";
 import { useTranslation } from "../hooks/useTranslation";
 import type { RootTabParamList } from "../navigation/types";
 import { getCollectorStats, type CollectorStats } from "../services/api/client";
+import { getTopOpportunities } from "../services/ai/opportunityScorer";
+import { findOptimalCluster } from "../services/logistics/routeOptimizer";
 import { speak } from "../services/voice/speech";
 import { useAuthStore } from "../store/authStore";
 import { useAppStore } from "../store/appStore";
@@ -77,6 +79,22 @@ export function HomeScreen({ navigation }: Props) {
 
   const recentLots = lots.slice(0, 3);
 
+  // ── ML signals ─────────────────────────────────────────────────────────────
+  // Top gainer from ML opportunity scorer
+  const topOpps = useMemo(() => getTopOpportunities(3), []);
+  const topGainer = topOpps[0];
+
+  // Best drop-off cluster from regional intel engine
+  const collectorCoords = collector.latitude && collector.longitude
+    ? { latitude: collector.latitude, longitude: collector.longitude }
+    : { latitude: 18.5204, longitude: 73.8567 }; // Pune default
+
+  const clusterScores = useMemo(
+    () => topGainer ? findOptimalCluster(topGainer.material, collectorCoords) : [],
+    [collector.latitude, collector.longitude, topGainer?.material]
+  );
+  const bestCluster = clusterScores[0];
+
   return (
     <ScrollView
       style={styles.screen}
@@ -108,20 +126,44 @@ export function HomeScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Hero card */}
+      {/* Hero card — ML opportunity */}
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>✦ {t("opportunity")}</Text>
-        <Text style={styles.heroTitle}>{t("collectSmarter")}</Text>
-        <Text style={styles.heroDescription}>{t("copperDemand")}</Text>
+        <Text style={styles.heroTitle}>
+          {topGainer
+            ? (language === "hi" ? "आज क्या बेचें?" : language === "mr" ? "आज काय विकायचे?" : "What to sell today?")
+            : t("collectSmarter")}
+        </Text>
+        <Text style={styles.heroDescription}>
+          {topGainer
+            ? (language === "hi"
+                ? `${topGainer.material} — स्कोर ${topGainer.score}/100, मांग ${topGainer.demand === "HIGH" ? "उच्च" : "सामान्य"}`
+                : language === "mr"
+                ? `${topGainer.material} — स्कोर ${topGainer.score}/100, मागणी ${topGainer.demand === "HIGH" ? "जास्त" : "सामान्य"}`
+                : `${topGainer.material} — AI score ${topGainer.score}/100, ${topGainer.demand} demand`)
+            : t("copperDemand")}
+        </Text>
         <View style={styles.pills}>
-          <Text style={styles.pill}>↗ +12% price up</Text>
-          <Text style={styles.pill}>● {t("highDemand")}</Text>
+          {topGainer ? (
+            <>
+              <Text style={styles.pill}>
+                {topGainer.trend === "up" ? "↗" : topGainer.trend === "down" ? "↘" : "→"} {topGainer.changePercent > 0 ? "+" : ""}{topGainer.changePercent}%
+              </Text>
+              <Text style={styles.pill}>Grade {topGainer.grade}</Text>
+              <Text style={styles.pill}>₹{topGainer.currentPricePerKg}/kg</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.pill}>↗ +12% price up</Text>
+              <Text style={styles.pill}>● {t("highDemand")}</Text>
+            </>
+          )}
         </View>
         <TouchableOpacity
           style={styles.heroButton}
           onPress={() =>
             navigation.navigate("Market", {
-              material: "Copper cable",
+              material: (topGainer?.material ?? "Copper cable") as any,
               quality: "medium",
               weightKg: 35,
             })
@@ -159,7 +201,7 @@ export function HomeScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Nearby demand */}
+      {/* Nearby demand — ML powered */}
       <View style={styles.sectionHeading}>
         <View>
           <Text style={styles.kicker}>SMART FOR YOU</Text>
@@ -172,19 +214,62 @@ export function HomeScreen({ navigation }: Props) {
       <TouchableOpacity
         onPress={() =>
           navigation.navigate("Market", {
-            material: "Copper cable",
+            material: (topGainer?.material ?? "Copper cable") as any,
             quality: "medium",
             weightKg: 35,
           })
         }
       >
         <MaterialCard
-          material="Copper cable"
-          price="₹612"
-          note="EcoCycle · 2.4 km away"
-          badge={t("highDemand").toUpperCase()}
+          material={topGainer?.material ?? "Copper cable"}
+          price={`₹${topGainer?.currentPricePerKg ?? 612}`}
+          note={`Grade ${topGainer?.grade ?? "A"} · ${topGainer?.demand ?? "HIGH"} demand`}
+          badge={topGainer?.demand === "HIGH" ? t("highDemand").toUpperCase() : "ACTIVE DEMAND"}
         />
       </TouchableOpacity>
+
+      {/* Regional Intelligence: Best Drop-off Hub */}
+      {bestCluster && (
+        <View style={styles.clusterCard}>
+          <View style={styles.clusterHeader}>
+            <Text style={styles.clusterKicker}>📍 REGIONAL INTELLIGENCE</Text>
+            <View style={styles.clusterScorePill}>
+              <Text style={styles.clusterScoreText}>{bestCluster.score}/100</Text>
+            </View>
+          </View>
+          <Text style={styles.clusterTitle}>
+            {language === "hi" ? "आज का सबसे अच्छा हब:" :
+             language === "mr" ? "आजचा सर्वोत्तम हब:" :
+             "Best Drop-off Hub Today:"}
+          </Text>
+          <Text style={styles.clusterName}>{bestCluster.cluster.name}</Text>
+          <View style={styles.clusterStats}>
+            <View style={styles.clusterStat}>
+              <Text style={styles.clusterStatLabel}>DISTANCE</Text>
+              <Text style={styles.clusterStatValue}>{bestCluster.distanceKm} km</Text>
+            </View>
+            <View style={styles.clusterStat}>
+              <Text style={styles.clusterStatLabel}>ETA</Text>
+              <Text style={styles.clusterStatValue}>~{bestCluster.estimatedETAMinutes} min</Text>
+            </View>
+            <View style={styles.clusterStat}>
+              <Text style={styles.clusterStatLabel}>DEMAND</Text>
+              <Text style={styles.clusterStatValue}>{(bestCluster.demandPressure * 100).toFixed(0)}%</Text>
+            </View>
+            <View style={styles.clusterStat}>
+              <Text style={styles.clusterStatLabel}>ACCEPTS</Text>
+              <Text style={[styles.clusterStatValue, { color: bestCluster.acceptsMaterial ? colors.green : colors.orange }]}>
+                {bestCluster.acceptsMaterial ? "✓ Yes" : "≠ Check"}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.clusterReason} numberOfLines={2}>
+            {language === "hi" ? bestCluster.reasoningHi :
+             language === "mr" ? bestCluster.reasoningMr :
+             bestCluster.reasoning}
+          </Text>
+        </View>
+      )}
 
       {/* Business stats */}
       <View style={styles.sectionHeading}>
@@ -324,4 +409,22 @@ const styles = StyleSheet.create({
 
   emptyLots: { padding: 15, borderWidth: 1, borderStyle: "dashed", borderColor: "#C6D8CB", borderRadius: 15 },
   emptyText: { color: colors.muted, fontSize: 11, lineHeight: 16 },
+
+  // Regional Intelligence cluster card
+  clusterCard: {
+    marginTop: 10, padding: 14, borderRadius: 18,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1, borderColor: "#BFDBFE",
+  },
+  clusterHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  clusterKicker: { fontSize: 8, fontWeight: "900", color: "#1D4ED8", letterSpacing: 0.8 },
+  clusterScorePill: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, backgroundColor: "#1D4ED8" },
+  clusterScoreText: { color: "#fff", fontSize: 9, fontWeight: "900" },
+  clusterTitle: { fontSize: 10, color: "#374151", marginBottom: 2 },
+  clusterName: { fontSize: 16, fontWeight: "900", color: "#1E3A5F", marginBottom: 8 },
+  clusterStats: { flexDirection: "row", gap: 6, marginBottom: 8 },
+  clusterStat: { flex: 1, padding: 7, borderRadius: 9, backgroundColor: "rgba(255,255,255,.7)" },
+  clusterStatLabel: { fontSize: 7, fontWeight: "800", color: "#6B7280", letterSpacing: 0.5 },
+  clusterStatValue: { marginTop: 3, fontSize: 11, fontWeight: "900", color: "#1E3A5F" },
+  clusterReason: { fontSize: 9, color: "#4B5563", lineHeight: 13, fontStyle: "italic" },
 });

@@ -1,8 +1,6 @@
 // src/screens/OpportunityScreen.tsx
-import { useQuery } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,11 +11,9 @@ import {
 
 import { colors } from "../constants/theme";
 import { useTranslation } from "../hooks/useTranslation";
-import type { RootTabParamList } from "../navigation/types";
-import { getOpportunityFeed } from "../services/api/client";
+import { scoreAllOpportunities } from "../services/ai/opportunityScorer";
 import { speak } from "../services/voice/speech";
-import { useAuthStore } from "../store/authStore";
-import { useAppStore } from "../store/appStore";
+import { MATERIAL_METADATA } from "../types/domain";
 import { currency } from "../utils/format";
 
 type Props = {
@@ -81,14 +77,14 @@ export function OpportunityScreen({ navigation }: Props) {
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={feedQuery.isFetching} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} />}
     >
       <View style={styles.topRow}>
         <View>
-          <Text style={styles.kicker}>OPPORTUNITY ENGINE</Text>
+          <Text style={styles.kicker}>ML OPPORTUNITY ENGINE</Text>
           <Text style={styles.title}>What should I collect?</Text>
           <Text style={styles.subtitle}>
-            Based on live demand · {feed.location_label}
+            Ranked by composite AI score · {scores.length} materials analysed
           </Text>
         </View>
         <TouchableOpacity style={styles.speakBtn} onPress={narrateTop}>
@@ -99,32 +95,62 @@ export function OpportunityScreen({ navigation }: Props) {
       {/* Top recommendation hero */}
       {topItem && (
         <View style={styles.hero}>
-          <Text style={styles.heroKicker}>🏆 #1 RECOMMENDATION</Text>
-          <Text style={styles.heroMaterial}>{topItem.material}</Text>
+          <View style={styles.heroTopRow}>
+            <Text style={styles.heroKicker}>🏆 #1 RECOMMENDATION</Text>
+            <View style={[styles.gradeBadge, { backgroundColor: GRADE_COLOR[topItem.grade] }]}>
+              <Text style={styles.gradeText}>Grade {topItem.grade}</Text>
+            </View>
+          </View>
+          <Text style={styles.heroMaterial}>
+            {MATERIAL_METADATA[topItem.material]?.icon ?? '' }
+            {language === "hi" ? MATERIAL_METADATA[topItem.material]?.hindi :
+             language === "mr" ? MATERIAL_METADATA[topItem.material]?.marathi :
+             topItem.material}
+          </Text>
           <View style={styles.heroStats}>
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>SCORE</Text>
-              <Text style={styles.heroStatValue}>{Math.round(topItem.opportunity_score)}</Text>
+              <Text style={styles.heroStatLabel}>AI SCORE</Text>
+              <Text style={styles.heroStatValue}>{topItem.score}/100</Text>
             </View>
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>BEST NET/kg</Text>
-              <Text style={styles.heroStatValue}>{currency(topItem.best_net_per_kg)}</Text>
+              <Text style={styles.heroStatLabel}>PRICE/kg</Text>
+              <Text style={styles.heroStatValue}>{currency(topItem.currentPricePerKg)}</Text>
             </View>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatLabel}>DEMAND</Text>
-              <Text style={styles.heroStatValue}>{Math.round(topItem.demand_kg_open)} kg</Text>
+              <Text style={styles.heroStatValue}>{topItem.demand}</Text>
             </View>
           </View>
-          <Text style={styles.heroReason}>{topItem.reasoning}</Text>
-          <Text style={styles.heroEstimate}>
-            Collect ~{Math.round(topItem.recommended_weight_kg)} kg → earn ~{currency(topItem.expected_payout)}
+
+          {/* Signal bars */}
+          <View style={styles.signalRow}>
+            {([
+              ["Momentum", topItem.signals.momentum],
+              ["Urgency", topItem.signals.urgency],
+              ["Capacity", topItem.signals.capacityMatch],
+              ["Logistics", topItem.signals.logisticsNet],
+              ["Scarcity", topItem.signals.scarcityPremium],
+            ] as [string, number][]).map(([label, val]) => (
+              <View key={label} style={styles.signal}>
+                <Text style={styles.signalLabel}>{label}</Text>
+                <View style={styles.signalTrack}>
+                  <View style={[styles.signalBar, { width: `${val}%` }]} />
+                </View>
+                <Text style={styles.signalVal}>{val}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.heroReason}>
+            {language === "hi" ? topItem.reasoningHi :
+             language === "mr" ? topItem.reasoningMr :
+             topItem.reasoning}
           </Text>
           <TouchableOpacity
             style={styles.heroCta}
             onPress={() =>
               navigation.navigate("Collect", {
                 prefillMaterial: topItem.material,
-                prefillWeightKg: Math.round(topItem.recommended_weight_kg),
               })
             }
           >
@@ -135,67 +161,69 @@ export function OpportunityScreen({ navigation }: Props) {
 
       {/* Full ranked list */}
       <Text style={styles.sectionTitle}>All opportunities ranked</Text>
-      {feed.items.map((item, idx) => (
+      {scores.map((item) => (
         <TouchableOpacity
           key={item.material}
-          style={styles.card}
+          style={[styles.card, item.isHazard && styles.cardHazard]}
           onPress={() =>
-            navigation.navigate("Collect", {
-              prefillMaterial: item.material,
-              prefillWeightKg: Math.round(item.recommended_weight_kg),
+            navigation.navigate("Market", {
+              material: item.material,
+              quality: "medium",
+              weightKg: 35,
             })
           }
         >
           <View style={styles.cardHeader}>
-            <View style={styles.rankBadge}>
-              <Text style={styles.rankText}>#{idx + 1}</Text>
+            <View style={[styles.rankBadge, { backgroundColor: GRADE_BG[item.grade] ?? colors.greenLight }]}>
+              <Text style={[styles.rankText, { color: GRADE_COLOR[item.grade] ?? colors.green }]}>#{item.rank}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardMaterial}>{item.material}</Text>
+              <Text style={styles.cardMaterial}>
+                {MATERIAL_METADATA[item.material]?.icon ?? ''} {item.material}
+              </Text>
               <Text style={styles.cardMeta}>
-                {item.active_demand_count > 0
-                  ? `${item.active_demand_count} buyer${item.active_demand_count > 1 ? "s" : ""} · ${Math.round(item.demand_kg_open)} kg needed`
-                  : "Steady demand"}
+                {item.demand} demand · {item.trend === "up" ? ↗️ : item.trend === "down" ? ↘️ : ➡️} {item.changePercent > 0 ? '+' : ''}{item.changePercent}% today
+                {item.isHazard ? ' · ⚠️ Hazardous' : ''}
               </Text>
             </View>
             <View style={styles.scoreCol}>
-              <Text style={styles.scoreValue}>{Math.round(item.opportunity_score)}</Text>
-              <Text style={styles.scoreLabel}>score</Text>
+              <Text style={[styles.scoreValue, { color: GRADE_COLOR[item.grade] ?? colors.orange }]}>{item.score}</Text>
+              <View style={[styles.gradeSmall, { backgroundColor: GRADE_COLOR[item.grade] ?? colors.orange }]}>
+                <Text style={styles.gradeSmallText}>{item.grade}</Text>
+              </View>
             </View>
           </View>
 
-          {/* Score bar */}
           <View style={styles.track}>
-            <View
-              style={[
-                styles.progress,
-                { width: `${Math.min(100, item.opportunity_score)}%` },
-              ]}
-            />
+            <View style={[styles.progress, { width: `${item.score}%` }]} />
           </View>
 
           <View style={styles.cardStatsRow}>
             <View style={styles.cardStat}>
-              <Text style={styles.cardStatLabel}>NET/kg</Text>
-              <Text style={styles.cardStatValue}>{currency(item.best_net_per_kg)}</Text>
+              <Text style={styles.cardStatLabel}>PRICE/kg</Text>
+              <Text style={styles.cardStatValue}>{currency(item.currentPricePerKg)}</Text>
             </View>
             <View style={styles.cardStat}>
-              <Text style={styles.cardStatLabel}>REC. WEIGHT</Text>
-              <Text style={styles.cardStatValue}>{Math.round(item.recommended_weight_kg)} kg</Text>
+              <Text style={styles.cardStatLabel}>MOMENTUM</Text>
+              <Text style={styles.cardStatValue}>{item.signals.momentum}/100</Text>
             </View>
             <View style={styles.cardStat}>
-              <Text style={styles.cardStatLabel}>EST. PAYOUT</Text>
-              <Text style={styles.cardStatValueGreen}>{currency(item.expected_payout)}</Text>
+              <Text style={styles.cardStatLabel}>URGENCY</Text>
+              <Text style={[styles.cardStatValueGreen, { color: item.signals.urgency > 70 ? colors.green : colors.orange }]}>
+                {item.signals.urgency}/100
+              </Text>
             </View>
           </View>
 
-          <Text style={styles.cardReasoning}>{item.reasoning}</Text>
+          <Text style={styles.cardReasoning} numberOfLines={2}>
+            {language === "hi" ? item.reasoningHi : language === "mr" ? item.reasoningMr : item.reasoning}
+          </Text>
         </TouchableOpacity>
       ))}
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Feed regenerates every time you refresh. Pull down to refresh.
+          AI scores computed locally · 5 signals: Price Momentum, Demand Urgency, Capacity Match, Logistics Net, Scarcity Premium
         </Text>
       </View>
     </ScrollView>
@@ -238,17 +266,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
     marginBottom: 20,
   },
+  heroTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   heroKicker: { color: "#C2E8CB", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
-  heroMaterial: { marginTop: 8, color: colors.white, fontSize: 24, fontWeight: "900", letterSpacing: -0.5 },
-  heroStats: { flexDirection: "row", gap: 10, marginTop: 14 },
+  gradeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  gradeText: { color: "#fff", fontSize: 10, fontWeight: "900" },
+  heroMaterial: { color: colors.white, fontSize: 22, fontWeight: "900", letterSpacing: -0.5 },
+  heroStats: { flexDirection: "row", gap: 8, marginTop: 12 },
   heroStat: {
-    flex: 1, padding: 10, borderRadius: 12,
+    flex: 1, padding: 10, borderRadius: 10,
     backgroundColor: "rgba(255,255,255,0.10)",
   },
   heroStatLabel: { color: "#B8DFC2", fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
-  heroStatValue: { marginTop: 4, color: colors.white, fontSize: 15, fontWeight: "900" },
-  heroReason: { marginTop: 14, color: "#D0E6D7", fontSize: 11, lineHeight: 16 },
-  heroEstimate: { marginTop: 8, color: "#F8E5AE", fontSize: 12, fontWeight: "800" },
+  heroStatValue: { marginTop: 4, color: colors.white, fontSize: 13, fontWeight: "900" },
+
+  // Signal breakdown
+  signalRow: { marginTop: 12, gap: 5 },
+  signal: { flexDirection: "row", alignItems: "center", gap: 6 },
+  signalLabel: { width: 55, fontSize: 8, color: "rgba(255,255,255,.65)", fontWeight: "700" },
+  signalTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,.15)", overflow: "hidden" },
+  signalBar: { height: "100%", borderRadius: 3, backgroundColor: "#86EFAC" },
+  signalVal: { width: 22, fontSize: 8, color: "rgba(255,255,255,.65)", fontWeight: "700", textAlign: "right" },
+
+  heroReason: { marginTop: 12, color: "#D0E6D7", fontSize: 10, lineHeight: 15 },
   heroCta: {
     marginTop: 14, padding: 12, borderRadius: 12,
     backgroundColor: "#F8E5AE",
@@ -267,6 +306,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1, borderColor: colors.line,
   },
+  cardHazard: { borderColor: "#FDBA74", backgroundColor: "#FFFBEB" },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   rankBadge: {
     width: 32, height: 32, borderRadius: 16,
@@ -274,11 +314,13 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   rankText: { color: colors.green, fontSize: 11, fontWeight: "900" },
-  cardMaterial: { fontSize: 14, fontWeight: "800", color: colors.ink },
-  cardMeta: { fontSize: 10, color: colors.muted, marginTop: 2 },
-  scoreCol: { alignItems: "center" },
+  cardMaterial: { fontSize: 13, fontWeight: "800", color: colors.ink },
+  cardMeta: { fontSize: 9, color: colors.muted, marginTop: 2 },
+  scoreCol: { alignItems: "center", gap: 3 },
   scoreValue: { color: colors.orange, fontSize: 18, fontWeight: "900" },
   scoreLabel: { color: colors.muted, fontSize: 8, fontWeight: "700", letterSpacing: 0.5 },
+  gradeSmall: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
+  gradeSmallText: { color: "#fff", fontSize: 8, fontWeight: "900" },
 
   track: {
     height: 6, borderRadius: 3,
@@ -298,8 +340,8 @@ const styles = StyleSheet.create({
   cardStatValue: { marginTop: 3, fontSize: 11, fontWeight: "900", color: colors.ink },
   cardStatValueGreen: { marginTop: 3, fontSize: 11, fontWeight: "900", color: colors.green },
 
-  cardReasoning: { fontSize: 10, color: colors.muted, lineHeight: 14, fontStyle: "italic" },
+  cardReasoning: { fontSize: 9, color: colors.muted, lineHeight: 13, fontStyle: "italic" },
 
   footer: { marginTop: 16, alignItems: "center" },
-  footerText: { fontSize: 10, color: colors.muted, textAlign: "center" },
+  footerText: { fontSize: 9, color: colors.muted, textAlign: "center" },
 });
