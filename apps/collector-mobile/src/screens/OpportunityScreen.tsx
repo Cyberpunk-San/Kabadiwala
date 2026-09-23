@@ -182,7 +182,7 @@ export function OpportunityScreen({ navigation }: Props) {
                 {MATERIAL_METADATA[item.material]?.icon ?? ''} {item.material}
               </Text>
               <Text style={styles.cardMeta}>
-                {item.demand} demand · {item.trend === "up" ? ↗️ : item.trend === "down" ? ↘️ : ➡️} {item.changePercent > 0 ? '+' : ''}{item.changePercent}% today
+                {item.demand} demand · {item.trend === "up" ? '↗️' : item.trend === "down" ? '↘️' : '➡️'} {item.changePercent > 0 ? '+' : ''}{item.changePercent}% today
                 {item.isHazard ? ' · ⚠️ Hazardous' : ''}
               </Text>
             </View>

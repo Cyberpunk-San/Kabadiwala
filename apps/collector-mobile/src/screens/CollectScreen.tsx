@@ -22,7 +22,7 @@ import { colors } from "../constants/theme";
 import { useTranslation } from "../hooks/useTranslation";
 import type { RootTabParamList } from "../navigation/types";
 import { analyseMaterial } from "../services/api/client";
-import { enqueue, makeIdempotencyKey } from "../services/sync/syncQueue";
+
 import { matchMaterial, parseSpokenNumber } from "../services/voice/parser";
 import { speak } from "../services/voice/speech";
 import { useAuthStore } from "../store/authStore";
