@@ -31,7 +31,7 @@ export function RiskBanner({ lotId }: { lotId?: string }) {
   return (
     <View style={{ marginBottom: 12 }}>
       {relevant.map((alert) => {
-        const s = SEVERITY_STYLES[alert.severity] ?? SEVERITY_STYLES.low;
+        const s = SEVERITY_STYLES[alert.severity] ?? SEVERITY_STYLES.low!;
         return (
           <View key={alert.id} style={[styles.banner, { backgroundColor: s.bg }]}>
             <Text style={styles.icon}>{s.icon}</Text>

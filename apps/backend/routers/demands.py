@@ -25,10 +25,11 @@ def create_demand(data: DemandCreate, db: Session = Depends(get_db)):
 @router.get("", response_model=List[DemandResponse])
 def list_demands(
     material: Optional[str] = Query(None),
+    recycler_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """List open + partial demands, optionally filtered by material."""
-    return demand_service.list_open(db, material=material)
+    """List open + partial demands, optionally filtered by material or recycler."""
+    return demand_service.list_open(db, material=material, recycler_id=recycler_id)
 
 
 @router.get("/{demand_id}", response_model=DemandResponse)

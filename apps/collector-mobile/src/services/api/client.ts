@@ -25,6 +25,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     }
 
     return (await res.json()) as T;
+  } catch (err: any) {
+    if (err?.name === "AbortError" || String(err?.message ?? "").toLowerCase().includes("cancel")) {
+      throw new Error(`Request timed out or was cancelled. Check backend at ${config.apiBaseUrl}`);
+    }
+    if (String(err?.message ?? "").toLowerCase().includes("network request failed")) {
+      throw new Error(`Cannot reach backend at ${config.apiBaseUrl}. Start FastAPI and check Android network settings.`);
+    }
+    throw err;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -255,6 +263,42 @@ export async function analyseMaterial(imageUri: string): Promise<MaterialPredict
       confidence: 0.0,
     };
   }
+}
+
+// ─── Price intelligence ─────────────────────────────────────────────────────
+export interface PriceHistoryPoint {
+  date: string;
+  price: number;
+  source: string;
+}
+
+export interface PriceForecastPoint {
+  date: string;
+  forecast_price: number;
+  lower_ci: number;
+  upper_ci: number;
+  trend: "up" | "down" | "stable";
+}
+
+export interface PriceForecast {
+  material: string;
+  zone: string;
+  current_price: number;
+  model_type: string;
+  forecast_7_days: PriceForecastPoint[];
+  advice: string;
+}
+
+export async function getPriceHistory(material: string, zone = "Pune MIDC", days = 90) {
+  return apiFetch<PriceHistoryPoint[]>(
+    `/v1/prices/history?material=${encodeURIComponent(material)}&zone=${encodeURIComponent(zone)}&days=${days}`
+  );
+}
+
+export async function getPriceForecast(material: string, zone = "Pune MIDC", horizon = 7) {
+  return apiFetch<PriceForecast>(
+    `/v1/prices/forecast?material=${encodeURIComponent(material)}&zone=${encodeURIComponent(zone)}&horizon=${horizon}`
+  );
 }
 
 // NOTE: demoOffers has been removed.

@@ -1,423 +1,95 @@
-import React, { useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { colors } from "../constants/theme";
-import { getAllBazarPrices } from "../data/prices";
 import { useTranslation } from "../hooks/useTranslation";
+import { getPriceForecast, getPriceHistory, type PriceForecast, type PriceHistoryPoint } from "../services/api/client";
 import { speak } from "../services/voice/speech";
-import { MATERIAL_METADATA, type BazarPriceItem, type Material } from "../types/domain";
+import { MATERIAL_METADATA, type Material } from "../types/domain";
 import { currency } from "../utils/format";
 
-interface BazarBhavProps {
-  navigation: {
-    navigate: (screen: string, params?: any) => void;
-    goBack: () => void;
-  };
-}
-
-const CATEGORIES = ["All", "Metals", "Electronics", "Batteries", "Heavy Scrap"] as const;
+interface BazarBhavProps { navigation: { goBack: () => void; navigate: (screen: string, params?: any) => void } }
+const MATERIALS = Object.keys(MATERIAL_METADATA) as Material[];
+const ZONES = ["Pune MIDC", "Mumbai Dharavi", "Delhi Mayapuri", "Bengaluru Peenya"];
 
 export function BazarBhavScreen({ navigation }: BazarBhavProps) {
   const { language, t } = useTranslation();
-  const prices = getAllBazarPrices();
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeMaterial, setActiveMaterial] = useState<Material | null>(null);
+  const [material, setMaterial] = useState<Material>("Copper cable");
+  const [zone, setZone] = useState(ZONES[0]);
+  const [history, setHistory] = useState<PriceHistoryPoint[]>([]);
+  const [forecast, setForecast] = useState<PriceForecast | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Dynamic best opportunity
-  const topGainer = [...prices].filter(p => p.trend === "up").sort((a, b) => b.changePercent - a.changePercent)[0];
-  const topLoser  = [...prices].filter(p => p.trend === "down").sort((a, b) => a.changePercent - b.changePercent)[0];
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setError(null);
+    Promise.all([getPriceHistory(material, zone, 90), getPriceForecast(material, zone, 7)])
+      .then(([points, prediction]) => { if (!cancelled) { setHistory(points); setForecast(prediction); } })
+      .catch((err) => { if (!cancelled) setError(err?.message ?? "Could not load price intelligence"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [material, zone]);
 
-  const filteredPrices = prices.filter((item) => {
-    const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
-    const meta = MATERIAL_METADATA[item.material];
-    const nameMatch =
-      item.material.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meta?.hindi.includes(searchQuery) ||
-      meta?.marathi.includes(searchQuery);
-    return matchesCategory && (searchQuery ? nameMatch : true);
-  });
+  const current = history[history.length - 1]?.price ?? forecast?.current_price ?? 0;
+  const previous = history[history.length - 2]?.price ?? current;
+  const change = previous ? ((current - previous) / previous) * 100 : 0;
+  const trend = change > 0.5 ? "up" : change < -0.5 ? "down" : "stable";
+  const meta = MATERIAL_METADATA[material];
+  const recent = history.slice(-14);
+  const maxHistory = Math.max(...recent.map((p) => p.price), current, 1);
+  const minHistory = Math.min(...recent.map((p) => p.price), current);
+  const forecastValues = forecast?.forecast_7_days ?? [];
+  const maxForecast = Math.max(...forecastValues.map((p) => p.upper_ci), current, 1);
+  const minForecast = Math.min(...forecastValues.map((p) => p.lower_ci), current);
 
-  const announcePrice = (item: BazarPriceItem) => {
-    setActiveMaterial(item.material);
-    const meta = MATERIAL_METADATA[item.material];
-    const name = language === "hi" ? meta.hindi : language === "mr" ? meta.marathi : item.material;
-    const trendWord =
-      item.trend === "up"
-        ? language === "hi" ? "बढ़ा है" : language === "mr" ? "वाढला आहे" : "increased"
-        : item.trend === "down"
-        ? language === "hi" ? "गिरा है" : language === "mr" ? "कमी झाला आहे" : "decreased"
-        : language === "hi" ? "स्थिर है" : language === "mr" ? "स्थिर आहे" : "stable";
-
-    const advice = language === "hi" ? item.adviceHi : language === "mr" ? item.adviceMr : item.advice;
-
-    const speechText =
-      language === "hi"
-        ? `${name} का आज का भाव ${item.currentPrice} रुपये प्रति किलो है। आज भाव ${item.changePercent} प्रतिशत ${trendWord}। ${advice}`
-        : language === "mr"
-        ? `${name} चा आजचा दर ${item.currentPrice} रुपये प्रति किलो आहे. आज दर ${item.changePercent} टक्के ${trendWord}। ${advice}`
-        : `${name}: Current rate is ${item.currentPrice} rupees per kilogram. Rate ${trendWord} by ${item.changePercent} percent today. ${advice}`;
-
-    speak(speechText, language);
+  const announce = () => {
+    const name = language === "hi" ? meta.hindi : language === "mr" ? meta.marathi : material;
+    speak(`${name}: ${Math.round(current)} rupees per kilogram in ${zone}. ${trend === "up" ? "Price is rising" : trend === "down" ? "Price is falling" : "Price is stable"}.`, language);
   };
+
+  const alertText = Math.abs(change) >= 5
+    ? `${material} price ${change > 0 ? "rose" : "fell"} ${Math.abs(change).toFixed(1)}% in the latest observation.`
+    : null;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Header */}
       <View style={styles.topRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <View style={styles.liveIndicator}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE MANDI RATES</Text>
-        </View>
+        <TouchableOpacity style={styles.backBtn} onPress={navigation.goBack}><Text style={styles.backText}>← Back</Text></TouchableOpacity>
+        <View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>DATABASE RATES</Text></View>
       </View>
-
-      <Text style={styles.kicker}>DAILY SCRAP INTELLIGENCE</Text>
+      <Text style={styles.kicker}>PRICE INTELLIGENCE</Text>
       <Text style={styles.title}>{t("bazarBhav")}</Text>
-      <Text style={styles.subtitle}>{t("dailyRates")}</Text>
+      <Text style={styles.subtitle}>Historical prices and fitted forecast</Text>
 
-      {/* TODAY'S BEST OPPORTUNITY Banner */}
-      {topGainer && (
-        <TouchableOpacity
-          style={styles.opportunityBanner}
-          activeOpacity={0.88}
-          onPress={() => navigation.navigate("Market", { material: topGainer.material, quality: "medium", weightKg: 35 })}
-        >
-          <View style={styles.oppLeft}>
-            <Text style={styles.oppEmoji}>{MATERIAL_METADATA[topGainer.material]?.icon ?? "🔥"}</Text>
-            <View>
-              <Text style={styles.oppLabel}>🔥 TODAY'S BEST OPPORTUNITY</Text>
-              <Text style={styles.oppMaterialName}>
-                {language === "hi"
-                  ? MATERIAL_METADATA[topGainer.material]?.hindi
-                  : language === "mr"
-                  ? MATERIAL_METADATA[topGainer.material]?.marathi
-                  : topGainer.material}
-              </Text>
-              <Text style={styles.oppAdvice} numberOfLines={1}>
-                {language === "hi" ? topGainer.adviceHi : language === "mr" ? topGainer.adviceMr : topGainer.advice}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.oppRight}>
-            <Text style={styles.oppPrice}>₹{topGainer.currentPrice}/kg</Text>
-            <View style={styles.oppChangePill}>
-              <Text style={styles.oppChangePillText}>▲ +{topGainer.changePercent}%</Text>
-            </View>
-            <Text style={styles.oppCta}>Sell now →</Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Voice Instruction Banner */}
-      <View style={styles.audioHintCard}>
-        <Text style={styles.audioHintIcon}>🔊</Text>
-        <Text style={styles.audioHintText}>{t("tapToHear")}</Text>
-      </View>
-
-      {/* Search Input */}
-      <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search materials (e.g. Copper, तांबा, बॅटरी)..."
-          placeholderTextColor={colors.muted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Text style={styles.clearText}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Category Filter Chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-        <View style={styles.categoryRow}>
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              onPress={() => setSelectedCategory(cat)}
-              style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
-            >
-              <Text style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <Text style={styles.label}>Material</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+        {MATERIALS.map((item) => <TouchableOpacity key={item} onPress={() => setMaterial(item)} style={[styles.chip, material === item && styles.chipActive]}><Text style={[styles.chipText, material === item && styles.chipTextActive]}>{MATERIAL_METADATA[item].icon} {item}</Text></TouchableOpacity>)}
+      </ScrollView>
+      <Text style={styles.label}>Zone</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+        {ZONES.map((item) => <TouchableOpacity key={item} onPress={() => setZone(item)} style={[styles.chip, zone === item && styles.chipActive]}><Text style={[styles.chipText, zone === item && styles.chipTextActive]}>{item}</Text></TouchableOpacity>)}
       </ScrollView>
 
-      {/* Price Cards List */}
-      <View style={styles.cardList}>
-        {filteredPrices.map((item) => {
-          const meta = MATERIAL_METADATA[item.material];
-          const isSelected = activeMaterial === item.material;
-          const maxPrice = Math.max(...item.history7Days.map((d) => d.price));
-          const minPrice = Math.min(...item.history7Days.map((d) => d.price));
-          const range = maxPrice - minPrice || 1;
+      {loading ? <View style={styles.center}><ActivityIndicator color={colors.green} size="large" /><Text style={styles.muted}>Loading market history…</Text></View> : error ? <View style={styles.error}><Text style={styles.errorTitle}>Price data unavailable</Text><Text style={styles.muted}>{error}</Text></View> : (
+        <>
+          {alertText && <View style={[styles.alert, trend === "up" ? styles.alertUp : styles.alertDown]}><Text style={styles.alertIcon}>{trend === "up" ? "↑" : "↓"}</Text><Text style={styles.alertText}>{alertText}</Text></View>}
+          <View style={styles.summary}>
+            <View><Text style={styles.summaryLabel}>CURRENT RATE</Text><Text style={styles.price}>{currency(current)}<Text style={styles.unit}> / kg</Text></Text></View>
+            <View style={[styles.change, trend === "up" ? styles.up : trend === "down" ? styles.down : styles.flat]}><Text style={styles.changeText}>{trend === "up" ? "▲" : trend === "down" ? "▼" : "●"} {Math.abs(change).toFixed(1)}%</Text></View>
+            <TouchableOpacity style={styles.speak} onPress={announce}><Text>🔊 Speak</Text></TouchableOpacity>
+          </View>
 
-          return (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.88}
-              style={[styles.priceCard, isSelected && styles.priceCardSelected]}
-              onPress={() => announcePrice(item)}
-            >
-              <View style={styles.cardTop}>
-                <View style={styles.materialTitleGroup}>
-                  <Text style={styles.materialIcon}>{meta.icon}</Text>
-                  <View>
-                    <Text style={styles.materialName}>
-                      {language === "hi" ? meta.hindi : language === "mr" ? meta.marathi : item.material}
-                    </Text>
-                    <Text style={styles.materialSubname}>{item.material}</Text>
-                  </View>
-                </View>
+          <View style={styles.card}><Text style={styles.cardTitle}>Historical price · 14 latest observations</Text><Text style={styles.source}>{recent[0]?.source === "seed_demo" ? "Demo history stored in database" : "Observed market data"}</Text><View style={styles.chart}>{recent.map((point, index) => <View key={`${point.date}-${index}`} style={styles.barWrap}><View style={[styles.bar, { height: `${20 + ((point.price - minHistory) / Math.max(1, maxHistory - minHistory)) * 80}%` }, index === recent.length - 1 && styles.barLatest]} /></View>)}</View><View style={styles.axis}><Text>{recent[0]?.date ?? ""}</Text><Text>{recent[recent.length - 1]?.date ?? ""}</Text></View></View>
 
-                <View style={styles.priceGroup}>
-                  <Text style={styles.currentPriceText}>{currency(item.currentPrice)}</Text>
-                  <Text style={styles.perKg}>/ kg</Text>
-                </View>
-              </View>
-
-              {/* Trend & Change Row */}
-              <View style={styles.trendRow}>
-                <View
-                  style={[
-                    styles.trendBadge,
-                    item.trend === "up" ? styles.trendBadgeUp : item.trend === "down" ? styles.trendBadgeDown : styles.trendBadgeStable
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.trendText,
-                      item.trend === "up" ? styles.trendTextUp : item.trend === "down" ? styles.trendTextDown : styles.trendTextStable
-                    ]}
-                  >
-                    {item.trend === "up" ? "▲ +" : item.trend === "down" ? "▼ -" : "● "}
-                    {item.changePercent}%
-                  </Text>
-                </View>
-
-                <View style={styles.demandPill}>
-                  <Text style={styles.demandText}>{item.demand} DEMAND</Text>
-                </View>
-
-                <TouchableOpacity style={styles.speakIconBtn} onPress={() => announcePrice(item)}>
-                  <Text style={styles.speakerEmoji}>🔊 Speak</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* 7-Day Sparkline Chart */}
-              <View style={styles.sparklineContainer}>
-                <Text style={styles.sparklineLabel}>{t("priceTrend")}:</Text>
-                <View style={styles.sparklineBars}>
-                  {item.history7Days.map((day, idx) => {
-                    const heightPercent = 20 + ((day.price - minPrice) / range) * 80;
-                    const isLatest = idx === item.history7Days.length - 1;
-                    return (
-                      <View key={day.day} style={styles.sparkBarWrapper}>
-                        <View
-                          style={[
-                            styles.sparkBar,
-                            { height: `${heightPercent}%` },
-                            isLatest ? styles.sparkBarLatest : null
-                          ]}
-                        />
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Advice Box */}
-              <View style={styles.adviceBox}>
-                <Text style={styles.adviceKicker}>{t("sellingAdvice")}:</Text>
-                <Text style={styles.adviceText}>
-                  {language === "hi" ? item.adviceHi : language === "mr" ? item.adviceMr : item.advice}
-                </Text>
-              </View>
-
-              {/* Sell Now Action Shortcut */}
-              <TouchableOpacity
-                style={styles.sellShortcut}
-                onPress={() => navigation.navigate("Collect")}
-              >
-                <Text style={styles.sellShortcutText}>+ {t("sellThisNow")}</Text>
-                <Text style={styles.sellShortcutArrow}>→</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+          <View style={styles.card}><View style={styles.forecastHeader}><View><Text style={styles.cardTitle}>7-day ARIMA forecast</Text><Text style={styles.source}>{forecast?.model_type}</Text></View><Text style={styles.forecastPrice}>{currency(forecastValues[forecastValues.length - 1]?.forecast_price ?? current)}</Text></View><View style={styles.chart}>{forecastValues.map((point, index) => { const range = Math.max(1, maxForecast - minForecast); const bandHeight = Math.max(12, ((point.upper_ci - point.lower_ci) / range) * 100); const top = ((maxForecast - point.upper_ci) / range) * 100; return <View key={point.date} style={styles.barWrap}><View style={[styles.confidence, { height: `${bandHeight}%`, top: `${top}%` }]} /><View style={[styles.forecastDot, { top: `${((maxForecast - point.forecast_price) / range) * 100}%` }]} /></View>; })}</View><Text style={styles.bandLegend}>● Forecast line · shaded range = 80% confidence interval</Text><Text style={styles.advice}>{forecast?.advice}</Text></View>
+          <TouchableOpacity style={styles.sell} onPress={() => navigation.navigate("Collect", { prefillWeightKg: 35 })}><Text style={styles.sellText}>+ Sell {material} now</Text><Text style={styles.sellArrow}>→</Text></TouchableOpacity>
+        </>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: 18, paddingBottom: 40 },
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  backBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: "#E2EBE4" },
-  backBtnText: { color: colors.ink, fontSize: 11, fontWeight: "700" },
-  liveIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: "#FDF2E9"
-  },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#EA580C" },
-  liveText: { color: "#EA580C", fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
-  kicker: { color: "#84948B", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
-  title: { marginTop: 4, color: colors.ink, fontSize: 25, fontWeight: "800", letterSpacing: -0.5 },
-  subtitle: { marginTop: 2, marginBottom: 14, color: colors.muted, fontSize: 12 },
-
-  audioHintCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: colors.greenLight,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "#BDE3CA"
-  },
-  audioHintIcon: { fontSize: 18 },
-  audioHintText: { flex: 1, color: colors.green, fontSize: 11, fontWeight: "800" },
-
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.white,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.line,
-    marginBottom: 12
-  },
-  searchIcon: { fontSize: 14, marginRight: 6 },
-  searchInput: { flex: 1, height: 42, fontSize: 12, color: colors.ink },
-  clearText: { color: colors.muted, fontSize: 14, padding: 4 },
-
-  categoriesScroll: { marginBottom: 14 },
-  categoryRow: { flexDirection: "row", gap: 8 },
-  categoryChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line
-  },
-  categoryChipActive: { backgroundColor: colors.green, borderColor: colors.green },
-  categoryText: { fontSize: 11, color: colors.muted, fontWeight: "700" },
-  categoryTextActive: { color: colors.white, fontWeight: "800" },
-
-  cardList: { gap: 12 },
-  priceCard: {
-    backgroundColor: colors.white,
-    borderRadius: 18,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: colors.line
-  },
-  priceCardSelected: { borderColor: colors.green, borderWidth: 1.5, backgroundColor: "#FBFCFB" },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  materialTitleGroup: { flexDirection: "row", alignItems: "center", gap: 8 },
-  materialIcon: { fontSize: 24 },
-  materialName: { fontSize: 16, fontWeight: "800", color: colors.ink },
-  materialSubname: { fontSize: 10, color: colors.muted },
-  priceGroup: { flexDirection: "row", alignItems: "baseline" },
-  currentPriceText: { fontSize: 20, fontWeight: "900", color: colors.green },
-  perKg: { fontSize: 10, color: colors.muted, marginLeft: 2 },
-
-  trendRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
-  trendBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
-  trendBadgeUp: { backgroundColor: "#DCFCE7" },
-  trendBadgeDown: { backgroundColor: "#FEE2E2" },
-  trendBadgeStable: { backgroundColor: "#F3F4F6" },
-  trendText: { fontSize: 10, fontWeight: "900" },
-  trendTextUp: { color: "#166534" },
-  trendTextDown: { color: "#991B1B" },
-  trendTextStable: { color: "#4B5563" },
-  demandPill: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, backgroundColor: "#EFF6FF" },
-  demandText: { fontSize: 9, fontWeight: "800", color: "#1D4ED8" },
-  speakIconBtn: { marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: "#F3F4F6" },
-  speakerEmoji: { fontSize: 10, fontWeight: "700", color: colors.ink },
-
-  sparklineContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#F0F3F0"
-  },
-  sparklineLabel: { fontSize: 9, color: colors.muted, fontWeight: "700" },
-  sparklineBars: { flexDirection: "row", alignItems: "flex-end", height: 28, gap: 4 },
-  sparkBarWrapper: { width: 14, height: "100%", justifyContent: "flex-end" },
-  sparkBar: { width: 14, borderRadius: 3, backgroundColor: "#A3D4B3" },
-  sparkBarLatest: { backgroundColor: colors.green },
-
-  adviceBox: {
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#F7FAF8",
-    borderWidth: 1,
-    borderColor: "#E5ECE6"
-  },
-  adviceKicker: { fontSize: 9, fontWeight: "800", color: "#3C6349", marginBottom: 2 },
-  adviceText: { fontSize: 10, color: "#4A5568", lineHeight: 14 },
-
-  sellShortcut: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: colors.greenLight
-  },
-  sellShortcutText: { fontSize: 11, fontWeight: "800", color: colors.green },
-  sellShortcutArrow: { fontSize: 14, fontWeight: "900", color: colors.green },
-
-  // Opportunity Banner
-  opportunityBanner: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 14,
-    borderRadius: 18,
-    backgroundColor: colors.green,
-    marginBottom: 10,
-    gap: 8
-  },
-  oppLeft: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
-  oppEmoji: { fontSize: 28 },
-  oppLabel: { fontSize: 8, fontWeight: "800", color: "rgba(255,255,255,.65)", letterSpacing: .8, marginBottom: 2 },
-  oppMaterialName: { fontSize: 15, fontWeight: "900", color: "#fff", letterSpacing: -.3 },
-  oppAdvice: { fontSize: 9, color: "rgba(255,255,255,.65)", marginTop: 2 },
-  oppRight: { alignItems: "flex-end", gap: 3 },
-  oppPrice: { fontSize: 16, fontWeight: "900", color: "#fff" },
-  oppChangePill: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, backgroundColor: "rgba(255,255,255,.15)" },
-  oppChangePillText: { fontSize: 9, fontWeight: "800", color: "#a7f3cc" },
-  oppCta: { fontSize: 9, fontWeight: "800", color: "#F8E5AE" }
+  screen: { flex: 1, backgroundColor: colors.cream }, content: { padding: 18, paddingBottom: 40 },
+  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }, backBtn: { padding: 8, borderRadius: 8, backgroundColor: "#E2EBE4" }, backText: { color: colors.ink, fontSize: 11, fontWeight: "700" }, live: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E2EBE4", padding: 7, borderRadius: 8 }, dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green }, liveText: { fontSize: 9, color: colors.green, fontWeight: "900" }, kicker: { color: "#84948B", fontSize: 9, fontWeight: "800", letterSpacing: 1 }, title: { marginTop: 4, color: colors.ink, fontSize: 25, fontWeight: "800" }, subtitle: { color: colors.muted, fontSize: 12, marginTop: 2, marginBottom: 14 }, label: { color: colors.muted, fontSize: 10, fontWeight: "800", marginTop: 8, marginBottom: 6 }, chipScroll: { marginBottom: 4 }, chip: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginRight: 7 }, chipActive: { backgroundColor: colors.green, borderColor: colors.green }, chipText: { color: colors.muted, fontSize: 10, fontWeight: "700" }, chipTextActive: { color: colors.white }, center: { alignItems: "center", padding: 42, gap: 10 }, muted: { color: colors.muted, fontSize: 11 }, error: { backgroundColor: colors.white, padding: 18, borderRadius: 14, marginTop: 14 }, errorTitle: { color: "#991B1B", fontWeight: "900", marginBottom: 5 }, alert: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 12, marginTop: 14 }, alertUp: { backgroundColor: "#DCFCE7" }, alertDown: { backgroundColor: "#FEE2E2" }, alertIcon: { fontSize: 22, fontWeight: "900" }, alertText: { flex: 1, color: colors.ink, fontSize: 11, fontWeight: "700" }, summary: { flexDirection: "row", alignItems: "center", backgroundColor: colors.white, borderRadius: 16, padding: 15, marginTop: 14, borderWidth: 1, borderColor: colors.line }, summaryLabel: { color: colors.muted, fontSize: 9, fontWeight: "800" }, price: { color: colors.green, fontSize: 24, fontWeight: "900", marginTop: 3 }, unit: { color: colors.muted, fontSize: 10, fontWeight: "600" }, change: { padding: 7, borderRadius: 7, marginLeft: 10 }, up: { backgroundColor: "#DCFCE7" }, down: { backgroundColor: "#FEE2E2" }, flat: { backgroundColor: "#F3F4F6" }, changeText: { color: colors.ink, fontSize: 10, fontWeight: "900" }, speak: { marginLeft: "auto", padding: 8, backgroundColor: "#F3F4F6", borderRadius: 8 }, card: { backgroundColor: colors.white, borderRadius: 16, padding: 15, marginTop: 12, borderWidth: 1, borderColor: colors.line }, cardTitle: { color: colors.ink, fontSize: 13, fontWeight: "900" }, source: { color: colors.muted, fontSize: 9, marginTop: 3 }, chart: { height: 110, flexDirection: "row", alignItems: "stretch", gap: 5, marginTop: 16, borderBottomWidth: 1, borderBottomColor: colors.line }, barWrap: { flex: 1, height: "100%", justifyContent: "flex-end", position: "relative" }, bar: { width: "100%", minHeight: 4, backgroundColor: "#A3D4B3", borderRadius: 3 }, barLatest: { backgroundColor: colors.green }, axis: { flexDirection: "row", justifyContent: "space-between", color: colors.muted, fontSize: 9, marginTop: 5 }, forecastHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }, forecastPrice: { color: colors.green, fontSize: 18, fontWeight: "900" }, confidence: { position: "absolute", left: "20%", right: "20%", backgroundColor: "#CDE8D5", borderRadius: 4 }, forecastDot: { position: "absolute", left: "35%", width: 8, height: 8, borderRadius: 4, backgroundColor: colors.green }, bandLegend: { color: colors.muted, fontSize: 9, marginTop: 8 }, advice: { color: colors.ink, backgroundColor: "#F7FAF8", padding: 10, borderRadius: 8, fontSize: 10, lineHeight: 14, marginTop: 10 }, sell: { flexDirection: "row", justifyContent: "space-between", backgroundColor: colors.greenLight, padding: 13, borderRadius: 12, marginTop: 12 }, sellText: { color: colors.green, fontSize: 12, fontWeight: "900" }, sellArrow: { color: colors.green, fontSize: 16, fontWeight: "900" },
 });
-

@@ -147,9 +147,15 @@ class PriceForecastResponse(BaseModel):
     material: MaterialType
     zone: str
     current_price: float
-    model_type: str = "ARIMA(2,1,1) with Seasonal Drift (simulated)"
+    model_type: str = "ARIMA(2,1,1)"
     forecast_7_days: List[PriceForecastPoint]
     advice: str
+
+
+class PriceHistoryPoint(BaseModel):
+    date: str
+    price: float
+    source: str
 
 
 # ─── Aggregator ──────────────────────────────────────────────────────────────
