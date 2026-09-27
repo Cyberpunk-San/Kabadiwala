@@ -271,6 +271,17 @@ class PickupRequestRow(Base):
     completed_at = Column(DateTime, nullable=True)
 
 
+class PriceHistoryRow(Base):
+    __tablename__ = "price_history"
+    id = Column(String, primary_key=True)
+    material = Column(String, nullable=False, index=True)
+    zone = Column(String, nullable=False, index=True)
+    price_per_kg = Column(Float, nullable=False)
+    observed_at = Column(DateTime, nullable=False, index=True)
+    source = Column(String, nullable=False, default="seed_demo")   # seed_demo | market_live
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 # ─── Lifecycle ───────────────────────────────────────────────────────────────
 
 def _add_missing_columns() -> None:
@@ -303,6 +314,8 @@ def init_db() -> None:
             _seed_demo_collector(db)
         if db.query(DemandRow).count() == 0:
             _seed_demo_demands(db)
+        if db.query(PriceHistoryRow).count() == 0:
+            _seed_price_history(db)
         _link_prices_to_market(db)
     finally:
         db.close()
@@ -413,6 +426,29 @@ def _seed_demo_collector(db) -> None:
     ))
     db.commit()
     print("[MHK DB] Seeded demo collector CLT-4218 (phone +919876543210)")
+
+
+def _seed_price_history(db) -> None:
+    """Clearly-labelled demo observations (source='seed_demo') so forecasting works on day one."""
+    from services.price_forecaster import BASE_PRICES, ZONE_MULTIPLIERS
+    import hashlib
+    rows = []
+    for material, base in BASE_PRICES.items():
+        for zone, zone_factor in ZONE_MULTIPLIERS.items():
+            for days_ago in range(90, -1, -1):
+                seed = int(hashlib.sha256(f"{material}:{zone}:{days_ago}".encode()).hexdigest()[:8], 16)
+                variation = ((seed % 1001) - 500) / 10000
+                trend = (90 - days_ago) * 0.00015
+                price = round(base * zone_factor * (1 + variation + trend), 2)
+                rows.append(PriceHistoryRow(
+                    id=f"ph_{hashlib.sha1(material.encode()).hexdigest()[:6]}_{zone[:3]}_{days_ago}",
+                    material=material, zone=zone, price_per_kg=price,
+                    observed_at=datetime.utcnow() - timedelta(days=days_ago),
+                    source="seed_demo",
+                ))
+    db.bulk_save_objects(rows)
+    db.commit()
+    print(f"[MHK DB] Seeded {len(rows)} demo price observations.")
 
 
 def _seed_demo_demands(db) -> None:

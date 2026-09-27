@@ -1,13 +1,13 @@
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from db import get_db
-from models.domain import MaterialType, PriceForecastResponse
+from models.domain import MaterialType, PriceForecastResponse, PriceHistoryPoint
 from services import market_price_service as mps
 from services.ml_classifier import MATERIAL_HAZARDS
-from services.price_forecaster import BASE_PRICES, generate_arima_forecast
+from services.price_forecaster import BASE_PRICES, generate_arima_forecast, list_history, record_live_prices
 
 router = APIRouter(prefix="/api/v1/prices", tags=["Market Intelligence & Pricing"])
 
@@ -59,6 +59,9 @@ def get_daily_spot_prices(
             "demand": "HIGH" if premium >= 8 else "MODERATE" if premium >= 3 else "LOW",
             "unit": "INR/kg",
         })
+    # Once a day, today's Pune market price becomes a real point in the price history (feeds the ARIMA forecast).
+    if mode == "live":
+        record_live_prices(db, {m: mps.market_price(m, snap, mode, DEFAULT_LAT, DEFAULT_LON)[0] for m in BASE_PRICES})
     return {
         "location": {"latitude": lat, "longitude": lon},
         "currency": "INR",
@@ -84,5 +87,16 @@ def get_arima_price_forecast(
     horizon: int = Query(7, ge=7, le=30),
     db: Session = Depends(get_db),
 ):
-    """7-day outlook starting from today's market price (the forecast curve itself is simulated)."""
-    return generate_arima_forecast(material=material, zone=zone)
+    """ARIMA(2,1,1) on the price history, anchored to today's market price (drift outlook if history is short)."""
+    return generate_arima_forecast(db=db, material=material, zone=zone, horizon=horizon)
+
+
+@router.get("/history", response_model=List[PriceHistoryPoint])
+def get_price_history(
+    material: MaterialType = Query("Copper cable"),
+    zone: str = Query("Pune MIDC"),
+    days: int = Query(90, ge=7, le=365),
+    db: Session = Depends(get_db),
+):
+    """Observed prices, oldest first. `source` says whether a point is seeded demo data or a recorded live price."""
+    return list_history(db=db, material=material, zone=zone, days=days)

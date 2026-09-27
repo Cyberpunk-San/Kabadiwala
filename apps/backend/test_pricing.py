@@ -561,6 +561,45 @@ def test_forecast_starts_from_market_price(monkeypatch):
     assert f["current_price"] == round(mps.market_price("Copper cable")[0], 1)
 
 
+def test_forecast_uses_arima_on_history_and_starts_at_market(monkeypatch):
+    use_snapshot(monkeypatch)
+    hist = client.get("/api/v1/prices/history?material=Copper%20cable&zone=Pune%20MIDC&days=90").json()
+    assert len(hist) >= 14 and {h["source"] for h in hist} <= {"seed_demo", "market_live"}
+    f = client.get("/api/v1/prices/forecast?material=Copper%20cable&zone=Pune%20MIDC&horizon=10").json()
+    assert f["model_type"].startswith("ARIMA(2,1,1)") and len(f["forecast_7_days"]) == 10
+    assert f["current_price"] == round(mps.market_price("Copper cable")[0], 1)
+    for p in f["forecast_7_days"]:
+        assert p["lower_ci"] <= p["forecast_price"] <= p["upper_ci"]
+        assert abs(p["forecast_price"] / f["current_price"] - 1) < 0.25       # anchored to today's price, not the old seed level
+
+
+def test_forecast_falls_back_when_history_is_short():
+    from services.price_forecaster import generate_arima_forecast
+    db = SessionLocal()
+    try:
+        f = generate_arima_forecast(db, "Copper cable", zone="Nowhere Zone")
+        assert f.model_type.startswith("Drift outlook")
+        assert len(f.forecast_7_days) == 7
+    finally:
+        db.close()
+
+
+def test_live_price_is_recorded_once_a_day(monkeypatch):
+    use_snapshot(monkeypatch)
+    from db import PriceHistoryRow
+    db = SessionLocal()
+    try:
+        live = lambda: db.query(PriceHistoryRow).filter(PriceHistoryRow.source == "market_live").count()
+        before = live()
+        client.get("/api/v1/prices/daily")
+        after_first = live()
+        client.get("/api/v1/prices/daily")
+        assert after_first - before in (0, len(BASE_PRICES)) and live() == after_first   # second call adds nothing
+        assert after_first >= len(BASE_PRICES)
+    finally:
+        db.close()
+
+
 def test_assistant_rates_are_local_prices(monkeypatch):
     use_snapshot(monkeypatch)
     from services.assistant_service import tool_get_rates

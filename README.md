@@ -57,6 +57,26 @@ regional intelligence map · risk scan with 8 fraud/anomaly detectors.
 
 ---
 
+## Telegram bot
+
+Same features on Telegram, in Hindi, Marathi or English — no app install needed. It uses long polling, so it runs from
+the same laptop as the backend with **no public URL or tunnel**.
+
+1. In Telegram open **@BotFather** → `/newbot` → pick a name → copy the token.
+2. Add it to `apps/backend/.env`: `TELEGRAM_BOT_TOKEN=123456:ABC…`
+3. With the backend running on :8000: `cd apps/backend && python -m bot.run`
+
+| Who | What they can do |
+|---|---|
+| Anyone | `/start` → share phone number (verified by Telegram) → linked to their existing account, or registered as a household |
+| Household / company | 🛺 book a pickup (pick material or send a photo → kg → location → time slot → confirm with price estimate) → PIN; 📦 my pickups; 💰 doorstep rates; alerts when a kabadiwala accepts and when it's done |
+| Kabadiwala | 📍 open pickups nearest first → accept (customer phone + map link) → 🏁 complete with the PIN; 💰 today's rates; 📷 value scrap from a photo; 🔔 alerts for new pickups within 25 km |
+| Everyone | any other message goes to the assistant; `/lang` switches language |
+
+Voice notes are not supported yet. Tests: `python -m pytest test_telegram_bot.py -q`.
+
+---
+
 ## How prices are calculated
 
 ```text
