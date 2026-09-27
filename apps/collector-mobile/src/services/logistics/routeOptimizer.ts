@@ -18,7 +18,13 @@
 
 import type { Material } from "../../types/domain";
 import { MATERIAL_METADATA } from "../../types/domain";
-import { getAllBazarPrices } from "../../data/prices";
+
+/** Price table is only needed for hub and batch advice, not for routing. */
+function listedPrices(): { material: Material; currentPrice: number }[] {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getAllBazarPrices } = require("../../data/prices") as typeof import("../../data/prices");
+  return getAllBazarPrices();
+}
 import {
   KNOWN_SCRAP_CLUSTERS,
   calculateDistanceKm,
@@ -63,7 +69,7 @@ export function findOptimalCluster(
   coords: GeoCoordinates
 ): ClusterScore[] {
   const meta = MATERIAL_METADATA[material];
-  const prices = getAllBazarPrices();
+  const prices = listedPrices();
   const priceItem = prices.find((p) => p.material === material);
 
   const results: ClusterScore[] = KNOWN_SCRAP_CLUSTERS.map((cluster) => {
@@ -149,7 +155,7 @@ export function batchAdvisory(
   distanceToClusterKm: number,
   dailyCollectionRateKg: number = 5
 ): BatchAdvisory {
-  const prices = getAllBazarPrices();
+  const prices = listedPrices();
   const priceItem = prices.find((p) => p.material === material);
   const pricePerKg = priceItem?.currentPrice ?? MATERIAL_METADATA[material].basePricePerKg;
 

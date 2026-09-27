@@ -1,5 +1,3 @@
-import * as Location from "expo-location";
-
 export interface GeoCoordinates {
   latitude: number;
   longitude: number;
@@ -24,8 +22,13 @@ export const KNOWN_SCRAP_CLUSTERS: ScrapCluster[] = [
   { id: "delhi-mandoli", name: "Mandoli E-Waste Hub", city: "East Delhi", state: "Delhi", latitude: 28.7082, longitude: 77.3015 }
 ];
 
+async function location() {
+  return import("expo-location");
+}
+
 export async function requestLocationPermissions(): Promise<boolean> {
   try {
+    const Location = await location();
     const { status } = await Location.requestForegroundPermissionsAsync();
     return status === "granted";
   } catch {
@@ -38,15 +41,16 @@ export async function getCurrentCoordinates(): Promise<GeoCoordinates | undefine
     const granted = await requestLocationPermissions();
     if (!granted) return undefined;
 
-    const location = await Location.getCurrentPositionAsync({
+    const Location = await location();
+    const locationFix = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced
     });
 
     return {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      accuracy: location.coords.accuracy,
-      altitude: location.coords.altitude
+      latitude: locationFix.coords.latitude,
+      longitude: locationFix.coords.longitude,
+      accuracy: locationFix.coords.accuracy,
+      altitude: locationFix.coords.altitude
     };
   } catch (error) {
     // No fix (GPS off, no signal, web without permission): let the caller fall back to a
@@ -105,6 +109,7 @@ export async function watchCollectorLocation(
   const granted = await requestLocationPermissions();
   if (!granted) return () => {};
 
+  const Location = await location();
   const subscription = await Location.watchPositionAsync(
     {
       accuracy: Location.Accuracy.Balanced,

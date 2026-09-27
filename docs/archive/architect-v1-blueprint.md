@@ -1,4 +1,5 @@
 # Kabadiwala → Entrepreneur
+
 ## AI-Powered E-Waste Collection, Marketplace, Intelligence & Traceability Platform
 
 **Document:** `architect.md`  
@@ -390,7 +391,8 @@ def verify_collector_kyc(
     pass
 ```
 
-### Associated API Routes:
+### Associated API Routes
+
 - `POST /api/v1/auth/register` - Register collector
 - `POST /api/v1/auth/verify-otp` - Verify OTP and login
 - `GET /api/v1/collector/profile` - Fetch current collector profile
@@ -403,13 +405,15 @@ def verify_collector_kyc(
 - `GET /api/v1/collector/reputation` - Fetch reputation scorecard
 - `POST /api/v1/collector/kyc` - Submit KYC verification
 
-### Database Entities:
+### Database Entities
+
 `users`, `collectors`, `collector_territories`, `collector_expertise`, `collector_kyc_records`, `collector_reputation_history`.
 
 ---
 ## 5.2 📱 Mobile & Accessibility
 
-### Core Features:
+### Core Features
+
 - Android mobile app
 - Hindi / Marathi / English
 - Icon-based low-literacy UI
@@ -420,10 +424,11 @@ def verify_collector_kyc(
 - Offline-first operation
 - Lightweight/basic-phone compatibility
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The mobile tier is built as an Android-first React Native + TypeScript application with a native Kotlin bridge for audio DSP and on-device SQLite (WatermelonDB). Designed for low-literacy scrap collectors, UI elements feature high-contrast pictorial icons (min 64x64 dp tap targets), zero-text wizard workflows, on-demand Hindi/Marathi Text-to-Speech (TTS), and SMS/USSD fallbacks for 2G feature phones.
 
-### Typed Function Specifications:
+### Typed Function Specifications
 
 ```typescript
 // --- Mobile Client & Edge Interfaces ---
@@ -519,19 +524,22 @@ export function generateUssdFallbackMenu(sessionId: string, inputCode: string): 
 };
 ```
 
-### Associated API & Edge Routes:
+### Associated API & Edge Routes
+
 - `GET /api/v1/mobile/locale-bundle/{locale}` - Fetch updated translation and audio phoneme mappings
 - `POST /api/v1/mobile/telemetry` - Batch upload low-bandwidth crash and battery telemetry
 - `POST /api/v1/ussd/callback` - Telecom gateway callback for feature phone USSD commands
 - `POST /api/v1/sms/inbound` - Inbound SMS parser for lightweight basic-phone interactions
 
-### Local Database Tables (Client-Side SQLite):
+### Local Database Tables (Client-Side SQLite)
+
 `cached_locales`, `offline_lots`, `sync_mutation_queue`, `audio_guidance_cache`, `device_settings`.
 
 ---
 ## 5.3 📷 Camera & AI Vision
 
-### Core Features:
+### Core Features
+
 - E-waste image capture
 - Material identification
 - Multi-item detection
@@ -543,10 +551,11 @@ export function generateUssdFallbackMenu(sessionId: string, inputCode: string): 
 - Manual correction of AI classification
 - Multiple photos per lot
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Camera & Computer Vision Pipeline (`backend/ai/vision`) performs real-time edge and cloud inference on scrap lot photographs. It incorporates a YOLOv8-based object detection model fine-tuned on 150,000+ Indian e-waste samples, a MobileNetV4 classifier for fine-grained PCB grading, PaddleOCR for equipment serial number recognition, and a multi-label hazard classifier (detecting puffed lithium batteries, cracked CRT glass, and leaking capacitors).
 
-### Typed Function Specifications:
+### Typed Function Specifications
 
 ```python
 from typing import List, Optional, Dict, Any, Tuple
@@ -649,7 +658,7 @@ def detect_visual_hazards(image_bytes: bytes) -> List[Dict[str, Any]]:
 def extract_model_and_serial_ocr(image_bytes: bytes) -> Dict[str, List[str]]:
     """
     Applies PaddleOCR + heuristic regex matching to extract OEM brand names,
-    model numbers, energy star ratings, and serial barcodes from equipment nameplates.
+    model numbers, energy star ratings, and serial barcode from equipment nameplates.
     """
     pass
 
@@ -677,20 +686,23 @@ def attach_multiple_photos_to_lot(
     pass
 ```
 
-### Associated API Routes:
+### Associated API Routes
+
 - `POST /api/v1/vision/analyze` - Perform full vision identification on uploaded image
 - `POST /api/v1/vision/detect-hazards` - Fast-track hazard scan endpoint (< 200ms)
 - `POST /api/v1/vision/ocr` - Extract model/serial numbers from device label photo
 - `POST /api/v1/lots/{lot_id}/images` - Upload and attach multiple images to lot
 - `POST /api/v1/vision/corrections` - Submit collector correction for AI prediction
 
-### Database Entities:
+### Database Entities
+
 `lot_images`, `vision_detections`, `vision_hazard_alerts`, `ai_classification_corrections`, `model_inference_logs`.
 
 ---
 ## 5.4 🎤 Voice
 
-### Core Features:
+### Core Features
+
 - Voice-based material entry
 - Voice-based weight entry
 - Voice search
@@ -701,10 +713,11 @@ def attach_multiple_photos_to_lot(
 - Spoken recommendations
 - Spoken safety warnings
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Voice Engine (`backend/voice`) empowers low-literacy collectors to interact conversationally in Hindi, Marathi, or English. Built on OpenAI Whisper / IndicConformer for Automated Speech Recognition (ASR), spaCy + custom Indian scrap terminology NER (Named Entity Recognition) models (recognizing colloquial terms like "patti", "motherboard", "taamba", "kanta"), and edge-optimized TTS.
 
-### Typed Function Specifications:
+### Typed Function Specifications
 
 ```python
 from typing import List, Optional, Dict, Any
@@ -828,20 +841,23 @@ def synthesize_spoken_safety_warning(
     pass
 ```
 
-### Associated API Routes:
+### Associated API Routes
+
 - `POST /api/v1/voice/transcribe-material` - Transcribe audio to material entity
 - `POST /api/v1/voice/transcribe-weight` - Transcribe audio to weight entity
 - `POST /api/v1/voice/query-price` - Voice price inquiry endpoint
 - `POST /api/v1/voice/confirm-transaction` - Voice consent registration
 - `GET /api/v1/voice/bulletin/{material_id}` - Stream spoken price audio
 
-### Database Entities:
+### Database Entities
+
 `voice_interaction_logs`, `voice_transaction_consents`, `audio_prompt_assets`.
 
 ---
 ## 5.5 ♻️ Material & Lot Management
 
-### Core Features:
+### Core Features
+
 - E-waste categorisation
 - Material separation guidance
 - Digital lot creation
@@ -853,10 +869,11 @@ def synthesize_spoken_safety_warning(
 - Lot status tracking
 - Lot history
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Material & Lot Management Service (`backend/lots`) is the system of record for physical scrap inventory. Every lot created receives a cryptographically verifiable Unique Lot ID (ULID + QR code), associates vision metadata and GPS coordinates, tracks the full state lifecycle (CREATED -> AI_IDENTIFIED -> OFFERED -> MATCHED -> IN_TRANSIT -> WEIGHED -> SETTLED), and provides step-by-step disassembly/separation guidance.
 
-### Typed Function Specifications:
+### Typed Function Specifications
 
 ```python
 from typing import List, Optional, Dict, Any
@@ -1003,7 +1020,8 @@ def get_lot_audit_trail(lot_id: UUID) -> List[Dict[str, Any]]:
     pass
 ```
 
-### Associated API Routes:
+### Associated API Routes
+
 - `GET /api/v1/materials/taxonomy` - Retrieve master e-waste taxonomy
 - `GET /api/v1/materials/{id}/separation-guidance` - Get manual disassembly guide
 - `POST /api/v1/lots` - Create new digital lot
@@ -1013,13 +1031,15 @@ def get_lot_audit_trail(lot_id: UUID) -> List[Dict[str, Any]]:
 - `POST /api/v1/lots/{lot_id}/status` - Advance lot lifecycle status
 - `GET /api/v1/lots/{lot_id}/audit-trail` - Fetch complete lot history
 
-### Database Entities:
+### Database Entities
+
 `materials`, `lots`, `lot_status_history`, `lot_images`, `lot_disassembly_guides`.
 
 ---
 ## 5.6 🗺️ Regional Intelligence
 
-### Core Features:
+### Core Features
+
 - Regional e-waste mapping
 - Nearby industry mapping
 - IT/automobile/manufacturing/telecom cluster identification
@@ -1030,10 +1050,11 @@ def get_lot_audit_trail(lot_id: UUID) -> List[Dict[str, Any]]:
 - Price heatmap
 - Collection opportunity map
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Regional Intelligence Service (`backend/regional`) leverages PostGIS, Uber H3 hexagonal spatial indexes (resolution 7 to 9), and OpenStreetMap / industrial registry datasets. It calculates spatial scrap densities, cross-references industrial firmographics (e.g. telecom data centers vs auto parts fabrication) to forecast expected e-waste yields, and builds dynamic GeoJSON heatmaps for demand, pricing, and collection opportunities.
 
-### Typed Function Specifications:
+### Typed Function Specifications
 
 ```python
 from typing import List, Optional, Dict, Any, Tuple
@@ -1169,7 +1190,8 @@ def generate_collection_opportunity_map(
 ---
 ## 5.7 📈 Market & Price Intelligence
 
-### Core Features:
+### Core Features
+
 - Location-wise prices
 - Material-wise prices
 - Recycler-wise offers
@@ -1184,10 +1206,11 @@ def generate_collection_opportunity_map(
 - Price anomaly detection
 - Short-term price prediction
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Market & Price Intelligence Service (`backend/pricing`) tracks spot prices, global London Metal Exchange (LME) commodities (copper, aluminum, gold, tin, lithium), domestic scrap market bulletins, and registered recycler rate sheets. Using time-series forecasting (ARIMA / Prophet / LightGBM), it provides collectors with fair market valuation, transparency, and predictive pricing.
 
-### Typed Function Specifications:
+### Typed Function Specifications
 
 ```python
 from typing import List, Optional, Dict, Any, Tuple
@@ -1348,20 +1371,23 @@ def predict_short_term_price(
     pass
 ```
 
-### Associated API Routes:
+### Associated API Routes
+
 - `GET /api/v1/pricing/spot` - Get spot price for material at location
 - `GET /api/v1/pricing/materials/{id}/history` - Historical pricing time series
 - `GET /api/v1/pricing/materials/{id}/forecast` - 7-day predictive price trajectory
 - `POST /api/v1/pricing/valuate-lot` - Dynamic valuation calculation for lot
 - `GET /api/v1/pricing/anomalies/check` - Check price quote anomaly
 
-### Database Entities:
+### Database Entities
+
 `material_prices`, `price_history_ticks`, `recycler_rate_sheets`, `metal_commodity_benchmarks`, `price_anomaly_flags`.
 
 ---
 ## 5.8 💡 Entrepreneur / Opportunity Engine
 
-### Core Features:
+### Core Features
+
 - “What should I collect?” recommendation
 - Material opportunity score
 - Region opportunity score
@@ -1373,7 +1399,8 @@ def predict_short_term_price(
 - Expected earning estimation
 - Net-profit opportunity calculation
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Opportunity Engine (`backend/opportunities`) is the brain that transforms the collector into a strategic businessman. Rather than merely maximizing the gross sale price, it optimizes for **Net Profit Opportunity** (Gross Expected Revenue minus Transport Expenses, Time Expenditure, and Holding Costs). It advises collectors on high-yield materials, optimal timing to liquidate inventory, and high-demand commercial procurement routes.
 
 ### Typed Function Specifications:
@@ -1513,19 +1540,22 @@ def calculate_net_profit_opportunity(
     pass
 ```
 
-### Associated API Routes:
+### Associated API Routes
+
 - `GET /api/v1/opportunities/recommendations` - Daily collection target advice
 - `GET /api/v1/opportunities/high-margin` - List high-margin materials nearby
 - `POST /api/v1/opportunities/hold-sell-advice` - Analyze whether to hold or sell lot
 - `POST /api/v1/opportunities/net-profit-calc` - Interactive net profit calculator
 
-### Database Entities:
+### Database Entities
+
 `collection_opportunities`, `opportunity_recommendation_history`, `hold_sell_logs`.
 
 ---
 ## 5.9 🏭 Recycler Marketplace
 
-### Core Features:
+### Core Features
+
 - Authorised recycler discovery
 - Recycler verification
 - Nearby recycler search
@@ -1537,10 +1567,12 @@ def calculate_net_profit_opportunity(
 - Pickup availability
 - Drop-off options
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Recycler Marketplace (`backend/recyclers`) connects collectors directly with government-authorized formal e-waste dismantlers, shredders, and PROs (Producer Responsibility Organisations). It enforces strict regulatory validation (State Pollution Control Board / Central Pollution Control Board registration), facilitates spot offers, compares competing terms, and indexes recycler operational reliability.
 
-### Typed Function Specifications:
+### Typed Function Specifications
+
 
 ```python
 from typing import List, Optional, Dict, Any, Tuple
@@ -1675,19 +1707,22 @@ def get_recycler_dropoff_windows(
     pass
 ```
 
-### Associated API Routes:
+### Associated API Routes
+
 - `GET /api/v1/recyclers` - Search authorized recyclers with filters
 - `GET /api/v1/recyclers/{id}` - Get recycler profile and facilities
 - `GET /api/v1/recyclers/{id}/materials` - Get accepted materials and rate rules
 - `POST /api/v1/marketplace/lots/{lot_id}/compare-offers` - Compare competing buyer offers
 
-### Database Entities:
+### Database Entities
+
 `recyclers`, `recycler_authorizations`, `recycler_accepted_materials`, `recycler_ratings`, `recycler_reliability_scores`.
 
 ---
 ## 5.10 🔄 Reverse Marketplace
 
-### Core Features:
+### Core Features
+
 - Recycler posts material demand
 - Required quantity
 - Required material quality
@@ -1697,10 +1732,11 @@ def get_recycler_dropoff_windows(
 - Bulk-demand matching
 - Demand alerts
 
-### Architecture & Service Blueprint:
+### Architecture & Service Blueprint
+
 The Reverse Marketplace Service (`backend/demands`) shifts the paradigm from collectors pushing small random lots to formal recyclers posting specific procurement targets (e.g., "Need 5 Metric Tons of Server Power Supply Units @ ₹180/kg by Friday"). It matches matching collector supply, facilitates group lot coalitions, and pushes geo-fenced demand broadcasts.
 
-### Typed Function Specifications:
+### Typed Function Specifications
 
 ```python
 from typing import List, Optional, Dict, Any

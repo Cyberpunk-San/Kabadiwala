@@ -44,7 +44,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   Settings: undefined;
   Demands: undefined;
-  Pickups: undefined;
+  Pickups: { tab?: "nearby" | "mine" } | undefined;
   PickupDetail: { pickupId: string };
   Assistant: { prompt?: string } | undefined;
   Accessibility: undefined;

@@ -38,6 +38,7 @@ BASE_PRICES: Dict[str, float] = {
     "Mixed plastic": 11.4,
     "PET bottles": 21.4,
     "Stainless steel": 57.1,
+    "Stainless steel": 57.1,
 }
 ZONE_MULTIPLIERS: Dict[str, float] = {"Pune MIDC": 1.00, "Mumbai Dharavi": 1.02, "Delhi Mayapuri": 1.03, "Bengaluru Peenya": 0.99}
 MIN_HISTORY = 14
