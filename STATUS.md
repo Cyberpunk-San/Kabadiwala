@@ -15,7 +15,7 @@ Run and demo instructions: [README.md](README.md) · Architecture: [architect.md
 | 1 | Accounts & roles | ✅ | One phone login for kabadiwala / household / company; OTP simulated |
 | 2 | KYC | 🟡 simulated | Aadhaar last 4, PAN, bank last 4 captured; verification not wired to UIDAI/NSDL |
 | 3 | Doorstep pickups | ✅ | Book with date + slot, accept, reschedule, cancel, PIN-verified completion → lot |
-| 4 | Location & distance | ✅ | Live GPS → saved address → default; all open requests nearest first, any city |
+| 4 | Location & distance | ✅ | Live GPS → saved address → default; all open requests nearest first, any city; accepted jobs ordered into a day's route |
 | 5 | Camera & AI vision | ✅ | 1–4 photos, consensus, HF zero-shot → local CLIP → on-device fallback; hazards + safety |
 | 6 | Valuation | ✅ | Fair price from live buyer prices × quality × volume, vs middleman price |
 | 7 | Marketplace & smart matching | ✅ | Buyers ranked by net take-home after pickup, handling and fees |
@@ -106,4 +106,4 @@ Fixed during this round of testing:
 3. Real payment rail (UPI collect / payouts) behind the existing settlement flow.
 4. Replace simulated price series with a scraped/official daily feed; retrain the forecaster.
 5. Postgres + Alembic migrations; deploy backend and portals with https (enables live camera scanning everywhere).
-6. Route planning for a kabadiwala's accepted pickups (the `routeOptimizer` service exists client-side).
+6. Done in the app: Home "do this next" and My jobs order accepted pickups into a route (nearest neighbour, fuel, time, Maps). Hold / sell / collect-more advice uses the week's price move. A licensed price history would make that advice sharper.

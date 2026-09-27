@@ -3,7 +3,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Linking, StyleSheet, TextInput, View } from "react-native";
 import { Text } from "../ui/Text";
 import Animated from "react-native-reanimated";
@@ -11,10 +11,12 @@ import Animated from "react-native-reanimated";
 import { PickupCard } from "../components/PickupCard";
 import { ScheduleChips, SLOT_KEY } from "../components/ScheduleChips";
 import { colors, radius, space, type } from "../constants/theme";
+import { mapsDirectionsUrl, nextAfter, pickupToJob, planRoute } from "../features/day/dayPlan";
+import { useCollectorLocation } from "../hooks/useCollectorLocation";
 import { useTranslation } from "../hooks/useTranslation";
-import { goBack, goTab } from "../navigation/ref";
+import { go, goBack, goTab } from "../navigation/ref";
 import type { RootStackParamList } from "../navigation/types";
-import { acceptPickup, ApiError, cancelPickup, completePickup, getPickup, reschedulePickup, type Pickup, type PickupSlot } from "../services/api/client";
+import { acceptPickup, ApiError, cancelPickup, completePickup, getPickup, listAcceptedPickups, reschedulePickup, type Pickup, type PickupSlot } from "../services/api/client";
 import { useAppStore } from "../store/appStore";
 import { useAccount, useAuthStore } from "../store/authStore";
 import { dialog, ErrorState, toast } from "../ui/feedback";
@@ -41,12 +43,30 @@ export function PickupDetailScreen({ route }: Props) {
   const [newDate, setNewDate] = useState(localDateISO(0));
   const [newSlot, setNewSlot] = useState<PickupSlot>("anytime");
 
+  const { lat, lon } = useCollectorLocation();
   const query = useQuery({
     queryKey: ["pickup", pickupId, viewerId],
     queryFn: () => getPickup(pickupId, viewerId),
     refetchInterval: 15_000,
   });
+  const mine = useQuery({
+    queryKey: ["pickups-mine", collector?.id],
+    queryFn: () => listAcceptedPickups(collector!.id),
+    enabled: !!collector && role === "kabadiwala",
+  });
   const p = query.data;
+  const doorUrl = p?.latitude != null && p.longitude != null
+    ? mapsDirectionsUrl({ latitude: lat, longitude: lon }, [{ latitude: p.latitude, longitude: p.longitude }])
+    : "";
+  const following = useMemo(() => {
+    const jobs = (mine.data ?? []).flatMap((item) => {
+      if (item.status !== "ACCEPTED") return [];
+      const job = pickupToJob(item);
+      return job ? [job] : [];
+    });
+    const planned = planRoute({ latitude: lat, longitude: lon }, jobs);
+    return planned ? nextAfter(planned, pickupId) : null;
+  }, [mine.data, lat, lon, pickupId]);
 
   const isRequester = !!p && p.requester_id === viewerId;
   const isMyJob = !!p && !!collector && p.collector_id === collector.id;
@@ -77,8 +97,25 @@ export function PickupDetailScreen({ route }: Props) {
     }
   };
 
+  const openDoor = (pickup: Pick<Pickup, "latitude" | "longitude">) => {
+    if (pickup.latitude == null || pickup.longitude == null) return;
+    void Linking.openURL(mapsDirectionsUrl({ latitude: lat, longitude: lon }, [{ latitude: pickup.latitude, longitude: pickup.longitude }]));
+  };
+
   const accept = () =>
-    run(() => acceptPickup(pickupId, collector!.id), () => toast.success(t("accepted"), t("acceptedMsg")));
+    run(() => acceptPickup(pickupId, collector!.id), (updated) => {
+      if (updated.latitude == null || updated.longitude == null) {
+        toast.success(t("accepted"), t("acceptedMsg"));
+        return;
+      }
+      dialog.show({
+        icon: "navigate",
+        tone: "primary",
+        title: t("accepted"),
+        message: t("acceptedMsg"),
+        actions: [{ label: t("goToDoor"), onPress: () => openDoor(updated) }],
+      });
+    });
 
   const complete = () =>
     run(
@@ -86,18 +123,22 @@ export function PickupDetailScreen({ route }: Props) {
       (done) => {
         void refreshLots(collector!.id);
         void refreshAuth();
+        const sell = () => goTab("Market", { lotId: done.lot_id ?? undefined, material: done.material, weightKg: done.actual_weight_kg ?? kg });
+        const next = following;
         dialog.show({
-          icon: "checkmark-circle",
+          icon: next ? "navigate" : "checkmark-circle",
           tone: "primary",
           title: t("pickupDone"),
-          message: t("pickupDoneMsg"),
-          actions: [
-            {
-              label: t("sellNow"),
-              onPress: () => goTab("Market", { lotId: done.lot_id ?? undefined, material: done.material, weightKg: done.actual_weight_kg ?? kg }),
-            },
-            { label: t("close"), variant: "ghost" },
-          ],
+          message: next ? t("nextStopMsg", { name: next.label, km: next.legKm }) : t("pickupDoneMsg"),
+          actions: next
+            ? [
+                { label: t("nextStop"), onPress: () => go("PickupDetail", { pickupId: next.id }) },
+                { label: t("sellNow"), variant: "ghost", onPress: sell },
+              ]
+            : [
+                { label: t("sellNow"), onPress: sell },
+                { label: t("close"), variant: "ghost" },
+              ],
         });
       }
     );
@@ -172,9 +213,10 @@ export function PickupDetailScreen({ route }: Props) {
               </Card>
             </Animated.View>
           ) : null}
-          {isMyJob && p.requester_phone && p.status === "ACCEPTED" ? (
-            <Animated.View entering={enter(2)}>
-              <Button label={`${t("call")} ${p.requester_name}`} icon="call" variant="secondary" onPress={() => call(p.requester_phone)} />
+          {isMyJob && p.status === "ACCEPTED" && (doorUrl || p.requester_phone) ? (
+            <Animated.View entering={enter(2)} style={{ marginTop: space.md, gap: space.sm }}>
+              {doorUrl ? <Button label={t("goToDoor")} icon="navigate" onPress={() => openDoor(p)} /> : null}
+              {p.requester_phone ? <Button label={`${t("call")} ${p.requester_name}`} icon="call" variant="secondary" onPress={() => call(p.requester_phone)} /> : null}
             </Animated.View>
           ) : null}
 

@@ -19,17 +19,20 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Defs, Ellipse, Path, RadialGradient, Rect, Stop } from "react-native-svg";
 
+import { TodayPlanCard } from "../components/TodayPlanCard";
 import { cinematic as C, motion, space } from "../constants/theme";
 import { useBazarPrices } from "../data/prices";
+import { buildDayPlan, pickupToJob } from "../features/day/dayPlan";
 import { useNotifications } from "../features/notifications/useNotifications";
 import { useScreenNarration } from "../hooks/useScreenNarration";
 import { useCollectorLocation } from "../hooks/useCollectorLocation";
 import { useTranslation } from "../hooks/useTranslation";
 import type { TranslationKey } from "../i18n";
 import { go, goTab } from "../navigation/ref";
-import { listNearbyPickups } from "../services/api/client";
+import { listAcceptedPickups, listNearbyPickups } from "../services/api/client";
 import { useAppStore } from "../store/appStore";
 import { useAuthStore } from "../store/authStore";
+import type { DayPlan } from "../features/day/dayPlan";
 import { materialName, type Lot } from "../types/domain";
 import { LineChart } from "../ui/controls";
 import { CinematicBackdrop, BACKDROP_BG } from "../ui/backdrop";
@@ -75,6 +78,30 @@ export function HomeScreen() {
     refetchInterval: 30_000,
   });
   const pickupCount = nearby.data?.length ?? 0;
+  const mine = useQuery({
+    queryKey: ["pickups-mine", collectorId],
+    queryFn: () => listAcceptedPickups(collectorId!),
+    enabled: !!collectorId,
+  });
+  const livePrices = useBazarPrices();
+  const plan = useMemo(() => {
+    const accepted = (mine.data ?? []).flatMap((p) => {
+      if (p.status !== "ACCEPTED") return [];
+      const job = pickupToJob(p);
+      return job ? [job] : [];
+    });
+    const open = (nearby.data ?? []).flatMap((p) => {
+      const job = pickupToJob(p);
+      return job ? [job] : [];
+    });
+    return buildDayPlan({
+      start: { latitude: lat, longitude: lon },
+      accepted,
+      open,
+      lots,
+      prices: livePrices.map((p) => ({ material: p.material, currentPrice: p.currentPrice, changePercent: p.changePercent })),
+    });
+  }, [mine.data, nearby.data, lots, livePrices, lat, lon]);
 
   // Weekly kg for the last 8 weeks (oldest → newest) and the 30-day change.
   const { weekly, change, unsoldKg, unsoldLots } = useMemo(() => {
@@ -93,12 +120,11 @@ export function HomeScreen() {
     return { weekly: weeks, change: previous > 0 ? Math.round(((recent - previous) / previous) * 100) : null, unsoldKg: Math.round(unsold * 10) / 10, unsoldLots: unsoldCount };
   }, [lots]);
 
-  const livePrices = useBazarPrices();
   const trending = useMemo(() => [...livePrices].sort((a, b) => b.changePercent - a.changePercent).slice(0, 6), [livePrices]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refreshAuth(), syncNow(collector?.id), nearby.refetch()]);
+    await Promise.all([refreshAuth(), syncNow(collector?.id), nearby.refetch(), mine.refetch()]);
     if (collector) await refreshLots(collector.id);
     setRefreshing(false);
   };
@@ -130,6 +156,7 @@ export function HomeScreen() {
         trending={trending}
         pickupCount={pickupCount}
         lots={lots}
+        plan={plan}
       />
     </Screen>
   );
@@ -153,9 +180,10 @@ type Body = {
   trending: ReturnType<typeof useBazarPrices>;
   pickupCount: number;
   lots: Lot[];
+  plan: DayPlan;
 };
 
-function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unsoldKg, totalEarnings, totalLots, change, weekly, trending, pickupCount, lots }: Body) {
+function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unsoldKg, totalEarnings, totalLots, change, weekly, trending, pickupCount, lots, plan }: Body) {
   const [week, setWeek] = useState<number | null>(null);
   const scrollY = useScreenScroll();
   const reduce = useReducedMotion();
@@ -192,6 +220,10 @@ function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unso
         <View pointerEvents="none" style={styles.headerLight}><Glow color={C.emerald} opacity={0.07} /></View>
         <InkTitle style={styles.title}>{t("hiName", { name: firstName })}</InkTitle>
         <Text style={styles.subtitle}>{t("homeSubtitle")}</Text>
+      </Animated.View>
+
+      <Animated.View entering={enter(0)}>
+        <TodayPlanCard plan={plan} />
       </Animated.View>
 
       {/* Hero: total collected */}
@@ -246,7 +278,7 @@ function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unso
         <QuickTile index={1} icon="camera-outline" label={t("qaSell")} accent={C.emerald} onPress={() => goTab("Collect")} />
         <QuickTile index={2} icon="people-outline" label={t("qaBuyers")} accent={C.lavender} onPress={() => go("Demands")} />
         <QuickTile index={3} icon="pricetags-outline" label={t("qaRates")} accent={C.teal} onPress={() => go("BazarBhav")} />
-        <QuickTile index={4} icon="bicycle-outline" label={t("qaPickups")} accent={C.amber} onPress={() => go("Pickups")} />
+        <QuickTile index={4} icon="bicycle-outline" label={t("qaPickups")} accent={C.amber} onPress={() => go("Pickups", plan.route ? { tab: "mine" } : undefined)} />
       </View>
 
       {/* Trending materials */}
@@ -279,7 +311,7 @@ function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unso
       </Animated.View>
 
       {/* Pickups waiting (attention → amber) */}
-      {pickupCount > 0 ? (
+      {pickupCount > 0 && !plan.nearby ? (
         <Animated.View entering={enter(6)}>
           <GlowPress onPress={() => go("Pickups")} glow={C.amber} glowBase={0.03} glowSize={1.1} style={[styles.bannerWrap, styles.depth]} label={t("pickupsWaiting", { n: pickupCount })}>
             <LinearGradient colors={[P("rgba(229,184,106,0.07)"), P("rgba(248,250,247,0.03)")]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.banner}>
@@ -301,7 +333,17 @@ function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unso
         <Animated.View entering={enter(7)} style={[styles.lotGroup, styles.depth]}>
           <EdgeLight strength={0.06} />
           {lots.slice(0, 3).map((lot, i, all) => (
-            <LotLine key={lot.id} lot={lot} last={i === all.length - 1} t={t} language={language} onPress={() => go("Handover", { lotId: lot.id })} />
+            <LotLine
+              key={lot.id}
+              lot={lot}
+              last={i === all.length - 1}
+              t={t}
+              language={language}
+              hint={plan.stock && lot.status !== "PAID" && lot.material === plan.stock.material
+                ? t(plan.stock.action === "HOLD" ? "chipHold" : plan.stock.action === "AGGREGATE" ? "chipAdd" : "chipSell")
+                : undefined}
+              onPress={() => go("Handover", { lotId: lot.id })}
+            />
           ))}
         </Animated.View>
       ) : (
@@ -465,7 +507,7 @@ function SectionTitle({ title, action, onAction }: { title: string; action?: str
 
 const STATUS_TONE: Partial<Record<Lot["status"], string>> = { PAID: C.emerald, SOLD: C.emerald, PICKUP_SCHEDULED: C.teal, AGGREGATED: C.lavender };
 
-function LotLine({ lot, last, onPress, t, language }: { lot: Lot; last: boolean; onPress: () => void; t: Body["t"]; language: Body["language"] }) {
+function LotLine({ lot, last, onPress, t, language, hint }: { lot: Lot; last: boolean; onPress: () => void; t: Body["t"]; language: Body["language"]; hint?: string }) {
   const pending = lot.syncState === "PENDING";
   const tone = pending ? C.amber : STATUS_TONE[lot.status] ?? C.textSoft;
   const p = useSharedValue(0);
@@ -483,7 +525,7 @@ function LotLine({ lot, last, onPress, t, language }: { lot: Lot; last: boolean;
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.lotTitle} numberOfLines={1}>{materialName(lot.material, language)}</Text>
-          <Text style={styles.lotSub} numberOfLines={1}>{lot.weightKg} {t("kg")} · {relativeDate(lot.createdAt, language)}</Text>
+          <Text style={styles.lotSub} numberOfLines={1}>{lot.weightKg} {t("kg")} · {relativeDate(lot.createdAt, language)}{hint ? ` · ${hint}` : ""}</Text>
         </View>
         <View style={{ alignItems: "flex-end", gap: 4 }}>
           <Text style={styles.lotValue}>{lot.expectedNetEarnings ? currency(lot.expectedNetEarnings) : "—"}</Text>

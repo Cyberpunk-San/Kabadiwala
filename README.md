@@ -22,6 +22,7 @@ How it is built: [architect.md](architect.md) · What is real, simulated and tes
 | Sign-up & KYC | Phone + OTP, name, language; KYC (Aadhaar last 4, PAN, bank) before accepting jobs |
 | Home | Total collected (sold + not yet sold), 8-week graph with weekly kg, trending prices, pickup requests waiting |
 | Pickup requests | **Every** open request from homes and companies, **nearest first** from the phone's live GPS (falls back to saved address); distance on each card; accept, navigate, complete with the customer's PIN |
+| Today's plan | Home opens with the next useful move: accepted jobs in the shortest riding order (km, time, fuel, open in Maps), a pickup that sits on that route, or whether to sell, hold, or collect more of what's already in hand |
 | Scan & identify | 1–4 photos per lot, AI material recognition with multi-photo consensus, hazard + safety warnings, weight and quality |
 | Valuation | Fair price for the lot (AI valuation), compared with what a local middleman would pay |
 | Market | Verified buyers ranked by **take-home money** after pickup and fees; works offline with on-device estimates |

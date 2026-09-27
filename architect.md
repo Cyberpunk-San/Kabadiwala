@@ -38,7 +38,6 @@ For what is real vs simulated and how it was tested, see [STATUS.md](STATUS.md).
 ## 2. Roles and journeys
 
 | Role | Client | Core journey |
-|---|---|---|
 | Kabadiwala | Mobile app | Sign up → KYC → accept nearby pickups / scan own scrap → value → pick best buyer → QR handover → paid |
 | Household | Mobile app | Sign up → book pickup (material, kg, date, slot) → share doorstep PIN → track |
 | Company (seller) | Mobile app | Same as household, for bulk pickups |
@@ -172,6 +171,11 @@ src/i18n/                   Hindi, Marathi, English catalogues
 refreshed every 5 min) → **saved profile location** → **configured default city**, and reports which one it used
 (shown above the pickup list). Pickups are requested without a radius so a kabadiwala anywhere sees every open
 request, nearest first; "near you" notifications keep a 25 km radius.
+
+Home leads with **do this next**: accepted jobs ordered into a day's route (nearest neighbour from the current
+fix, with distance, time, fuel and a Maps link), an open pickup that sits beside that route, or one call on
+unsold stock — sell if the week is down or the lot has sat 7 days, hold if the rise beats a small holding cost,
+collect more if the pile is too small to justify the trip to the yard. My jobs uses the same order.
 
 ### 4.4 Offline and weak networks
 - Queries run with `networkMode: "always"`: without signal they fail fast, so screens show cached data, an on-device

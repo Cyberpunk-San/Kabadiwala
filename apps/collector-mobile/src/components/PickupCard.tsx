@@ -22,12 +22,14 @@ export const PICKUP_TONE: Record<PickupStatus, "warn" | "info" | "primary" | "mu
   CANCELLED: "muted",
 };
 
-export function PickupCard({ pickup, index = 0, onPress, footer, showRequester }: {
+export function PickupCard({ pickup, index = 0, onPress, footer, showRequester, kicker }: {
   pickup: Pickup;
   index?: number;
   onPress?: () => void;
   footer?: ReactNode;
   showRequester?: boolean;
+  /** Route position, e.g. "Stop 2 · 1.4 km". */
+  kicker?: string;
 }) {
   const { t, language } = useTranslation();
   const live = pickup.status === "OPEN" || pickup.status === "ACCEPTED";
@@ -58,6 +60,7 @@ export function PickupCard({ pickup, index = 0, onPress, footer, showRequester }
 
         <View style={styles.statusRow}>
           {live ? <PulseDot color={pickup.status === "OPEN" ? colors.accent : colors.info} size={7} /> : null}
+          {kicker ? <Badge label={kicker} tone="primary" icon="navigate" /> : null}
           <Badge label={t(`status${pickup.status}` as "statusOPEN")} tone={PICKUP_TONE[pickup.status]} />
           {pickup.preferred_date ? (
             <View style={styles.when}>

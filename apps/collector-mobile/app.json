@@ -6,9 +6,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "maihukabadiwala",
-    "splash": {
-      "backgroundColor": "#FBF9F1"
-    },
     "android": {
       "package": "com.maihukabadiwala.collector",
       "permissions": [
@@ -35,7 +32,14 @@
       "expo-notifications",
       "expo-asset",
       "expo-speech-recognition",
-      "expo-font"
+      "expo-font",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FBF9F1"
+        }
+      ]
     ]
   }
 }
