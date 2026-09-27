@@ -11,15 +11,24 @@ export type Material =
   | "Iron & steel scrap"
   | "CRT & monitor glass"
   | "Lead acid batteries"
-  | "Compressors & cooling units";
+  | "Compressors & cooling units"
+  // Household scrap — priced from city rate cards
+  | "Newspaper"
+  | "Books & notebooks"
+  | "Cardboard"
+  | "Mixed plastic"
+  | "PET bottles"
+  | "Stainless steel";
 
-export type LotStatus = "DRAFT" | "IDENTIFIED" | "AVAILABLE" | "MATCHED" | "PICKUP_SCHEDULED" | "SOLD" | "PAID";
+export type LotStatus = "DRAFT" | "IDENTIFIED" | "AVAILABLE" | "MATCHED" | "PICKUP_SCHEDULED" | "SOLD" | "PAID" | "AGGREGATED";
+
+export type MaterialCategory = "Metals" | "Electronics" | "Batteries" | "Heavy Scrap" | "Paper" | "Plastic";
 
 export interface MaterialMeta {
   material: Material;
   hindi: string;
   marathi: string;
-  category: "Metals" | "Electronics" | "Batteries" | "Heavy Scrap";
+  category: MaterialCategory;
   icon: string;
   hazard: boolean;
   basePricePerKg: number;
@@ -137,7 +146,14 @@ export const MATERIAL_METADATA: Record<Material, MaterialMeta> = {
     icon: "❄",
     hazard: false,
     basePricePerKg: 165
-  }
+  },
+  // basePricePerKg for household scrap = India median doorstep rate ÷ 0.70 (offline fallback only)
+  "Newspaper": { material: "Newspaper", hindi: "अखबार (रद्दी)", marathi: "वर्तमानपत्र (रद्दी)", category: "Paper", icon: "N", hazard: false, basePricePerKg: 14.3 },
+  "Books & notebooks": { material: "Books & notebooks", hindi: "किताबें और कॉपियाँ", marathi: "पुस्तके आणि वह्या", category: "Paper", icon: "B", hazard: false, basePricePerKg: 14.3 },
+  "Cardboard": { material: "Cardboard", hindi: "गत्ता / कार्टन", marathi: "पुठ्ठा / कार्टन", category: "Paper", icon: "C", hazard: false, basePricePerKg: 12.9 },
+  "Mixed plastic": { material: "Mixed plastic", hindi: "प्लास्टिक (बाल्टी, डिब्बे)", marathi: "प्लास्टिक (बादली, डबे)", category: "Plastic", icon: "P", hazard: false, basePricePerKg: 11.4 },
+  "PET bottles": { material: "PET bottles", hindi: "प्लास्टिक बोतलें", marathi: "प्लास्टिक बाटल्या", category: "Plastic", icon: "P", hazard: false, basePricePerKg: 21.4 },
+  "Stainless steel": { material: "Stainless steel", hindi: "स्टेनलेस स्टील (बर्तन)", marathi: "स्टेनलेस स्टील (भांडी)", category: "Metals", icon: "S", hazard: false, basePricePerKg: 57.1 }
 };
 
 export interface MaterialPrediction {
@@ -147,12 +163,15 @@ export interface MaterialPrediction {
   hazard: boolean;
   confidence: number;
   safetyMessage?: string;
+  alternatives?: Array<{ material: Material; confidence: number }>;
+  /** Where the answer came from: cloud AI, server AI, or a fallback. */
+  source?: "huggingface" | "local" | "fallback";
 }
 
 export interface BazarPriceItem {
   id: string;
   material: Material;
-  category: "Metals" | "Electronics" | "Batteries" | "Heavy Scrap";
+  category: MaterialCategory;
   currentPrice: number;
   previousPrice: number;
   changePercent: number;
@@ -162,6 +181,25 @@ export interface BazarPriceItem {
   advice: string;
   adviceHi: string;
   adviceMr: string;
+  /** Present when the price came from the server for the user's location. */
+  live?: LivePriceInfo;
+}
+
+export interface PremiumReason {
+  kind: "industry" | "buyers" | "demand";
+  label: string;
+  detail: string;
+  distance_km: number | null;
+  pct: number;
+}
+
+export interface LivePriceInfo {
+  marketPrice: number;        // dealer-level value before the local premium
+  premiumPct: number;         // nearby industry + buyers + open demand, 0–15%
+  reasons: PremiumReason[];
+  doorstepPrice: number;      // what a household is paid
+  basis: "live" | "rate_card" | "reference";
+  source: string;             // e.g. "Copper (COMEX) (live)" or "Pune rate card"
 }
 
 export interface HandoverPayload {
@@ -200,24 +238,48 @@ export interface LotEvent {
 }
 
 export interface Lot {
+  /** Same id locally and on the server (offline lots are created on the server with this id). */
   id: string;
   material: Material;
   quality: "low" | "medium" | "high";
   weightKg: number;
   status: LotStatus;
+  /** Cover photo (first of imageUris). */
   imageUri?: string;
+  /** Every photo taken of this lot (before-handover evidence). */
+  imageUris?: string[];
   createdAt: string;
   expectedNetEarnings?: number;
   syncState: "PENDING" | "SYNCED";
+  recyclerId?: string;
+  recyclerName?: string;
 }
 
 export interface CreateLotInput {
+  id?: string;
   material: Material;
   quality: "low" | "medium" | "high";
   weightKg: number;
   imageUri?: string;
+  imageUris?: string[];
   expectedNetEarnings?: number;
   status?: LotStatus;
+  syncState?: Lot["syncState"];
+  createdAt?: string;
+  recyclerId?: string;
+  recyclerName?: string;
+}
+
+export const ALL_MATERIALS = Object.keys(MATERIAL_METADATA) as Material[];
+
+export function isMaterial(value: unknown): value is Material {
+  return typeof value === "string" && value in MATERIAL_METADATA;
+}
+
+export function materialName(material: Material, language: Language): string {
+  const meta = MATERIAL_METADATA[material];
+  if (!meta) return material;
+  return language === "hi" ? meta.hindi : language === "mr" ? meta.marathi : material;
 }
 
 export type UserRole = "kabadiwala" | "user" | "admin";

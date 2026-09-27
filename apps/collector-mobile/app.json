@@ -34,7 +34,8 @@
       "expo-sqlite",
       "expo-notifications",
       "expo-asset",
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      "expo-font"
     ]
   }
 }

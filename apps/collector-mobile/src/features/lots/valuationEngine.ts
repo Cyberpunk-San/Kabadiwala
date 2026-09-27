@@ -29,19 +29,20 @@ const DEMAND_WEIGHT: Record<"HIGH" | "MODERATE" | "LOW", number> = {
   LOW:      0.86,
 };
 
-// Day-of-week factor (0=Sun … 6=Sat)
-const DOW_FACTOR = [0.95, 1.03, 1.02, 1.00, 1.00, 1.03, 0.97];
+// Bigger lots fetch a little more per kg (same curve as the server).
+const VOLUME_CURVE: Array<[number, number]> = [[1, 0.90], [10, 0.96], [50, 1.00], [200, 1.05], [1000, 1.10]];
+
+function volumeMultiplier(weightKg: number): number {
+  let [prevW, prevM] = VOLUME_CURVE[0]!;
+  if (weightKg <= prevW) return prevM;
+  for (const [w, m] of VOLUME_CURVE.slice(1)) {
+    if (weightKg <= w) return prevM + ((weightKg - prevW) / (w - prevW)) * (m - prevM);
+    [prevW, prevM] = [w, m];
+  }
+  return VOLUME_CURVE[VOLUME_CURVE.length - 1]![1];
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Coefficient of variation of a price history — proxy for scarcity volatility */
-function priceCV(history7Days: { price: number }[]): number {
-  if (history7Days.length < 2) return 0;
-  const prices = history7Days.map((d) => d.price);
-  const mean = prices.reduce((s, p) => s + p, 0) / prices.length;
-  const variance = prices.reduce((s, p) => s + (p - mean) ** 2, 0) / prices.length;
-  return Math.sqrt(variance) / (mean || 1);
-}
 
 /** Ordinary least-squares slope of price over 7 days (per-day change) */
 function priceSlope(history7Days: { price: number }[]): number {
@@ -69,10 +70,7 @@ export interface ValuationResult {
   method: "LOCAL_REGRESSION";
   factors: {
     qualityMultiplier: number;
-    demandWeight: number;
-    scarcityFactor: number;
-    dowFactor: number;
-    trendMomentum: number;
+    volumeMultiplier: number;
   };
   reasoning: string;
   reasoningHi: string;
@@ -95,26 +93,13 @@ export function valuateLot(
   const demand = priceItem?.demand ?? "MODERATE";
   const history = priceItem?.history7Days ?? [];
 
-  // Factor computation
+  // Same formula as the server (services/ml_service.py): today's local price × quality × volume.
+  // The local price already includes the live market and the nearby-industry premium.
   const qualityMult = QUALITY_MULTIPLIER[quality];
-  const demandWt    = DEMAND_WEIGHT[demand];
-
-  // Scarcity: high CV → price is volatile → premium of up to 8%
-  const cv = priceCV(history);
-  const scarcityFactor = 1 + Math.min(0.08, cv * 0.5);
-
-  // Day-of-week
-  const dow = new Date().getDay();
-  const dowFactor = DOW_FACTOR[dow] ?? 1.0;
-
-  // Trend momentum: slope per day normalized to ±5% range
+  const volumeMult = volumeMultiplier(weightKg);
+  const demandWt = DEMAND_WEIGHT[demand];
   const slope = priceSlope(history);
-  const trendMomentum = 1 + Math.max(-0.05, Math.min(0.05, slope / (basePrice || 1)));
-
-  // Final fair price (polynomial composition)
-  const fairPricePerKg = Math.round(
-    basePrice * qualityMult * demandWt * scarcityFactor * dowFactor * trendMomentum
-  );
+  const fairPricePerKg = Math.round(basePrice * qualityMult * volumeMult);
 
   const fairPayout = Math.round(fairPricePerKg * weightKg);
 
@@ -130,7 +115,7 @@ export function valuateLot(
   const qualityLabel = { low: "low", medium: "standard", high: "premium" }[quality];
   const reasoning =
     `Fair price for ${qualityLabel}-quality ${material} today: ₹${fairPricePerKg}/kg. ` +
-    `Demand is ${demand.toLowerCase()} (+${((demandWt - 1) * 100).toFixed(0)}% premium). ` +
+    `Demand is ${demand.toLowerCase()} (local premium ${((demandWt - 1) * 100).toFixed(0)}%+). ` +
     `Price ${slope > 0 ? "trending up" : slope < 0 ? "trending down" : "stable"} this week.`;
 
   const reasoningHi =
@@ -154,10 +139,7 @@ export function valuateLot(
     method: "LOCAL_REGRESSION",
     factors: {
       qualityMultiplier: qualityMult,
-      demandWeight: demandWt,
-      scarcityFactor: Math.round(scarcityFactor * 100) / 100,
-      dowFactor,
-      trendMomentum: Math.round(trendMomentum * 1000) / 1000,
+      volumeMultiplier: Math.round(volumeMult * 1000) / 1000,
     },
     reasoning,
     reasoningHi,

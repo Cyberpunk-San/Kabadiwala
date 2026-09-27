@@ -16,6 +16,8 @@ router = APIRouter(prefix="/api/v1/ml", tags=["AI / ML"])
 @router.post("/valuation", response_model=ValuationResponse)
 def get_valuation(req: ValuationRequest, db: Session = Depends(get_db)):
     """Fair-price estimate for a lot — no external API, deterministic math."""
+    if req.latitude is not None and req.longitude is not None:
+        return ml_service.valuate(db, req.material, req.quality, req.weight_kg, req.latitude, req.longitude)
     return ml_service.valuate(db, req.material, req.quality, req.weight_kg)
 
 

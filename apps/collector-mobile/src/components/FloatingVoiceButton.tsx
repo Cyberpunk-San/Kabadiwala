@@ -1,6 +1,8 @@
 // src/components/FloatingVoiceButton.tsx
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "../ui/Text";
 import { useNavigation } from "@react-navigation/native";
 
 import { colors } from "../constants/theme";
@@ -11,6 +13,7 @@ import { VoiceCommandBar } from "./VoiceCommandBar";
 import { matchMaterial } from "../services/voice/parser";
 import { speak } from "../services/voice/speech";
 
+import { P } from "../constants/palette";
 /**
  * Global floating mic button (bottom-right corner).
  * Opens the voice command bar; forwards intents to the app.
@@ -53,7 +56,7 @@ export function FloatingVoiceButton() {
         accessibilityLabel="Voice command"
         activeOpacity={0.9}
       >
-        <Text style={styles.fabIcon}>🎤</Text>
+        <Ionicons name="mic-outline" size={22} color={P("#A8E8C9")} />
       </TouchableOpacity>
 
       <VoiceCommandBar
@@ -77,11 +80,13 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: colors.orange,
+    backgroundColor: P("#020705"),
+    borderWidth: 1,
+    borderColor: P("rgba(168,232,201,0.22)"),
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.22,
+    shadowColor: P("#000"),
+    shadowOpacity: 0.45,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,

@@ -10,6 +10,9 @@ from sqlalchemy.orm import Session
 
 from db import (
     CollectorRow,
+    CompanyRow,
+    HouseholdRow,
+    PickupRequestRow,
     DemandRow,
     HandoverRow,
     LotRow,
@@ -87,6 +90,9 @@ def overview(db: Session) -> AdminOverviewResponse:
         totals={
             "collectors": collectors,
             "recyclers": recyclers,
+            "households": db.query(HouseholdRow).count(),
+            "companies": db.query(CompanyRow).count(),
+            "pickups_completed": db.query(PickupRequestRow).filter(PickupRequestRow.status == "COMPLETED").count(),
             "lots": lots,
             "weight_kg": round(total_kg, 1),
             "payout_inr": round(total_inr, 1),
@@ -100,6 +106,8 @@ def overview(db: Session) -> AdminOverviewResponse:
             "unverified_kyc": unverified_kyc,
             "open_demands": open_demands,
             "pending_payouts": pending_payouts,
+            "companies_awaiting_approval": db.query(CompanyRow).filter(CompanyRow.approved == 0).count(),
+            "open_pickups": db.query(PickupRequestRow).filter(PickupRequestRow.status == "OPEN").count(),
         },
         top_materials=top_materials,
         top_recyclers=top_recyclers,

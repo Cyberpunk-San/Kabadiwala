@@ -1,143 +1,142 @@
+// src/database/sqlite.ts — offline lot storage.
+//
+// Native: expo-sqlite. Web: AsyncStorage (localStorage), because expo-sqlite
+// is native-only. Both expose the same async API.
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+
 import type { CreateLotInput, Lot, LotEvent } from "../types/domain";
 
-// ─── Web-safe in-memory store (IndexedDB-like) ───────────────────────────────
-// expo-sqlite is native-only. On web we use a plain in-memory Map seeded with
-// demo data so every screen works during a browser/Expo-web demo.
+export const makeId = (prefix: string) =>
+  `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-const makeId = (prefix: string) =>
-  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+function buildLot(input: CreateLotInput): Lot {
+  return {
+    id: input.id ?? makeId("lot_off"),
+    material: input.material,
+    quality: input.quality,
+    weightKg: input.weightKg,
+    status: input.status ?? "AVAILABLE",
+    imageUri: input.imageUri ?? input.imageUris?.[0],
+    imageUris: input.imageUris ?? (input.imageUri ? [input.imageUri] : undefined),
+    createdAt: input.createdAt ?? new Date().toISOString(),
+    expectedNetEarnings: input.expectedNetEarnings,
+    syncState: input.syncState ?? "PENDING",
+    recyclerId: input.recyclerId,
+    recyclerName: input.recyclerName,
+  };
+}
 
-// ---------- WEB FALLBACK ----------
-class WebMemoryDB {
-  private lots: Map<string, Lot> = new Map();
-  private events: LotEvent[] = [];
+const byNewest = (a: Lot, b: Lot) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 
-  constructor() {
-    // Seed 3 realistic demo lots
-    const seed: Lot[] = [
-      {
-        id: "lot_demo_copper_01",
-        material: "Copper",
-        quality: "medium",
-        weightKg: 35,
-        status: "AVAILABLE",
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        expectedNetEarnings: 18450,
-        syncState: "SYNCED"
-      },
-      {
-        id: "lot_demo_server_02",
-        material: "PCB / Circuit boards",
-        quality: "high",
-        weightKg: 22.5,
-        status: "PICKUP_SCHEDULED",
-        createdAt: new Date(Date.now() - 43200000).toISOString(),
-        expectedNetEarnings: 11475,
-        syncState: "SYNCED"
-      },
-      {
-        id: "lot_demo_battery_03",
-        material: "Lithium-ion Battery",
-        quality: "high",
-        weightKg: 18,
-        status: "IDENTIFIED",
-        createdAt: new Date().toISOString(),
-        expectedNetEarnings: 5040,
-        syncState: "PENDING"
-      }
-    ];
-    seed.forEach((l) => this.lots.set(l.id, l));
-  }
+// ─── Web store (AsyncStorage-backed so data survives a page reload) ─────────
+const WEB_KEY = "@mhk_lots_v2";
+
+class WebStore {
+  private lots = new Map<string, Lot>();
+  private loaded = false;
 
   async init() {
-    // No-op for web
+    if (this.loaded) return;
+    this.loaded = true;
+    try {
+      const raw = await AsyncStorage.getItem(WEB_KEY);
+      const parsed: Lot[] = raw ? JSON.parse(raw) : [];
+      parsed.forEach((l) => this.lots.set(l.id, l));
+    } catch (err) {
+      console.warn("[db] web load failed:", err);
+    }
   }
 
-  async create(input: CreateLotInput): Promise<Lot> {
-    const lot: Lot = {
-      id: makeId("lot"),
-      material: input.material,
-      quality: input.quality,
-      weightKg: input.weightKg,
-      status: input.status ?? "AVAILABLE",
-      imageUri: input.imageUri,
-      createdAt: new Date().toISOString(),
-      expectedNetEarnings: input.expectedNetEarnings,
-      syncState: "PENDING"
-    };
-    this.lots.set(lot.id, lot);
-    return lot;
+  private async save() {
+    try {
+      await AsyncStorage.setItem(WEB_KEY, JSON.stringify([...this.lots.values()]));
+    } catch (err) {
+      console.warn("[db] web save failed:", err);
+    }
   }
 
-  async list(): Promise<Lot[]> {
-    return [...this.lots.values()].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+  async upsert(lots: Lot[]) {
+    lots.forEach((l) => {
+      const prev = this.lots.get(l.id);
+      this.lots.set(l.id, { ...prev, ...l, imageUri: prev?.imageUri ?? l.imageUri, imageUris: prev?.imageUris ?? l.imageUris });
+    });
+    await this.save();
   }
 
-  async listPending(): Promise<{ id: string }[]> {
-    return [...this.lots.values()]
-      .filter((l) => l.syncState === "PENDING")
-      .map((l) => ({ id: l.id }));
+  async list() {
+    return [...this.lots.values()].sort(byNewest);
   }
 
-  async markSynced(lotId: string) {
-    const lot = this.lots.get(lotId);
-    if (lot) this.lots.set(lotId, { ...lot, syncState: "SYNCED" });
+  async patch(id: string, patch: Partial<Lot>) {
+    const lot = this.lots.get(id);
+    if (!lot) return;
+    this.lots.set(id, { ...lot, ...patch });
+    await this.save();
   }
 
-  async updateStatus(lotId: string, status: Lot["status"]) {
-    const lot = this.lots.get(lotId);
-    if (lot) this.lots.set(lotId, { ...lot, status });
+  async get(id: string) {
+    return this.lots.get(id);
   }
 
-  async getById(lotId: string): Promise<Lot | undefined> {
-    return this.lots.get(lotId);
-  }
-
-  async appendEvent(lotId: string, type: string, payload: Record<string, unknown> = {}) {
-    const event: LotEvent = {
-      id: makeId("event"),
-      lotId,
-      type,
-      createdAt: new Date().toISOString(),
-      payload
-    };
-    this.events.push(event);
-    return event;
+  async clear() {
+    this.lots.clear();
+    await this.save();
   }
 }
 
-// ---------- NATIVE SQLITE (lazy-loaded only on native) ----------
-let _nativeSQLite: typeof import("expo-sqlite") | null = null;
-const getNativeSQLite = async () => {
-  if (!_nativeSQLite) {
-    _nativeSQLite = await import("expo-sqlite");
-  }
-  return _nativeSQLite;
-};
+// ─── Native SQLite ───────────────────────────────────────────────────────────
+type SQLiteDB = import("expo-sqlite").SQLiteDatabase;
+let _db: SQLiteDB | null = null;
 
-let _db: import("expo-sqlite").SQLiteDatabase | null = null;
-const nativeDB = async () => {
+async function nativeDB(): Promise<SQLiteDB> {
   if (!_db) {
-    const SQLite = await getNativeSQLite();
+    const SQLite = await import("expo-sqlite");
     _db = await SQLite.openDatabaseAsync("mai-hu-kabadiwala.db");
   }
   return _db;
+}
+
+type LotRowDb = {
+  id: string; material: Lot["material"]; quality: Lot["quality"]; weight_kg: number;
+  status: Lot["status"]; image_uri: string | null; image_uris: string | null; created_at: string;
+  expected_net_earnings: number | null; sync_state: Lot["syncState"];
+  recycler_id: string | null; recycler_name: string | null;
 };
 
-// ---------- SINGLETON ----------
-const webDB = new WebMemoryDB();
+function parseUris(raw: string | null): string[] | undefined {
+  if (!raw) return undefined;
+  try {
+    const v: unknown = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const fromRow = (row: LotRowDb): Lot => ({
+  id: row.id,
+  material: row.material,
+  quality: row.quality,
+  weightKg: row.weight_kg,
+  status: row.status,
+  imageUri: row.image_uri ?? undefined,
+  imageUris: parseUris(row.image_uris) ?? (row.image_uri ? [row.image_uri] : undefined),
+  createdAt: row.created_at,
+  expectedNetEarnings: row.expected_net_earnings ?? undefined,
+  syncState: row.sync_state,
+  recyclerId: row.recycler_id ?? undefined,
+  recyclerName: row.recycler_name ?? undefined,
+});
+
+const web = new WebStore();
 const isWeb = Platform.OS === "web";
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export async function initialiseDatabase() {
-  if (isWeb) {
-    await webDB.init();
-    return;
-  }
+  if (isWeb) return web.init();
+
   const db = await nativeDB();
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
@@ -161,50 +160,54 @@ export async function initialiseDatabase() {
     );
     CREATE INDEX IF NOT EXISTS idx_lot_events_lot_id ON lot_events(lot_id);
   `);
+
+  // Migration for installs created before recycler columns existed.
+  const cols = await db.getAllAsync<{ name: string }>("PRAGMA table_info(lots)");
+  const names = new Set(cols.map((c) => c.name));
+  if (!names.has("recycler_id")) await db.execAsync("ALTER TABLE lots ADD COLUMN recycler_id TEXT");
+  if (!names.has("recycler_name")) await db.execAsync("ALTER TABLE lots ADD COLUMN recycler_name TEXT");
+  if (!names.has("image_uris")) await db.execAsync("ALTER TABLE lots ADD COLUMN image_uris TEXT");
 }
 
 export async function createOfflineLot(input: CreateLotInput): Promise<Lot> {
-  if (isWeb) return webDB.create(input);
-
-  const db = await nativeDB();
-  const lot: Lot = {
-    id: makeId("lot"),
-    material: input.material,
-    quality: input.quality,
-    weightKg: input.weightKg,
-    status: input.status ?? "AVAILABLE",
-    imageUri: input.imageUri,
-    createdAt: new Date().toISOString(),
-    expectedNetEarnings: input.expectedNetEarnings,
-    syncState: "PENDING"
-  };
-  await db.withTransactionAsync(async () => {
-    await db.runAsync(
-      `INSERT INTO lots (id, material, quality, weight_kg, status, image_uri, created_at, expected_net_earnings, sync_state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      lot.id, lot.material, lot.quality, lot.weightKg, lot.status,
-      lot.imageUri ?? null, lot.createdAt, lot.expectedNetEarnings ?? null, lot.syncState
-    );
-    await appendLotEvent(lot.id, "LOT_CREATED", { material: lot.material, weightKg: lot.weightKg });
-  });
+  const lot = buildLot(input);
+  await upsertLots([lot]);
+  await appendLotEvent(lot.id, "LOT_CREATED", { material: lot.material, weightKg: lot.weightKg });
   return lot;
 }
 
-export async function appendLotEvent(
-  lotId: string,
-  type: string,
-  payload: Record<string, unknown> = {}
-) {
-  if (isWeb) return webDB.appendEvent(lotId, type, payload);
+/** Insert or update lots (used for new lots and for merging server lots). */
+export async function upsertLots(lots: Lot[]) {
+  if (!lots.length) return;
+  if (isWeb) return web.upsert(lots);
 
   const db = await nativeDB();
-  const event: LotEvent = {
-    id: makeId("event"),
-    lotId,
-    type,
-    createdAt: new Date().toISOString(),
-    payload
-  };
+  await db.withTransactionAsync(async () => {
+    for (const l of lots) {
+      await db.runAsync(
+        `INSERT INTO lots (id, material, quality, weight_kg, status, image_uri, image_uris, created_at, expected_net_earnings, sync_state, recycler_id, recycler_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           status = excluded.status,
+           weight_kg = excluded.weight_kg,
+           expected_net_earnings = COALESCE(excluded.expected_net_earnings, lots.expected_net_earnings),
+           sync_state = excluded.sync_state,
+           image_uri = COALESCE(lots.image_uri, excluded.image_uri),
+           image_uris = COALESCE(lots.image_uris, excluded.image_uris),
+           recycler_id = COALESCE(excluded.recycler_id, lots.recycler_id),
+           recycler_name = COALESCE(excluded.recycler_name, lots.recycler_name)`,
+        l.id, l.material, l.quality, l.weightKg, l.status, l.imageUri ?? null,
+        l.imageUris?.length ? JSON.stringify(l.imageUris) : null, l.createdAt,
+        l.expectedNetEarnings ?? null, l.syncState, l.recyclerId ?? null, l.recyclerName ?? null
+      );
+    }
+  });
+}
+
+export async function appendLotEvent(lotId: string, type: string, payload: Record<string, unknown> = {}) {
+  const event: LotEvent = { id: makeId("event"), lotId, type, createdAt: new Date().toISOString(), payload };
+  if (isWeb) return event; // event log is native-only (audit trail on device)
+  const db = await nativeDB();
   await db.runAsync(
     "INSERT INTO lot_events (id, lot_id, type, created_at, payload_json) VALUES (?, ?, ?, ?, ?)",
     event.id, event.lotId, event.type, event.createdAt, JSON.stringify(event.payload)
@@ -213,58 +216,36 @@ export async function appendLotEvent(
 }
 
 export async function listLots(): Promise<Lot[]> {
-  if (isWeb) return webDB.list();
-
+  if (isWeb) return web.list();
   const db = await nativeDB();
-  const rows = await db.getAllAsync<{
-    id: string; material: Lot["material"]; quality: Lot["quality"];
-    weight_kg: number; status: Lot["status"]; image_uri: string | null;
-    created_at: string; expected_net_earnings: number | null; sync_state: Lot["syncState"];
-  }>("SELECT * FROM lots ORDER BY created_at DESC");
-
-  return rows.map((row) => ({
-    id: row.id, material: row.material, quality: row.quality,
-    weightKg: row.weight_kg, status: row.status,
-    imageUri: row.image_uri ?? undefined, createdAt: row.created_at,
-    expectedNetEarnings: row.expected_net_earnings ?? undefined,
-    syncState: row.sync_state
-  }));
-}
-
-export async function listPendingLots() {
-  if (isWeb) return webDB.listPending();
-  const db = await nativeDB();
-  return db.getAllAsync<{ id: string }>("SELECT id FROM lots WHERE sync_state = 'PENDING'");
+  const rows = await db.getAllAsync<LotRowDb>("SELECT * FROM lots ORDER BY created_at DESC");
+  return rows.map(fromRow);
 }
 
 export async function markLotSynced(lotId: string) {
-  if (isWeb) { await webDB.markSynced(lotId); return; }
+  if (isWeb) return web.patch(lotId, { syncState: "SYNCED" });
   const db = await nativeDB();
   await db.runAsync("UPDATE lots SET sync_state = 'SYNCED' WHERE id = ?", lotId);
   await appendLotEvent(lotId, "SYNC_COMPLETED");
 }
 
 export async function updateLotStatus(lotId: string, status: Lot["status"]) {
-  if (isWeb) { await webDB.updateStatus(lotId, status); return; }
+  if (isWeb) return web.patch(lotId, { status });
   const db = await nativeDB();
   await db.runAsync("UPDATE lots SET status = ? WHERE id = ?", status, lotId);
   await appendLotEvent(lotId, "STATUS_UPDATED", { newStatus: status });
 }
 
 export async function getLotById(lotId: string): Promise<Lot | undefined> {
-  if (isWeb) return webDB.getById(lotId);
+  if (isWeb) return web.get(lotId);
   const db = await nativeDB();
-  const row = await db.getFirstAsync<{
-    id: string; material: Lot["material"]; quality: Lot["quality"];
-    weight_kg: number; status: Lot["status"]; image_uri: string | null;
-    created_at: string; expected_net_earnings: number | null; sync_state: Lot["syncState"];
-  }>("SELECT * FROM lots WHERE id = ?", lotId);
-  if (!row) return undefined;
-  return {
-    id: row.id, material: row.material, quality: row.quality,
-    weightKg: row.weight_kg, status: row.status,
-    imageUri: row.image_uri ?? undefined, createdAt: row.created_at,
-    expectedNetEarnings: row.expected_net_earnings ?? undefined,
-    syncState: row.sync_state
-  };
+  const row = await db.getFirstAsync<LotRowDb>("SELECT * FROM lots WHERE id = ?", lotId);
+  return row ? fromRow(row) : undefined;
+}
+
+/** Wipe local lots (on sign-out, so the next user doesn't see them). */
+export async function clearLots() {
+  if (isWeb) return web.clear();
+  const db = await nativeDB();
+  await db.execAsync("DELETE FROM lots; DELETE FROM lot_events;");
 }

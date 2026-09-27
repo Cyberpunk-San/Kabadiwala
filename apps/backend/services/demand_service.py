@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from db import DemandRow, DemandMatchRow, LotRow
+from db import DemandMatchRow, DemandRow, LotRow, RecyclerRow
 from models.domain import (
     DemandCreate,
     DemandMatchResponse,
@@ -42,6 +42,7 @@ def _row_to_response(row: DemandRow, match_count: int = 0) -> DemandResponse:
 
 def create(db: Session, data: DemandCreate) -> DemandResponse:
     deadline = datetime.utcnow() + timedelta(days=data.deadline_days)
+    buyer = db.query(RecyclerRow).filter(RecyclerRow.id == data.recycler_id).first()
     row = DemandRow(
         id=f"demand_{uuid.uuid4().hex[:8]}",
         recycler_id=data.recycler_id,
@@ -52,8 +53,8 @@ def create(db: Session, data: DemandCreate) -> DemandResponse:
         offered_price_per_kg=data.offered_price_per_kg,
         deadline=deadline,
         hub=data.hub,
-        latitude=data.latitude,
-        longitude=data.longitude,
+        latitude=data.latitude if data.latitude is not None else (buyer.latitude if buyer else None),
+        longitude=data.longitude if data.longitude is not None else (buyer.longitude if buyer else None),
         notes=data.notes,
         status="OPEN",
         filled_kg=0.0,
@@ -76,6 +77,14 @@ def list_open(db: Session, material: Optional[str] = None) -> List[DemandRespons
         count = db.query(DemandMatchRow).filter(DemandMatchRow.demand_id == r.id).count()
         out.append(_row_to_response(r, match_count=count))
     return out
+
+
+def list_for_recycler(db: Session, recycler_id: str) -> List[DemandResponse]:
+    rows = db.query(DemandRow).filter(DemandRow.recycler_id == recycler_id).order_by(DemandRow.created_at.desc()).all()
+    return [
+        _row_to_response(r, match_count=db.query(DemandMatchRow).filter(DemandMatchRow.demand_id == r.id).count())
+        for r in rows
+    ]
 
 
 def get(db: Session, demand_id: str) -> Optional[DemandResponse]:

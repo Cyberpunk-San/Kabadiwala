@@ -1,0 +1,17 @@
+{
+  "_comment": "Fill this file with REAL numbers from data.gov.in or dataful.in. Do not invent values. Set 'configured: false' until you have verified data.",
+  "configured": false,
+  "source": {
+    "name": "Central Pollution Control Board (CPCB)",
+    "url": "https://dataful.in/datasets/19388/",
+    "retrieved_on": "YYYY-MM-DD"
+  },
+  "year": 2024,
+  "india": {
+    "annual_ewaste_generated_mt": null,
+    "formally_recycled_mt": null,
+    "informally_recycled_percent": null
+  },
+  "top_states": [],
+  "notes": "Replace nulls with real values. Do NOT invent. When configured=true, the mobile Impact card will display them."
+}

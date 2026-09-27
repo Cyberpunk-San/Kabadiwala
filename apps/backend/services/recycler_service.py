@@ -16,6 +16,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from db import RecyclerRow
+from services import market_price_service
 from models.domain import GeoLocation, RecyclerOffer
 
 
@@ -61,8 +62,10 @@ def match_recyclers_spatially(
         if dist_km > max_radius_km:
             continue
 
-        prices = json.loads(r.prices_json)
-        listed_price = prices.get(material, prices.get("Mixed e-waste", 80.0))
+        prices = market_price_service.buyer_prices(db, r)
+        listed_price = prices.get(material)
+        if not listed_price:
+            continue  # this buyer doesn't buy this material
 
         variable_pickup = max(0.0, (dist_km - 2.0) * 15.0)
         total_pickup = r.pickup_base_cost + variable_pickup

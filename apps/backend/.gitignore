@@ -1,1 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
 venv/
+env/
+
+# SQLite database (regenerated on first run) — seed JSON files in data/ ARE committed
+data/*.db
+data/*.db-*
+*.db
+
+# Env (holds your free AI keys)
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Live market quotes cache (rebuilt automatically)
+data/market_snapshot.json

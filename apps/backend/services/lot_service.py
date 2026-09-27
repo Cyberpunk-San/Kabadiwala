@@ -14,14 +14,15 @@ Key responsibilities:
 
 from __future__ import annotations
 
-import random
+import hmac
+import secrets
 import uuid
 from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from db import LotRow
+from db import CollectorRow, LotRow
 from models.domain import GeoLocation, LotCreate, LotResponse, LotStatus
 
 
@@ -56,12 +57,9 @@ def _row_to_response(row: LotRow) -> LotResponse:
 
 # ─── PIN Generation ──────────────────────────────────────────────────────────
 
-def _generate_pin() -> str:
-    """
-    4-digit PIN, avoiding 0000 and any leading-zero ambiguity is not needed
-    here because the recycler will type digits anyway. Range 1000–9999.
-    """
-    return f"{random.randint(1000, 9999)}"
+def generate_pin() -> str:
+    """4-digit PIN in 1000–9999, from a cryptographic RNG (it gates a payout)."""
+    return str(1000 + secrets.randbelow(9000))
 
 
 # ─── CRUD ────────────────────────────────────────────────────────────────────
@@ -74,7 +72,7 @@ def create_lot(db: Session, data: LotCreate) -> LotResponse:
       - created_at timestamp
     """
     lot_id = f"lot_{datetime.utcnow().strftime('%y%m%d')}_{uuid.uuid4().hex[:6]}"
-    pin = _generate_pin()
+    pin = generate_pin()
 
     # Location defaults (Pune Bhosari) if the collector did not supply GPS.
     lat = data.location.latitude if data.location else 18.6279
@@ -108,11 +106,17 @@ def create_lot(db: Session, data: LotCreate) -> LotResponse:
     return _row_to_response(row)
 
 
-def list_lots(db: Session, status: Optional[str] = None) -> List[LotResponse]:
-    """List lots, newest first, optionally filtered by status."""
+def list_lots(
+    db: Session,
+    status: Optional[str] = None,
+    collector_id: Optional[str] = None,
+) -> List[LotResponse]:
+    """List lots, newest first, optionally filtered by status and/or collector."""
     q = db.query(LotRow).order_by(LotRow.created_at.desc())
     if status:
         q = q.filter(LotRow.status == status)
+    if collector_id:
+        q = q.filter(LotRow.collector_id == collector_id)
     return [_row_to_response(r) for r in q.all()]
 
 
@@ -133,11 +137,11 @@ def get_lot_pin(db: Session, lot_id: str) -> Optional[str]:
 
 
 def verify_pin(db: Session, lot_id: str, pin: str) -> bool:
-    """Constant-time-ish PIN check for a lot."""
+    """Constant-time PIN check for a lot."""
     row = db.query(LotRow).filter(LotRow.id == lot_id).first()
-    if not row:
+    if not row or not pin:
         return False
-    return row.pickup_pin == pin
+    return hmac.compare_digest(row.pickup_pin.encode(), str(pin).encode())
 
 
 def update_status(db: Session, lot_id: str, status: LotStatus) -> Optional[LotResponse]:
@@ -160,3 +164,19 @@ def attach_epr_certificate(db: Session, lot_id: str, epr_certificate_id: str) ->
     db.commit()
     db.refresh(row)
     return _row_to_response(row)
+
+def credit_collector(db: Session, collector_id: str, weight_kg: float, amount: float) -> None:
+    """
+    Add a settled lot to the collector's lifetime totals and recompute tier.
+    Caller commits. Unknown collectors (e.g. demo lots) are ignored.
+    """
+    # Imported here to avoid a circular import (collector_service imports db models too).
+    from services.collector_service import _compute_tier
+
+    row = db.query(CollectorRow).filter(CollectorRow.id == collector_id).first()
+    if not row:
+        return
+    row.total_lots = (row.total_lots or 0) + 1
+    row.total_weight_kg = round((row.total_weight_kg or 0.0) + weight_kg, 2)
+    row.total_earnings = round((row.total_earnings or 0.0) + amount, 2)
+    row.tier = _compute_tier(row.total_weight_kg)

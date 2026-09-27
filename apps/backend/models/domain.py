@@ -2,8 +2,8 @@
 """Pydantic models for every request/response in the API."""
 
 from typing import List, Optional, Literal, Dict, Any
-from pydantic import BaseModel, Field
-from datetime import datetime
+from pydantic import BaseModel, Field, field_validator
+from datetime import date, datetime
 
 
 # ─── Enums ───────────────────────────────────────────────────────────────────
@@ -13,6 +13,8 @@ MaterialType = Literal[
     "Lithium-ion batteries", "Brass fittings", "Printed Circuit Boards (PCB)",
     "Electric motors", "Iron & steel scrap", "CRT & monitor glass",
     "Lead acid batteries", "Compressors & cooling units",
+    # Household scrap (priced from city rate cards)
+    "Newspaper", "Books & notebooks", "Cardboard", "Mixed plastic", "PET bottles", "Stainless steel",
 ]
 
 LotStatus = Literal[
@@ -24,6 +26,7 @@ QualityLevel = Literal["low", "medium", "high"]
 LanguageType = Literal["en", "hi", "mr"]
 KycStatus = Literal["PENDING", "IN_PROGRESS", "VERIFIED", "REJECTED"]
 CollectorTier = Literal["bronze", "silver", "gold", "platinum"]
+PickupSlot = Literal["morning", "afternoon", "evening", "anytime"]
 DemandStatus = Literal["OPEN", "PARTIAL", "FULFILLED", "EXPIRED"]
 RiskSeverity = Literal["low", "medium", "high", "critical"]
 RiskAlertType = Literal[
@@ -122,6 +125,11 @@ class HandoverReceipt(BaseModel):
 
 # ─── Vision ──────────────────────────────────────────────────────────────────
 
+class MaterialAlternative(BaseModel):
+    material: MaterialType
+    confidence: float
+
+
 class MLMaterialPrediction(BaseModel):
     material: MaterialType
     category: str
@@ -130,7 +138,221 @@ class MLMaterialPrediction(BaseModel):
     confidence: float
     safety_message: Optional[str] = None
     bounding_box: Optional[Dict[str, float]] = None
-    model_version: str = "openai/clip-vit-base-patch32 (zero-shot)"
+    alternatives: List[MaterialAlternative] = []
+    model_version: str = "fallback"
+    # "huggingface" | "local" | "fallback" — lets the UI say where the answer came from.
+    source: str = "fallback"
+
+
+class ImageAnalyzeRequest(BaseModel):
+    # Preferred: base64 JPEG/PNG (raw or data URL) straight from the phone camera.
+    image_base64: Optional[str] = None
+    # Legacy: a path readable by the backend machine (scripts / tests).
+    imageUri: Optional[str] = None
+
+
+# ─── AI Assistant ────────────────────────────────────────────────────────────
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
+class AssistantChatRequestLocation(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class AssistantChatRequest(BaseModel):
+    messages: List[ChatMessage] = Field(..., min_length=1, max_length=20)
+    language: LanguageType = "hi"
+    collector_id: Optional[str] = None
+    location: Optional[AssistantChatRequestLocation] = None
+
+
+class AssistantAction(BaseModel):
+    """Something the app can do for the user — rendered as a tappable button."""
+    type: Literal["open_market", "open_scan", "open_rates", "open_demands", "open_earnings", "open_opportunity"]
+    material: Optional[MaterialType] = None
+    weight_kg: Optional[float] = None
+
+
+class AssistantStep(BaseModel):
+    """One tool call the agent made — shown to the user for transparency."""
+    tool: str
+    summary: str
+
+
+class AssistantChatResponse(BaseModel):
+    reply: str
+    provider: str  # "huggingface" | "gemini" | "offline"
+    suggestions: List[str] = []
+    actions: List[AssistantAction] = []
+    steps: List[AssistantStep] = []
+
+
+# ─── Collector business insights ─────────────────────────────────────────────
+
+class UnderpricedSale(BaseModel):
+    lot_id: str
+    material: MaterialType
+    weight_kg: float
+    sold_per_kg: float
+    fair_per_kg: float
+    gap_percent: float
+    lost_inr: float
+    recycler_name: str
+    sold_at: str
+
+
+class InsightMaterial(BaseModel):
+    material: MaterialType
+    kg: float
+    earned: float
+    sales: int
+    avg_per_kg: float
+    share_percent: float
+    realised_percent: float
+
+
+class InsightRecycler(BaseModel):
+    recycler_id: str
+    recycler_name: str
+    sales: int
+    kg: float
+    earned: float
+    avg_per_kg: float
+
+
+class InsightWeekday(BaseModel):
+    day: str
+    lots: int
+    kg: float
+
+
+class InsightSuggestion(BaseModel):
+    """Rendered as a sentence by the app, in the collector's language."""
+    code: Literal["UNDERPRICED", "SWITCH_RECYCLER", "SELL_STALE", "POOL_SMALL_LOTS", "NEW_DEMAND", "BEST_DAY"]
+    impact_inr: float
+    params: Dict[str, Any] = {}
+
+
+class CollectorInsights(BaseModel):
+    collector_id: str
+    generated_at: str
+    sold_lots: int
+    sold_kg: float
+    earned: float
+    avg_per_kg: float
+    realised_percent: float
+    unsold_lots: int
+    unsold_value: float
+    underpriced: List[UnderpricedSale]
+    materials: List[InsightMaterial]
+    recyclers: List[InsightRecycler]
+    weekdays: List[InsightWeekday]
+    best_material: Optional[str] = None
+    best_recycler: Optional[str] = None
+    suggestions: List[InsightSuggestion]
+
+
+# ─── Regional intelligence ───────────────────────────────────────────────────
+
+class RegionalCell(BaseModel):
+    latitude: float
+    longitude: float
+    supply_kg: float
+    collected_kg: float
+    pickup_kg: float
+    pickups: int
+    demand_kg: float
+    recyclers: int
+    industry: float
+    score: float
+
+
+class RegionalHotspot(BaseModel):
+    latitude: float
+    longitude: float
+    score: float
+    reasons: List[Literal["SUPPLY", "PICKUPS", "DEMAND", "INDUSTRY"]]
+    area: Optional[str] = None
+    distance_km: float
+
+
+class RegionalClusterMaterial(BaseModel):
+    material: MaterialType
+    share: float
+    best_price_per_kg: Optional[float] = None
+
+
+class RegionalCluster(BaseModel):
+    id: str
+    name: str
+    sector: str
+    sector_label: str
+    latitude: float
+    longitude: float
+    size: int
+    distance_km: float
+    value_per_kg: float
+    open_demand_kg: float
+    opportunity_score: float
+    materials: List[RegionalClusterMaterial]
+
+
+class RegionalMaterialBalance(BaseModel):
+    material: MaterialType
+    supply_kg: float
+    demand_kg: float
+    gap_kg: float
+    best_price_per_kg: Optional[float] = None
+
+
+class RegionalRecycler(BaseModel):
+    id: str
+    name: str
+    latitude: float
+    longitude: float
+
+
+class RegionalDataset(BaseModel):
+    name: str
+    approximate: bool
+    clusters: int
+    retrieved_on: Optional[str] = None
+
+
+class RegionalOverviewResponse(BaseModel):
+    latitude: float
+    longitude: float
+    radius_km: float
+    cell_deg: float
+    cells: List[RegionalCell]
+    hotspots: List[RegionalHotspot]
+    clusters: List[RegionalCluster]
+    balance: List[RegionalMaterialBalance]
+    recyclers: List[RegionalRecycler]
+    dataset: RegionalDataset
+
+
+class PriceHeatCell(BaseModel):
+    latitude: float
+    longitude: float
+    best_net_per_kg: Optional[float] = None
+    best_recycler: Optional[str] = None
+
+
+class PriceHeatmapResponse(BaseModel):
+    material: MaterialType
+    latitude: float
+    longitude: float
+    radius_km: float
+    step_lat: float
+    step_lon: float
+    cells: List[PriceHeatCell]
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
 
 
 # ─── Prices ──────────────────────────────────────────────────────────────────
@@ -439,7 +661,7 @@ class ValuationResponse(BaseModel):
     fair_price_per_kg: float
     fair_payout: float
     confidence: float
-    method: str = "gradient-free price blend (avg × quality × volume)"
+    method: str = "local market price (live metals × nearby industry) × quality × volume"
     reasoning: str
 
 
@@ -490,6 +712,25 @@ class SyncBatchResponse(BaseModel):
 
 
 # ─── Recycler Console ────────────────────────────────────────────────────────
+
+class RecyclerPrices(BaseModel):
+    recycler_id: str
+    recycler_name: str
+    is_active: bool
+    prices: Dict[str, float]
+    market_linked: List[str] = []   # materials whose price follows the live market
+
+
+class RecyclerPricesUpdate(BaseModel):
+    prices: Dict[MaterialType, float]
+
+    @field_validator("prices")
+    @classmethod
+    def _positive(cls, v: Dict[str, float]) -> Dict[str, float]:
+        if not v or any(p <= 0 or p > 100000 for p in v.values()):
+            raise ValueError("Prices must be between 0 and 100000 ₹/kg")
+        return v
+
 
 class RecyclerOfferCreate(BaseModel):
     recycler_id: str
@@ -552,3 +793,134 @@ class RecyclerAnalytics(BaseModel):
     open_offers: int
     accepted_offers: int
     incoming_lots_pending: int
+
+# ─── Roles: households & companies ───────────────────────────────────────────
+
+CompanyType = Literal["buyer", "seller", "both"]
+PickupStatus = Literal["OPEN", "ACCEPTED", "COMPLETED", "CANCELLED"]
+RoleType = Literal["kabadiwala", "household", "company"]
+
+
+class HouseholdRegisterRequest(BaseModel):
+    phone: str = Field(..., min_length=10, max_length=15)
+    name: str = Field(..., min_length=2, max_length=80)
+    language: LanguageType = "hi"
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class HouseholdProfile(BaseModel):
+    id: str
+    phone: str
+    name: str
+    language: LanguageType
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    created_at: str
+    total_pickups: int = 0
+    total_received: float = 0.0
+
+
+class CompanyRegisterRequest(BaseModel):
+    phone: str = Field(..., min_length=10, max_length=15)
+    name: str = Field(..., min_length=2, max_length=120)
+    contact_name: Optional[str] = None
+    company_type: CompanyType = "seller"
+    gstin: Optional[str] = None
+    cpcb_license: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class CompanyProfile(BaseModel):
+    id: str
+    phone: str
+    name: str
+    contact_name: Optional[str] = None
+    company_type: CompanyType
+    gstin: Optional[str] = None
+    cpcb_license: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    approved: bool
+    created_at: str
+    total_pickups: int = 0
+
+
+class LoginRequest(BaseModel):
+    phone: str = Field(..., min_length=10, max_length=15)
+
+
+class LoginResponse(BaseModel):
+    role: RoleType
+    collector: Optional[CollectorProfileResponse] = None
+    household: Optional[HouseholdProfile] = None
+    company: Optional[CompanyProfile] = None
+
+
+class PickupCreate(BaseModel):
+    requester_type: Literal["household", "company"]
+    requester_id: str
+    material: MaterialType
+    estimated_weight_kg: float = Field(..., gt=0, le=100000)
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    notes: Optional[str] = Field(None, max_length=500)
+    preferred_time: Optional[str] = Field(None, max_length=60)
+    preferred_date: Optional[date] = None
+    preferred_slot: Optional[PickupSlot] = None
+
+
+class PickupSchedule(BaseModel):
+    requester_id: str
+    preferred_date: date
+    preferred_slot: PickupSlot = "anytime"
+    preferred_time: Optional[str] = Field(None, max_length=60)
+
+
+class PickupAccept(BaseModel):
+    collector_id: str
+    offered_price_per_kg: Optional[float] = Field(None, gt=0)
+
+
+class PickupComplete(BaseModel):
+    collector_id: str
+    pickup_pin: str
+    actual_weight_kg: float = Field(..., gt=0, le=100000)
+
+
+class PickupResponse(BaseModel):
+    id: str
+    requester_type: str
+    requester_id: str
+    requester_name: str
+    requester_phone: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    material: MaterialType
+    estimated_weight_kg: float
+    estimated_value: float
+    notes: Optional[str] = None
+    preferred_time: Optional[str] = None
+    preferred_date: Optional[str] = None
+    preferred_slot: Optional[PickupSlot] = None
+    status: PickupStatus
+    collector_id: Optional[str] = None
+    collector_name: Optional[str] = None
+    collector_phone: Optional[str] = None
+    offered_price_per_kg: Optional[float] = None
+    actual_weight_kg: Optional[float] = None
+    amount_paid: Optional[float] = None
+    lot_id: Optional[str] = None
+    distance_km: Optional[float] = None
+    created_at: str
+    accepted_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    # Only returned to the requester — the kabadiwala must ask for it at the door.
+    pickup_pin: Optional[str] = None

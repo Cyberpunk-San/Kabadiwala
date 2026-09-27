@@ -1,0 +1,2293 @@
+{
+ "_comment": "Doorstep scrap rates (what a household is paid, INR) per city. Built by tools/build_rate_cards.py from public rate cards; see 'dropped' for values removed during cleaning.",
+ "source": {
+  "name": "The Kabadiwala — published city rate cards",
+  "url": "https://www.thekabadiwala.com/scrap-rates",
+  "retrieved_on": "2026-09-27",
+  "official": false,
+  "rate_level": "doorstep"
+ },
+ "cities": {
+  "mumbai": {
+   "name": "Mumbai",
+   "state": "Maharashtra",
+   "latitude": 19.076,
+   "longitude": 72.8777
+  },
+  "pune": {
+   "name": "Pune",
+   "state": "Maharashtra",
+   "latitude": 18.5204,
+   "longitude": 73.8567
+  },
+  "nagpur": {
+   "name": "Nagpur",
+   "state": "Maharashtra",
+   "latitude": 21.1458,
+   "longitude": 79.0882
+  },
+  "delhi": {
+   "name": "Delhi",
+   "state": "Delhi",
+   "latitude": 28.6139,
+   "longitude": 77.209
+  },
+  "noida": {
+   "name": "Noida",
+   "state": "Uttar Pradesh",
+   "latitude": 28.5355,
+   "longitude": 77.391
+  },
+  "ghaziabad": {
+   "name": "Ghaziabad",
+   "state": "Uttar Pradesh",
+   "latitude": 28.6692,
+   "longitude": 77.4538
+  },
+  "gurgaon": {
+   "name": "Gurugram",
+   "state": "Haryana",
+   "latitude": 28.4595,
+   "longitude": 77.0266
+  },
+  "lucknow": {
+   "name": "Lucknow",
+   "state": "Uttar Pradesh",
+   "latitude": 26.8467,
+   "longitude": 80.9462
+  },
+  "jaipur": {
+   "name": "Jaipur",
+   "state": "Rajasthan",
+   "latitude": 26.9124,
+   "longitude": 75.7873
+  },
+  "ahmedabad": {
+   "name": "Ahmedabad",
+   "state": "Gujarat",
+   "latitude": 23.0225,
+   "longitude": 72.5714
+  },
+  "bhopal": {
+   "name": "Bhopal",
+   "state": "Madhya Pradesh",
+   "latitude": 23.2599,
+   "longitude": 77.4126
+  },
+  "indore": {
+   "name": "Indore",
+   "state": "Madhya Pradesh",
+   "latitude": 22.7196,
+   "longitude": 75.8577
+  },
+  "raipur": {
+   "name": "Raipur",
+   "state": "Chhattisgarh",
+   "latitude": 21.2514,
+   "longitude": 81.6296
+  },
+  "bangalore": {
+   "name": "Bengaluru",
+   "state": "Karnataka",
+   "latitude": 12.9716,
+   "longitude": 77.5946
+  },
+  "hyderabad": {
+   "name": "Hyderabad",
+   "state": "Telangana",
+   "latitude": 17.385,
+   "longitude": 78.4867
+  }
+ },
+ "items": {
+  "AC (1 ton)": {
+   "unit": "pcs",
+   "national": {
+    "median": 2500.0,
+    "min": 2000.0,
+    "max": 4000.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 3000.0,
+    "bhopal": 2000.0,
+    "delhi": 3000.0,
+    "ghaziabad": 2500.0,
+    "gurgaon": 4000.0,
+    "hyderabad": 2100.0,
+    "indore": 2800.0,
+    "jaipur": 3000.0,
+    "lucknow": 2000.0,
+    "nagpur": 2000.0,
+    "noida": 3000.0,
+    "pune": 2000.0,
+    "raipur": 2200.0
+   }
+  },
+  "AC (1.5 ton)": {
+   "unit": "pcs",
+   "national": {
+    "median": 3000.0,
+    "min": 2200.0,
+    "max": 4000.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 3500.0,
+    "bangalore": 2500.0,
+    "bhopal": 2500.0,
+    "delhi": 4000.0,
+    "ghaziabad": 3000.0,
+    "gurgaon": 2500.0,
+    "hyderabad": 3200.0,
+    "indore": 3000.0,
+    "jaipur": 3200.0,
+    "lucknow": 2500.0,
+    "mumbai": 3000.0,
+    "nagpur": 2200.0,
+    "noida": 3500.0,
+    "pune": 2500.0,
+    "raipur": 2500.0
+   }
+  },
+  "AC (2 Ton)": {
+   "unit": "pcs",
+   "national": {
+    "median": 3500.0,
+    "min": 2500.0,
+    "max": 7000.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 4000.0,
+    "bangalore": 3000.0,
+    "bhopal": 3000.0,
+    "delhi": 4500.0,
+    "ghaziabad": 3500.0,
+    "gurgaon": 3500.0,
+    "hyderabad": 7000.0,
+    "indore": 3500.0,
+    "jaipur": 3500.0,
+    "lucknow": 3000.0,
+    "mumbai": 3500.0,
+    "nagpur": 2500.0,
+    "noida": 4000.0,
+    "pune": 3500.0,
+    "raipur": 2800.0
+   }
+  },
+  "Alkaline Battery (Cell)": {
+   "unit": "kg",
+   "national": {
+    "median": 2.0,
+    "min": 1.0,
+    "max": 2.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 2.0,
+    "bangalore": 1.0,
+    "delhi": 1.0,
+    "ghaziabad": 1.0,
+    "gurgaon": 2.0,
+    "hyderabad": 2.0,
+    "indore": 2.0,
+    "jaipur": 2.0,
+    "lucknow": 2.0,
+    "mumbai": 1.0,
+    "nagpur": 2.0,
+    "noida": 1.0,
+    "pune": 2.0,
+    "raipur": 2.0
+   }
+  },
+  "Aluminium": {
+   "unit": "kg",
+   "national": {
+    "median": 150.0,
+    "min": 120.0,
+    "max": 180.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 150.0,
+    "bangalore": 150.0,
+    "bhopal": 150.0,
+    "delhi": 150.0,
+    "ghaziabad": 150.0,
+    "gurgaon": 150.0,
+    "hyderabad": 120.0,
+    "indore": 180.0,
+    "jaipur": 180.0,
+    "lucknow": 155.0,
+    "mumbai": 150.0,
+    "nagpur": 160.0,
+    "noida": 150.0,
+    "pune": 150.0,
+    "raipur": 160.0
+   }
+  },
+  "Aluminium Wire": {
+   "unit": "kg",
+   "national": {
+    "median": 20.0,
+    "min": 10.0,
+    "max": 40.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 40.0,
+    "bangalore": 35.0,
+    "bhopal": 18.0,
+    "delhi": 30.0,
+    "ghaziabad": 30.0,
+    "gurgaon": 40.0,
+    "hyderabad": 10.0,
+    "indore": 15.0,
+    "jaipur": 20.0,
+    "lucknow": 20.0,
+    "mumbai": 25.0,
+    "nagpur": 15.0,
+    "noida": 30.0,
+    "pune": 15.0,
+    "raipur": 10.0
+   }
+  },
+  "Beer/Wine Bottles": {
+   "unit": "kg",
+   "national": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 2.0,
+    "cities": 3
+   },
+   "cities": {
+    "bhopal": 1.0,
+    "nagpur": 2.0,
+    "raipur": 1.0
+   }
+  },
+  "Beverage Cans (Aluminium)": {
+   "unit": "kg",
+   "national": {
+    "median": 80.0,
+    "min": 50.0,
+    "max": 120.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 70.0,
+    "bangalore": 60.0,
+    "bhopal": 120.0,
+    "delhi": 70.0,
+    "ghaziabad": 70.0,
+    "gurgaon": 90.0,
+    "hyderabad": 90.0,
+    "indore": 80.0,
+    "jaipur": 90.0,
+    "lucknow": 110.0,
+    "nagpur": 110.0,
+    "noida": 70.0,
+    "pune": 50.0,
+    "raipur": 80.0
+   }
+  },
+  "Bike": {
+   "unit": "pcs",
+   "national": {
+    "median": 2000.0,
+    "min": 1000.0,
+    "max": 2000.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 2000.0,
+    "bangalore": 2000.0,
+    "bhopal": 2000.0,
+    "delhi": 2000.0,
+    "ghaziabad": 2000.0,
+    "gurgaon": 2000.0,
+    "indore": 2000.0,
+    "jaipur": 2000.0,
+    "lucknow": 2000.0,
+    "mumbai": 2000.0,
+    "noida": 2000.0,
+    "pune": 1000.0
+   }
+  },
+  "Books": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 8.0,
+    "max": 12.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 8.0,
+    "bhopal": 12.0,
+    "delhi": 10.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 10.0,
+    "hyderabad": 8.0,
+    "indore": 9.0,
+    "jaipur": 10.0,
+    "lucknow": 9.0,
+    "mumbai": 12.0,
+    "nagpur": 9.0,
+    "noida": 11.0,
+    "pune": 10.0,
+    "raipur": 9.0
+   }
+  },
+  "Brass": {
+   "unit": "kg",
+   "national": {
+    "median": 415.0,
+    "min": 300.0,
+    "max": 500.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 500.0,
+    "bangalore": 400.0,
+    "bhopal": 450.0,
+    "delhi": 450.0,
+    "hyderabad": 300.0,
+    "indore": 420.0,
+    "jaipur": 500.0,
+    "lucknow": 410.0,
+    "mumbai": 500.0,
+    "nagpur": 410.0,
+    "pune": 400.0,
+    "raipur": 410.0
+   }
+  },
+  "CPU": {
+   "unit": "pcs",
+   "national": {
+    "median": 150.0,
+    "min": 150.0,
+    "max": 250.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 150.0,
+    "bangalore": 150.0,
+    "bhopal": 250.0,
+    "gurgaon": 250.0,
+    "hyderabad": 250.0,
+    "indore": 150.0,
+    "jaipur": 250.0,
+    "lucknow": 200.0,
+    "mumbai": 150.0,
+    "nagpur": 150.0,
+    "pune": 150.0,
+    "raipur": 150.0
+   }
+  },
+  "Car": {
+   "unit": "pcs",
+   "national": {
+    "median": 10000.0,
+    "min": 8000.0,
+    "max": 10000.0,
+    "cities": 8
+   },
+   "cities": {
+    "ahmedabad": 10000.0,
+    "bangalore": 10000.0,
+    "bhopal": 10000.0,
+    "gurgaon": 10000.0,
+    "jaipur": 10000.0,
+    "lucknow": 8000.0,
+    "mumbai": 10000.0,
+    "pune": 10000.0
+   }
+  },
+  "Carton": {
+   "unit": "kg",
+   "national": {
+    "median": 9.0,
+    "min": 3.0,
+    "max": 12.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 3.0,
+    "bhopal": 12.0,
+    "delhi": 6.0,
+    "ghaziabad": 9.0,
+    "gurgaon": 7.0,
+    "hyderabad": 4.0,
+    "indore": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 10.0,
+    "mumbai": 4.0,
+    "nagpur": 10.0,
+    "noida": 8.0,
+    "pune": 4.0,
+    "raipur": 10.0
+   }
+  },
+  "Casting Aluminium": {
+   "unit": "kg",
+   "national": {
+    "median": 87.5,
+    "min": 50.0,
+    "max": 140.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 120.0,
+    "bangalore": 50.0,
+    "bhopal": 140.0,
+    "delhi": 60.0,
+    "ghaziabad": 70.0,
+    "gurgaon": 60.0,
+    "hyderabad": 120.0,
+    "indore": 85.0,
+    "lucknow": 110.0,
+    "mumbai": 95.0,
+    "nagpur": 110.0,
+    "noida": 90.0,
+    "pune": 80.0,
+    "raipur": 80.0
+   }
+  },
+  "Cooler (Plastic/Fibre)": {
+   "unit": "kg",
+   "national": {
+    "median": 8.0,
+    "min": 4.0,
+    "max": 12.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 5.0,
+    "bangalore": 8.0,
+    "bhopal": 10.0,
+    "ghaziabad": 12.0,
+    "hyderabad": 4.0,
+    "indore": 5.0,
+    "jaipur": 8.0,
+    "lucknow": 5.0,
+    "mumbai": 10.0,
+    "nagpur": 10.0,
+    "pune": 10.0,
+    "raipur": 5.0
+   }
+  },
+  "Cooler (Tin)": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 12.0,
+    "max": 20.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 12.0,
+    "bhopal": 15.0,
+    "delhi": 15.0,
+    "hyderabad": 17.0,
+    "indore": 15.0,
+    "jaipur": 15.0,
+    "lucknow": 15.0,
+    "mumbai": 15.0,
+    "nagpur": 15.0,
+    "pune": 20.0,
+    "raipur": 18.0
+   }
+  },
+  "Copper": {
+   "unit": "kg",
+   "national": {
+    "median": 600.0,
+    "min": 400.0,
+    "max": 900.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 600.0,
+    "bangalore": 500.0,
+    "bhopal": 600.0,
+    "delhi": 550.0,
+    "ghaziabad": 700.0,
+    "gurgaon": 700.0,
+    "hyderabad": 400.0,
+    "indore": 800.0,
+    "jaipur": 900.0,
+    "lucknow": 650.0,
+    "mumbai": 700.0,
+    "nagpur": 620.0,
+    "noida": 600.0,
+    "pune": 500.0,
+    "raipur": 600.0
+   }
+  },
+  "Copper Wire": {
+   "unit": "kg",
+   "national": {
+    "median": 60.0,
+    "min": 20.0,
+    "max": 150.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 20.0,
+    "bangalore": 50.0,
+    "bhopal": 60.0,
+    "delhi": 69.0,
+    "ghaziabad": 70.0,
+    "gurgaon": 70.0,
+    "hyderabad": 60.0,
+    "indore": 60.0,
+    "lucknow": 45.0,
+    "nagpur": 40.0,
+    "noida": 60.0,
+    "pune": 150.0,
+    "raipur": 20.0
+   }
+  },
+  "Copy": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 8.0,
+    "max": 12.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 12.0,
+    "bangalore": 8.0,
+    "bhopal": 12.0,
+    "delhi": 10.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 10.0,
+    "hyderabad": 8.0,
+    "indore": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 10.0,
+    "mumbai": 8.0,
+    "nagpur": 10.0,
+    "noida": 10.0,
+    "pune": 10.0,
+    "raipur": 8.0
+   }
+  },
+  "Core Pipe (Cardboard)": {
+   "unit": "kg",
+   "national": {
+    "median": 7.0,
+    "min": 5.0,
+    "max": 8.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 7.0,
+    "delhi": 7.0,
+    "ghaziabad": 7.0,
+    "gurgaon": 8.0,
+    "hyderabad": 8.0,
+    "indore": 8.0,
+    "jaipur": 5.0,
+    "lucknow": 6.0,
+    "mumbai": 8.0,
+    "nagpur": 8.0,
+    "noida": 7.0,
+    "pune": 6.0,
+    "raipur": 8.0
+   }
+  },
+  "E-waste": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 20.0,
+    "cities": 11
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 10.0,
+    "delhi": 20.0,
+    "hyderabad": 20.0,
+    "indore": 15.0,
+    "jaipur": 10.0,
+    "lucknow": 15.0,
+    "mumbai": 15.0,
+    "nagpur": 15.0,
+    "pune": 10.0,
+    "raipur": 15.0
+   }
+  },
+  "Fibre": {
+   "unit": "kg",
+   "national": {
+    "median": 5.0,
+    "min": 4.0,
+    "max": 5.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 5.0,
+    "bangalore": 5.0,
+    "delhi": 5.0,
+    "ghaziabad": 5.0,
+    "gurgaon": 5.0,
+    "hyderabad": 5.0,
+    "indore": 5.0,
+    "jaipur": 5.0,
+    "lucknow": 5.0,
+    "mumbai": 5.0,
+    "nagpur": 4.0,
+    "noida": 4.0,
+    "pune": 5.0,
+    "raipur": 5.0
+   }
+  },
+  "Geyser": {
+   "unit": "pcs",
+   "national": {
+    "median": 110.0,
+    "min": 100.0,
+    "max": 200.0,
+    "cities": 8
+   },
+   "cities": {
+    "ahmedabad": 200.0,
+    "bangalore": 100.0,
+    "ghaziabad": 120.0,
+    "hyderabad": 100.0,
+    "indore": 100.0,
+    "mumbai": 200.0,
+    "pune": 200.0,
+    "raipur": 100.0
+   }
+  },
+  "Glass Bottles": {
+   "unit": "kg",
+   "national": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "cities": 1
+   },
+   "cities": {
+    "raipur": 1.0
+   }
+  },
+  "Grey Board": {
+   "unit": "kg",
+   "national": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 5.0,
+    "cities": 14
+   },
+   "cities": {
+    "bangalore": 2.0,
+    "bhopal": 3.0,
+    "delhi": 5.0,
+    "ghaziabad": 2.0,
+    "gurgaon": 2.0,
+    "hyderabad": 2.0,
+    "indore": 3.0,
+    "jaipur": 2.0,
+    "lucknow": 2.0,
+    "mumbai": 2.0,
+    "nagpur": 2.0,
+    "noida": 2.0,
+    "pune": 3.0,
+    "raipur": 2.0
+   }
+  },
+  "Hard Plastic": {
+   "unit": "kg",
+   "national": {
+    "median": 2.0,
+    "min": 2.0,
+    "max": 5.0,
+    "cities": 14
+   },
+   "cities": {
+    "bangalore": 2.0,
+    "bhopal": 2.0,
+    "delhi": 5.0,
+    "ghaziabad": 5.0,
+    "gurgaon": 2.0,
+    "hyderabad": 2.0,
+    "indore": 2.0,
+    "jaipur": 5.0,
+    "lucknow": 2.0,
+    "mumbai": 2.0,
+    "nagpur": 2.0,
+    "noida": 5.0,
+    "pune": 2.0,
+    "raipur": 2.0
+   }
+  },
+  "Inverter Battery": {
+   "unit": "kg",
+   "national": {
+    "median": 80.0,
+    "min": 35.0,
+    "max": 90.0,
+    "cities": 11
+   },
+   "cities": {
+    "ahmedabad": 80.0,
+    "bangalore": 70.0,
+    "bhopal": 80.0,
+    "ghaziabad": 35.0,
+    "gurgaon": 80.0,
+    "indore": 75.0,
+    "jaipur": 90.0,
+    "lucknow": 80.0,
+    "nagpur": 80.0,
+    "noida": 35.0,
+    "raipur": 70.0
+   }
+  },
+  "Iron": {
+   "unit": "kg",
+   "national": {
+    "median": 24.0,
+    "min": 20.0,
+    "max": 26.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 22.0,
+    "bangalore": 22.0,
+    "bhopal": 25.0,
+    "delhi": 25.0,
+    "gurgaon": 26.0,
+    "hyderabad": 20.0,
+    "indore": 26.0,
+    "jaipur": 25.0,
+    "lucknow": 24.0,
+    "mumbai": 22.0,
+    "nagpur": 26.0,
+    "noida": 22.0,
+    "pune": 23.0,
+    "raipur": 24.0
+   }
+  },
+  "Laptop": {
+   "unit": "pcs",
+   "national": {
+    "median": 200.0,
+    "min": 100.0,
+    "max": 300.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 100.0,
+    "bangalore": 250.0,
+    "bhopal": 200.0,
+    "delhi": 200.0,
+    "gurgaon": 300.0,
+    "hyderabad": 200.0,
+    "indore": 150.0,
+    "jaipur": 200.0,
+    "mumbai": 200.0,
+    "nagpur": 150.0,
+    "pune": 200.0,
+    "raipur": 150.0
+   }
+  },
+  "MS Drum (50 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 20.0,
+    "min": 14.0,
+    "max": 20.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 19.0,
+    "bangalore": 14.0,
+    "delhi": 20.0,
+    "ghaziabad": 20.0,
+    "gurgaon": 20.0,
+    "hyderabad": 15.0,
+    "indore": 20.0,
+    "jaipur": 20.0,
+    "lucknow": 20.0,
+    "mumbai": 20.0,
+    "nagpur": 20.0,
+    "noida": 20.0,
+    "pune": 20.0,
+    "raipur": 18.0
+   }
+  },
+  "MS Drums (200 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 20.0,
+    "min": 19.0,
+    "max": 25.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 20.0,
+    "bangalore": 20.0,
+    "delhi": 25.0,
+    "ghaziabad": 25.0,
+    "hyderabad": 20.0,
+    "indore": 20.0,
+    "jaipur": 20.0,
+    "lucknow": 19.0,
+    "mumbai": 20.0,
+    "nagpur": 20.0,
+    "noida": 25.0,
+    "pune": 20.0,
+    "raipur": 20.0
+   }
+  },
+  "Magazines": {
+   "unit": "kg",
+   "national": {
+    "median": 8.0,
+    "min": 4.0,
+    "max": 10.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 8.0,
+    "bangalore": 5.0,
+    "bhopal": 10.0,
+    "delhi": 10.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 8.0,
+    "hyderabad": 10.0,
+    "indore": 9.0,
+    "jaipur": 7.0,
+    "lucknow": 7.0,
+    "mumbai": 4.0,
+    "nagpur": 8.0,
+    "noida": 10.0,
+    "pune": 8.0,
+    "raipur": 8.0
+   }
+  },
+  "Microwave": {
+   "unit": "kg",
+   "national": {
+    "median": 16.5,
+    "min": 10.0,
+    "max": 20.0,
+    "cities": 8
+   },
+   "cities": {
+    "ahmedabad": 20.0,
+    "hyderabad": 10.0,
+    "indore": 18.0,
+    "jaipur": 15.0,
+    "lucknow": 18.0,
+    "mumbai": 15.0,
+    "nagpur": 18.0,
+    "raipur": 15.0
+   }
+  },
+  "Milk Covers": {
+   "unit": "kg",
+   "national": {
+    "median": 2.0,
+    "min": 1.0,
+    "max": 2.0,
+    "cities": 3
+   },
+   "cities": {
+    "mumbai": 1.0,
+    "nagpur": 2.0,
+    "raipur": 2.0
+   }
+  },
+  "Mix Plastic": {
+   "unit": "kg",
+   "national": {
+    "median": 8.0,
+    "min": 4.0,
+    "max": 12.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 5.0,
+    "bhopal": 12.0,
+    "delhi": 8.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 10.0,
+    "hyderabad": 8.0,
+    "indore": 8.0,
+    "jaipur": 7.0,
+    "lucknow": 4.0,
+    "mumbai": 7.0,
+    "nagpur": 5.0,
+    "noida": 10.0,
+    "pune": 10.0,
+    "raipur": 6.0
+   }
+  },
+  "Monitor (CRT)": {
+   "unit": "pcs",
+   "national": {
+    "median": 149.0,
+    "min": 100.0,
+    "max": 200.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 100.0,
+    "bangalore": 100.0,
+    "bhopal": 200.0,
+    "delhi": 149.0,
+    "ghaziabad": 149.0,
+    "gurgaon": 100.0,
+    "hyderabad": 100.0,
+    "indore": 150.0,
+    "jaipur": 100.0,
+    "lucknow": 180.0,
+    "nagpur": 150.0,
+    "noida": 150.0,
+    "pune": 100.0,
+    "raipur": 150.0
+   }
+  },
+  "Monitor (LCD/LED)": {
+   "unit": "pcs",
+   "national": {
+    "median": 80.0,
+    "min": 40.0,
+    "max": 100.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 100.0,
+    "bangalore": 60.0,
+    "bhopal": 55.0,
+    "hyderabad": 100.0,
+    "indore": 50.0,
+    "jaipur": 100.0,
+    "lucknow": 40.0,
+    "mumbai": 100.0,
+    "nagpur": 50.0,
+    "noida": 100.0,
+    "pune": 100.0,
+    "raipur": 50.0
+   }
+  },
+  "Newspaper": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 10.0,
+    "max": 13.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 10.0,
+    "bhopal": 13.0,
+    "delhi": 11.0,
+    "ghaziabad": 10.0,
+    "hyderabad": 10.0,
+    "indore": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 10.0,
+    "mumbai": 10.0,
+    "nagpur": 10.0,
+    "pune": 11.0,
+    "raipur": 10.0
+   }
+  },
+  "Old Clothes": {
+   "unit": "kg",
+   "national": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "cities": 1
+   },
+   "cities": {
+    "bhopal": 1.0
+   }
+  },
+  "PET Bottle": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 25.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 10.0,
+    "bhopal": 25.0,
+    "delhi": 10.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 20.0,
+    "hyderabad": 15.0,
+    "indore": 18.0,
+    "jaipur": 20.0,
+    "lucknow": 15.0,
+    "mumbai": 14.0,
+    "nagpur": 17.0,
+    "noida": 15.0,
+    "pune": 20.0,
+    "raipur": 15.0
+   }
+  },
+  "PVC Pipe": {
+   "unit": "kg",
+   "national": {
+    "median": 5.0,
+    "min": 4.0,
+    "max": 15.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 8.0,
+    "delhi": 5.0,
+    "ghaziabad": 5.0,
+    "gurgaon": 5.0,
+    "hyderabad": 4.0,
+    "indore": 5.0,
+    "jaipur": 10.0,
+    "lucknow": 5.0,
+    "mumbai": 5.0,
+    "nagpur": 5.0,
+    "noida": 5.0,
+    "pune": 15.0,
+    "raipur": 5.0
+   }
+  },
+  "Plastic (PP) Bags": {
+   "unit": "kg",
+   "national": {
+    "median": 4.0,
+    "min": 3.0,
+    "max": 10.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 4.0,
+    "bangalore": 4.0,
+    "delhi": 4.0,
+    "ghaziabad": 9.0,
+    "gurgaon": 9.0,
+    "hyderabad": 9.0,
+    "indore": 3.0,
+    "jaipur": 10.0,
+    "lucknow": 3.0,
+    "mumbai": 4.0,
+    "nagpur": 3.0,
+    "noida": 4.0,
+    "pune": 4.0,
+    "raipur": 3.0
+   }
+  },
+  "Plastic Can (20 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 20.0,
+    "cities": 12
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 15.0,
+    "delhi": 14.0,
+    "ghaziabad": 15.0,
+    "gurgaon": 15.0,
+    "hyderabad": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 20.0,
+    "mumbai": 10.0,
+    "noida": 15.0,
+    "pune": 15.0,
+    "raipur": 14.0
+   }
+  },
+  "Plastic Can (25 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 22.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 15.0,
+    "delhi": 10.0,
+    "ghaziabad": 22.0,
+    "gurgaon": 15.0,
+    "hyderabad": 10.0,
+    "indore": 15.0,
+    "jaipur": 15.0,
+    "lucknow": 15.0,
+    "mumbai": 15.0,
+    "noida": 10.0,
+    "pune": 12.0,
+    "raipur": 15.0
+   }
+  },
+  "Plastic Can (50 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 15.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 15.0,
+    "delhi": 14.0,
+    "ghaziabad": 15.0,
+    "gurgaon": 15.0,
+    "hyderabad": 10.0,
+    "indore": 14.0,
+    "jaipur": 14.0,
+    "lucknow": 15.0,
+    "mumbai": 15.0,
+    "noida": 15.0,
+    "pune": 15.0,
+    "raipur": 14.0
+   }
+  },
+  "Plastic Drum (200 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 15.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 10.0,
+    "delhi": 15.0,
+    "ghaziabad": 15.0,
+    "gurgaon": 15.0,
+    "hyderabad": 10.0,
+    "indore": 15.0,
+    "jaipur": 10.0,
+    "lucknow": 15.0,
+    "mumbai": 15.0,
+    "nagpur": 15.0,
+    "noida": 15.0,
+    "pune": 15.0,
+    "raipur": 15.0
+   }
+  },
+  "Plastic Jar (15 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 5.0,
+    "max": 20.0,
+    "cities": 10
+   },
+   "cities": {
+    "ahmedabad": 5.0,
+    "bangalore": 5.0,
+    "delhi": 12.0,
+    "gurgaon": 15.0,
+    "hyderabad": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 15.0,
+    "mumbai": 10.0,
+    "nagpur": 20.0,
+    "pune": 10.0
+   }
+  },
+  "Plastic Jar (5 Litre)": {
+   "unit": "kg",
+   "national": {
+    "median": 14.0,
+    "min": 8.0,
+    "max": 36.0,
+    "cities": 11
+   },
+   "cities": {
+    "bangalore": 8.0,
+    "ghaziabad": 15.0,
+    "gurgaon": 15.0,
+    "hyderabad": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 15.0,
+    "mumbai": 10.0,
+    "nagpur": 14.0,
+    "noida": 36.0,
+    "pune": 8.0,
+    "raipur": 15.0
+   }
+  },
+  "Polythene Bags (HM)": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 7.0,
+    "max": 15.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 10.0,
+    "delhi": 7.0,
+    "ghaziabad": 9.0,
+    "gurgaon": 10.0,
+    "hyderabad": 10.0,
+    "indore": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 10.0,
+    "mumbai": 10.0,
+    "nagpur": 10.0,
+    "noida": 10.0,
+    "pune": 15.0,
+    "raipur": 10.0
+   }
+  },
+  "Polythene Bags (LD)": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 4.0,
+    "max": 24.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 10.0,
+    "bhopal": 4.0,
+    "delhi": 10.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 10.0,
+    "hyderabad": 10.0,
+    "indore": 5.0,
+    "jaipur": 10.0,
+    "lucknow": 8.0,
+    "mumbai": 10.0,
+    "nagpur": 24.0,
+    "noida": 10.0,
+    "pune": 15.0
+   }
+  },
+  "Printer": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 25.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 10.0,
+    "bangalore": 10.0,
+    "bhopal": 20.0,
+    "ghaziabad": 10.0,
+    "hyderabad": 10.0,
+    "indore": 18.0,
+    "jaipur": 10.0,
+    "lucknow": 25.0,
+    "mumbai": 20.0,
+    "nagpur": 20.0,
+    "noida": 10.0,
+    "pune": 15.0,
+    "raipur": 15.0
+   }
+  },
+  "Record Paper": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 7.0,
+    "max": 12.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 8.0,
+    "bangalore": 10.0,
+    "bhopal": 12.0,
+    "delhi": 10.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 10.0,
+    "indore": 7.0,
+    "jaipur": 10.0,
+    "lucknow": 8.0,
+    "mumbai": 10.0,
+    "nagpur": 8.0,
+    "noida": 10.0,
+    "pune": 10.0,
+    "raipur": 8.0
+   }
+  },
+  "Refrigerator (Double Door)": {
+   "unit": "pcs",
+   "national": {
+    "median": 700.0,
+    "min": 400.0,
+    "max": 1200.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 800.0,
+    "bangalore": 550.0,
+    "bhopal": 400.0,
+    "delhi": 800.0,
+    "ghaziabad": 800.0,
+    "gurgaon": 700.0,
+    "hyderabad": 500.0,
+    "indore": 500.0,
+    "jaipur": 1200.0,
+    "lucknow": 600.0,
+    "mumbai": 700.0,
+    "nagpur": 550.0,
+    "noida": 1000.0,
+    "pune": 850.0,
+    "raipur": 500.0
+   }
+  },
+  "Refrigerator (Single Door)": {
+   "unit": "pcs",
+   "national": {
+    "median": 500.0,
+    "min": 300.0,
+    "max": 800.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 650.0,
+    "bangalore": 350.0,
+    "bhopal": 300.0,
+    "delhi": 500.0,
+    "ghaziabad": 600.0,
+    "gurgaon": 800.0,
+    "hyderabad": 300.0,
+    "indore": 350.0,
+    "jaipur": 800.0,
+    "lucknow": 400.0,
+    "mumbai": 500.0,
+    "nagpur": 400.0,
+    "noida": 500.0,
+    "pune": 500.0,
+    "raipur": 350.0
+   }
+  },
+  "Soft Plastic": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 10.0,
+    "max": 15.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 12.0,
+    "bangalore": 10.0,
+    "delhi": 10.0,
+    "ghaziabad": 15.0,
+    "gurgaon": 10.0,
+    "hyderabad": 10.0,
+    "indore": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 10.0,
+    "mumbai": 10.0,
+    "nagpur": 10.0,
+    "noida": 12.0,
+    "pune": 10.0,
+    "raipur": 10.0
+   }
+  },
+  "Steel": {
+   "unit": "kg",
+   "national": {
+    "median": 40.0,
+    "min": 40.0,
+    "max": 50.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 40.0,
+    "bangalore": 40.0,
+    "bhopal": 45.0,
+    "delhi": 40.0,
+    "ghaziabad": 40.0,
+    "gurgaon": 40.0,
+    "hyderabad": 40.0,
+    "indore": 48.0,
+    "jaipur": 50.0,
+    "lucknow": 45.0,
+    "mumbai": 40.0,
+    "nagpur": 45.0,
+    "noida": 40.0,
+    "pune": 40.0,
+    "raipur": 45.0
+   }
+  },
+  "Television (CRT)": {
+   "unit": "pcs",
+   "national": {
+    "median": 100.0,
+    "min": 40.0,
+    "max": 150.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 100.0,
+    "bangalore": 100.0,
+    "bhopal": 100.0,
+    "delhi": 100.0,
+    "ghaziabad": 100.0,
+    "gurgaon": 100.0,
+    "hyderabad": 100.0,
+    "indore": 50.0,
+    "jaipur": 150.0,
+    "lucknow": 40.0,
+    "mumbai": 100.0,
+    "nagpur": 50.0,
+    "noida": 100.0,
+    "pune": 100.0,
+    "raipur": 100.0
+   }
+  },
+  "Television (LCD/LED)": {
+   "unit": "pcs",
+   "national": {
+    "median": 100.0,
+    "min": 40.0,
+    "max": 100.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 100.0,
+    "bangalore": 50.0,
+    "bhopal": 55.0,
+    "delhi": 100.0,
+    "ghaziabad": 100.0,
+    "gurgaon": 50.0,
+    "hyderabad": 100.0,
+    "indore": 50.0,
+    "jaipur": 100.0,
+    "lucknow": 40.0,
+    "mumbai": 100.0,
+    "nagpur": 50.0,
+    "noida": 100.0,
+    "pune": 100.0,
+    "raipur": 50.0
+   }
+  },
+  "Tin": {
+   "unit": "kg",
+   "national": {
+    "median": 20.0,
+    "min": 15.0,
+    "max": 22.0,
+    "cities": 10
+   },
+   "cities": {
+    "ahmedabad": 20.0,
+    "bhopal": 20.0,
+    "hyderabad": 17.0,
+    "indore": 22.0,
+    "jaipur": 20.0,
+    "lucknow": 20.0,
+    "mumbai": 15.0,
+    "nagpur": 20.0,
+    "noida": 18.0,
+    "raipur": 16.0
+   }
+  },
+  "Tyre": {
+   "unit": "kg",
+   "national": {
+    "median": 3.0,
+    "min": 2.0,
+    "max": 8.0,
+    "cities": 11
+   },
+   "cities": {
+    "ahmedabad": 5.0,
+    "bhopal": 8.0,
+    "delhi": 2.0,
+    "ghaziabad": 2.0,
+    "gurgaon": 8.0,
+    "hyderabad": 2.0,
+    "indore": 3.0,
+    "lucknow": 3.0,
+    "noida": 2.0,
+    "pune": 5.0,
+    "raipur": 3.0
+   }
+  },
+  "UPS (with battery)": {
+   "unit": "pcs",
+   "national": {
+    "median": 250.0,
+    "min": 150.0,
+    "max": 300.0,
+    "cities": 13
+   },
+   "cities": {
+    "bangalore": 250.0,
+    "bhopal": 200.0,
+    "delhi": 300.0,
+    "ghaziabad": 300.0,
+    "gurgaon": 300.0,
+    "hyderabad": 250.0,
+    "indore": 150.0,
+    "jaipur": 300.0,
+    "lucknow": 220.0,
+    "nagpur": 155.0,
+    "noida": 249.0,
+    "pune": 300.0,
+    "raipur": 150.0
+   }
+  },
+  "UPS (without battery)": {
+   "unit": "pcs",
+   "national": {
+    "median": 150.0,
+    "min": 100.0,
+    "max": 220.0,
+    "cities": 8
+   },
+   "cities": {
+    "ahmedabad": 150.0,
+    "delhi": 220.0,
+    "gurgaon": 150.0,
+    "hyderabad": 150.0,
+    "indore": 100.0,
+    "jaipur": 150.0,
+    "lucknow": 120.0,
+    "raipur": 150.0
+   }
+  },
+  "Used Beverage Carton": {
+   "unit": "kg",
+   "national": {
+    "median": 5.0,
+    "min": 4.0,
+    "max": 8.0,
+    "cities": 6
+   },
+   "cities": {
+    "ahmedabad": 8.0,
+    "bhopal": 5.0,
+    "indore": 5.0,
+    "lucknow": 5.0,
+    "nagpur": 4.0,
+    "raipur": 5.0
+   }
+  },
+  "Washing machine": {
+   "unit": "pcs",
+   "national": {
+    "median": 500.0,
+    "min": 300.0,
+    "max": 500.0,
+    "cities": 15
+   },
+   "cities": {
+    "ahmedabad": 300.0,
+    "bangalore": 300.0,
+    "bhopal": 400.0,
+    "delhi": 500.0,
+    "ghaziabad": 500.0,
+    "gurgaon": 500.0,
+    "hyderabad": 350.0,
+    "indore": 500.0,
+    "jaipur": 500.0,
+    "lucknow": 500.0,
+    "mumbai": 300.0,
+    "nagpur": 500.0,
+    "noida": 500.0,
+    "pune": 400.0,
+    "raipur": 400.0
+   }
+  },
+  "Water Tank (Sintex)": {
+   "unit": "kg",
+   "national": {
+    "median": 15.0,
+    "min": 10.0,
+    "max": 20.0,
+    "cities": 14
+   },
+   "cities": {
+    "ahmedabad": 15.0,
+    "bangalore": 10.0,
+    "delhi": 14.0,
+    "ghaziabad": 14.0,
+    "gurgaon": 17.0,
+    "hyderabad": 15.0,
+    "indore": 14.0,
+    "jaipur": 15.0,
+    "lucknow": 15.0,
+    "mumbai": 20.0,
+    "nagpur": 14.0,
+    "noida": 14.0,
+    "pune": 15.0,
+    "raipur": 15.0
+   }
+  },
+  "White Paper": {
+   "unit": "kg",
+   "national": {
+    "median": 10.0,
+    "min": 5.0,
+    "max": 12.0,
+    "cities": 13
+   },
+   "cities": {
+    "ahmedabad": 8.0,
+    "bangalore": 5.0,
+    "bhopal": 12.0,
+    "delhi": 10.0,
+    "ghaziabad": 10.0,
+    "gurgaon": 10.0,
+    "hyderabad": 10.0,
+    "jaipur": 10.0,
+    "lucknow": 8.0,
+    "mumbai": 10.0,
+    "nagpur": 8.0,
+    "noida": 10.0,
+    "pune": 10.0
+   }
+  },
+  "Wooden Pallets": {
+   "unit": "kg",
+   "national": {
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "cities": 1
+   },
+   "cities": {
+    "indore": 1.0
+   }
+  }
+ },
+ "dropped": [
+  {
+   "item": "AC (1 ton)",
+   "city": "mumbai",
+   "value": 2000.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "AC (1 ton)",
+   "city": "bangalore",
+   "value": 10.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Beverage Cans (Aluminium)",
+   "city": "mumbai",
+   "value": 25.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 80"
+  },
+  {
+   "item": "Brass",
+   "city": "noida",
+   "value": 420.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Brass",
+   "city": "ghaziabad",
+   "value": 420.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Brass",
+   "city": "gurgaon",
+   "value": 420.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "CPU",
+   "city": "delhi",
+   "value": 13.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "CPU",
+   "city": "noida",
+   "value": 13.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "CPU",
+   "city": "ghaziabad",
+   "value": 13.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Casting Aluminium",
+   "city": "jaipur",
+   "value": 50.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Cooler (Plastic/Fibre)",
+   "city": "delhi",
+   "value": 100.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Cooler (Plastic/Fibre)",
+   "city": "noida",
+   "value": 100.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Cooler (Plastic/Fibre)",
+   "city": "gurgaon",
+   "value": 100.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Cooler (Tin)",
+   "city": "noida",
+   "value": 400.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Cooler (Tin)",
+   "city": "ghaziabad",
+   "value": 300.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Cooler (Tin)",
+   "city": "gurgaon",
+   "value": 300.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Copper Wire",
+   "city": "mumbai",
+   "value": 400.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 60"
+  },
+  {
+   "item": "Copper Wire",
+   "city": "jaipur",
+   "value": 250.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 60"
+  },
+  {
+   "item": "Core Pipe (Cardboard)",
+   "city": "bangalore",
+   "value": 2.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 7"
+  },
+  {
+   "item": "E-waste",
+   "city": "bhopal",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "E-waste",
+   "city": "noida",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "E-waste",
+   "city": "ghaziabad",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "E-waste",
+   "city": "gurgaon",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Geyser",
+   "city": "delhi",
+   "value": 14.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Geyser",
+   "city": "bhopal",
+   "value": 150.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Geyser",
+   "city": "nagpur",
+   "value": 18.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Geyser",
+   "city": "lucknow",
+   "value": 15.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Geyser",
+   "city": "noida",
+   "value": 14.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Geyser",
+   "city": "gurgaon",
+   "value": 14.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Geyser",
+   "city": "jaipur",
+   "value": 15.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Grey Board",
+   "city": "ahmedabad",
+   "value": 8.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 2"
+  },
+  {
+   "item": "Hard Plastic",
+   "city": "ahmedabad",
+   "value": 8.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 2"
+  },
+  {
+   "item": "Inverter Battery",
+   "city": "mumbai",
+   "value": 1700.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Inverter Battery",
+   "city": "delhi",
+   "value": 3000.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Inverter Battery",
+   "city": "hyderabad",
+   "value": 1000.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Inverter Battery",
+   "city": "pune",
+   "value": 1700.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Iron",
+   "city": "ghaziabad",
+   "value": 1000.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Laptop",
+   "city": "noida",
+   "value": 7.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Laptop",
+   "city": "ghaziabad",
+   "value": 7.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Laptop",
+   "city": "lucknow",
+   "value": 50.0,
+   "unit": "pcs",
+   "reason": "outlier vs national median 200"
+  },
+  {
+   "item": "MS Drums (200 Litre)",
+   "city": "gurgaon",
+   "value": 300.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Microwave",
+   "city": "delhi",
+   "value": 300.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Microwave",
+   "city": "bangalore",
+   "value": 130.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Microwave",
+   "city": "bhopal",
+   "value": 150.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Microwave",
+   "city": "noida",
+   "value": 250.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Microwave",
+   "city": "ghaziabad",
+   "value": 250.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Microwave",
+   "city": "gurgaon",
+   "value": 150.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Microwave",
+   "city": "pune",
+   "value": 100.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Monitor (CRT)",
+   "city": "mumbai",
+   "value": 200.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Monitor (LCD/LED)",
+   "city": "delhi",
+   "value": 100.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Monitor (LCD/LED)",
+   "city": "ghaziabad",
+   "value": 100.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Monitor (LCD/LED)",
+   "city": "gurgaon",
+   "value": 100.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "Newspaper",
+   "city": "noida",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Newspaper",
+   "city": "gurgaon",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic (PP) Bags",
+   "city": "bhopal",
+   "value": 6.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Can (20 Litre)",
+   "city": "indore",
+   "value": 15.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Can (20 Litre)",
+   "city": "nagpur",
+   "value": 15.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Can (25 Litre)",
+   "city": "nagpur",
+   "value": 25.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Can (50 Litre)",
+   "city": "nagpur",
+   "value": 30.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (15 Litre)",
+   "city": "bhopal",
+   "value": 17.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (15 Litre)",
+   "city": "indore",
+   "value": 8.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (15 Litre)",
+   "city": "raipur",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (15 Litre)",
+   "city": "noida",
+   "value": 20.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (15 Litre)",
+   "city": "ghaziabad",
+   "value": 20.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (5 Litre)",
+   "city": "delhi",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (5 Litre)",
+   "city": "ahmedabad",
+   "value": 4.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (5 Litre)",
+   "city": "bhopal",
+   "value": 5.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Plastic Jar (5 Litre)",
+   "city": "indore",
+   "value": 3.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Polythene Bags (LD)",
+   "city": "raipur",
+   "value": 6.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Printer",
+   "city": "delhi",
+   "value": 50.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Printer",
+   "city": "gurgaon",
+   "value": 40.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Soft Plastic",
+   "city": "bhopal",
+   "value": 15.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Tin",
+   "city": "delhi",
+   "value": 18.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Tin",
+   "city": "bangalore",
+   "value": 10.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Tin",
+   "city": "ghaziabad",
+   "value": 18.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Tin",
+   "city": "gurgaon",
+   "value": 18.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Tin",
+   "city": "pune",
+   "value": 12.0,
+   "unit": "pcs",
+   "reason": "unit is kg in most cities"
+  },
+  {
+   "item": "Tyre",
+   "city": "jaipur",
+   "value": 13.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 3"
+  },
+  {
+   "item": "UPS (with battery)",
+   "city": "mumbai",
+   "value": 250.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "UPS (with battery)",
+   "city": "ahmedabad",
+   "value": 250.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "UPS (without battery)",
+   "city": "mumbai",
+   "value": 150.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "UPS (without battery)",
+   "city": "nagpur",
+   "value": 100.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "UPS (without battery)",
+   "city": "noida",
+   "value": 150.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "UPS (without battery)",
+   "city": "ghaziabad",
+   "value": 150.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "UPS (without battery)",
+   "city": "pune",
+   "value": 150.0,
+   "unit": "kg",
+   "reason": "unit is pcs in most cities"
+  },
+  {
+   "item": "White Paper",
+   "city": "indore",
+   "value": 3.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 10"
+  },
+  {
+   "item": "White Paper",
+   "city": "raipur",
+   "value": 2.0,
+   "unit": "kg",
+   "reason": "outlier vs national median 10"
+  }
+ ]
+}

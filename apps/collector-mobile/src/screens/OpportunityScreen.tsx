@@ -1,329 +1,167 @@
-// src/screens/OpportunityScreen.tsx
-import { useCallback, useMemo } from "react";
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+// src/screens/OpportunityScreen.tsx — "What should I collect?": on-device opportunity ranking.
+import { Ionicons } from "@expo/vector-icons";
+import { useMemo } from "react";
+import { StyleSheet, View } from "react-native";
+import Animated from "react-native-reanimated";
 
-import { colors } from "../constants/theme";
+import { cinematic as C, space, type } from "../constants/theme";
 import { useTranslation } from "../hooks/useTranslation";
-import { scoreAllOpportunities } from "../services/ai/opportunityScorer";
+import { go, goBack, goTab } from "../navigation/ref";
+import { scoreAllOpportunities, type OpportunityScore } from "../services/ai/opportunityScorer";
 import { speak } from "../services/voice/speech";
-import { MATERIAL_METADATA } from "../types/domain";
+import { materialName } from "../types/domain";
+import { MaterialAvatar } from "../ui/materials";
+import { ProgressBar } from "../ui/motion";
+import { Badge, Button, Card, enter, GradientCard, ListRow, PressScale, Screen, SectionHeader, TopBar } from "../ui/primitives";
+import { Text } from "../ui/Text";
 import { currency } from "../utils/format";
 
-type Props = {
-  navigation: any;
-};
+import { P } from "../constants/palette";
+/** One hue per grade, drawn from the palette's accents. */
+const GRADE: Record<OpportunityScore["grade"], string> = { S: C.lavender, A: C.mint, B: C.teal, C: C.amber, D: C.rose };
 
-const GRADE_COLOR: Record<string, string> = {
-  S: "#9333EA",
-  A: "#16A34A",
-  B: "#2563EB",
-  C: "#EAB308",
-  D: "#DC2626",
-};
-
-const GRADE_BG: Record<string, string> = {
-  S: "#F3E8FF",
-  A: "#DCFCE7",
-  B: "#DBEAFE",
-  C: "#FEF9C3",
-  D: "#FEE2E2",
-};
-
-export function OpportunityScreen({ navigation }: Props) {
+export function OpportunityScreen() {
   const { language, t } = useTranslation();
-
-  // Local ML engine score (synchronous, offline, 0ms)
   const scores = useMemo(() => scoreAllOpportunities(), []);
   const topItem = scores[0];
-
-  const onRefresh = useCallback(() => {
-    // No-op for local ML, but keeping for UX
-  }, []);
+  const reason = (o: OpportunityScore) => (language === "hi" ? o.reasoningHi : language === "mr" ? o.reasoningMr : o.reasoning);
+  const demandLabel = (d: OpportunityScore["demand"]) => t(d === "HIGH" ? "high" : d === "LOW" ? "low" : "medium");
 
   const narrateTop = () => {
     if (!topItem) return;
-    speak(
-      `Top opportunity: ${topItem.material}. Score ${Math.round(topItem.opportunity_score)}. ${topItem.reasoning}`,
-      language
-    );
+    speak(`${materialName(topItem.material, language)}. ${t("aiScore")} ${topItem.score}. ${reason(topItem)}`, language);
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} />}
-    >
-      <View style={styles.topRow}>
-        <View>
-          <Text style={styles.kicker}>ML OPPORTUNITY ENGINE</Text>
-          <Text style={styles.title}>What should I collect?</Text>
-          <Text style={styles.subtitle}>
-            Ranked by composite AI score · {scores.length} materials analysed
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.speakBtn} onPress={narrateTop}>
-          <Text style={styles.speakIcon}>🔊</Text>
-        </TouchableOpacity>
-      </View>
+    <Screen>
+      <TopBar
+        title={t("oppTitle")}
+        kicker={t("oppSubtitle", { n: scores.length })}
+        onBack={goBack}
+        right={
+          <PressScale onPress={narrateTop} style={styles.iconBtn} accessibilityLabel={t("listen")} accessibilityRole="button">
+            <Ionicons name="volume-high-outline" size={18} color={C.mint} />
+          </PressScale>
+        }
+      />
 
-      {/* Top recommendation hero */}
-      {topItem && (
-        <View style={styles.hero}>
-          <View style={styles.heroTopRow}>
-            <Text style={styles.heroKicker}>🏆 #1 RECOMMENDATION</Text>
-            <View style={[styles.gradeBadge, { backgroundColor: GRADE_COLOR[topItem.grade] }]}>
-              <Text style={styles.gradeText}>Grade {topItem.grade}</Text>
-            </View>
-          </View>
-          <Text style={styles.heroMaterial}>
-            {MATERIAL_METADATA[topItem.material]?.icon ?? '' }
-            {language === "hi" ? MATERIAL_METADATA[topItem.material]?.hindi :
-             language === "mr" ? MATERIAL_METADATA[topItem.material]?.marathi :
-             topItem.material}
-          </Text>
-          <View style={styles.heroStats}>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>AI SCORE</Text>
-              <Text style={styles.heroStatValue}>{topItem.score}/100</Text>
-            </View>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>PRICE/kg</Text>
-              <Text style={styles.heroStatValue}>{currency(topItem.currentPricePerKg)}</Text>
-            </View>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>DEMAND</Text>
-              <Text style={styles.heroStatValue}>{topItem.demand}</Text>
-            </View>
-          </View>
+      <Card style={{ paddingVertical: 0, marginBottom: space.lg }}>
+        <ListRow icon="map-outline" title={t("openMap")} subtitle={t("regionTitle")} onPress={() => go("Regional")} last />
+      </Card>
 
-          {/* Signal bars */}
-          <View style={styles.signalRow}>
-            {([
-              ["Momentum", topItem.signals.momentum],
-              ["Urgency", topItem.signals.urgency],
-              ["Capacity", topItem.signals.capacityMatch],
-              ["Logistics", topItem.signals.logisticsNet],
-              ["Scarcity", topItem.signals.scarcityPremium],
-            ] as [string, number][]).map(([label, val]) => (
-              <View key={label} style={styles.signal}>
-                <Text style={styles.signalLabel}>{label}</Text>
-                <View style={styles.signalTrack}>
-                  <View style={[styles.signalBar, { width: `${val}%` }]} />
+      {topItem ? (
+        <Animated.View entering={enter(0)}>
+          <GradientCard>
+            <View style={styles.heroTop}>
+              <Text style={styles.heroKicker}>{t("topPick")}</Text>
+              <Badge label={`${topItem.grade}`} tone="light" icon="ribbon-outline" />
+            </View>
+            <View style={styles.heroName}>
+              <MaterialAvatar material={topItem.material} size={48} onDark />
+              <Text style={styles.heroMaterial} numberOfLines={2}>{materialName(topItem.material, language)}</Text>
+            </View>
+
+            <View style={styles.heroStats}>
+              {[
+                [t("aiScore"), `${topItem.score}/100`],
+                [t("perKg").replace("/", ""), currency(topItem.currentPricePerKg)],
+                [t("demand"), demandLabel(topItem.demand)],
+              ].map(([label, value], i) => (
+                <View key={label} style={[styles.heroStat, i > 0 && styles.heroStatDivider]}>
+                  <Text style={styles.heroStatLabel}>{label}</Text>
+                  <Text style={styles.heroStatValue}>{value}</Text>
                 </View>
-                <Text style={styles.signalVal}>{val}</Text>
+              ))}
+            </View>
+
+            <View style={styles.signals}>
+              {([
+                ["momentum", topItem.signals.momentum],
+                ["urgency", topItem.signals.urgency],
+                ["capacity", topItem.signals.capacityMatch],
+                ["logistics", topItem.signals.logisticsNet],
+                ["scarcity", topItem.signals.scarcityPremium],
+              ] as const).map(([key, val], i) => (
+                <View key={key} style={styles.signal}>
+                  <Text style={styles.signalLabel}>{t(key)}</Text>
+                  <View style={{ flex: 1 }}><ProgressBar progress={val / 100} height={4} color={C.mint} track={P("rgba(248,250,247,0.1)")} delay={120 + i * 60} /></View>
+                  <Text style={styles.signalVal}>{val}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Text style={styles.heroReason}>{reason(topItem)}</Text>
+            <Button label={t("startCollecting")} icon="camera-outline" variant="light" onPress={() => goTab("Collect", { prefillMaterial: topItem.material })} style={{ marginTop: space.lg }} />
+          </GradientCard>
+        </Animated.View>
+      ) : null}
+
+      <SectionHeader title={t("allRanked")} />
+      {scores.map((item, i) => (
+        <Animated.View key={item.material} entering={enter(Math.min(i, 6))}>
+          <PressScale onPress={() => goTab("Market", { material: item.material, quality: "medium", weightKg: 35 })} scaleTo={0.985} accessibilityRole="button">
+            <Card tone={item.isHazard ? "warn" : "surface"} style={styles.card}>
+              <View style={styles.cardHead}>
+                <View style={[styles.rank, { borderColor: `${GRADE[item.grade]}55` }]}>
+                  <Text style={[styles.rankText, { color: GRADE[item.grade] }]}>{item.rank}</Text>
+                </View>
+                <MaterialAvatar material={item.material} size={40} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardName} numberOfLines={1}>{materialName(item.material, language)}</Text>
+                  <Text style={styles.cardMeta} numberOfLines={1}>
+                    {demandLabel(item.demand)} {t("demand").toLowerCase()} · {item.changePercent > 0 ? "+" : ""}{item.changePercent}%
+                  </Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={[styles.score, { color: GRADE[item.grade] }]}>{item.score}</Text>
+                  <Text style={styles.grade}>{item.grade}</Text>
+                </View>
               </View>
-            ))}
-          </View>
-
-          <Text style={styles.heroReason}>
-            {language === "hi" ? topItem.reasoningHi :
-             language === "mr" ? topItem.reasoningMr :
-             topItem.reasoning}
-          </Text>
-          <TouchableOpacity
-            style={styles.heroCta}
-            onPress={() =>
-              navigation.navigate("Collect", {
-                prefillMaterial: topItem.material,
-              })
-            }
-          >
-            <Text style={styles.heroCtaText}>Start collecting →</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Full ranked list */}
-      <Text style={styles.sectionTitle}>All opportunities ranked</Text>
-      {scores.map((item) => (
-        <TouchableOpacity
-          key={item.material}
-          style={[styles.card, item.isHazard && styles.cardHazard]}
-          onPress={() =>
-            navigation.navigate("Market", {
-              material: item.material,
-              quality: "medium",
-              weightKg: 35,
-            })
-          }
-        >
-          <View style={styles.cardHeader}>
-            <View style={[styles.rankBadge, { backgroundColor: GRADE_BG[item.grade] ?? colors.greenLight }]}>
-              <Text style={[styles.rankText, { color: GRADE_COLOR[item.grade] ?? colors.green }]}>#{item.rank}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardMaterial}>
-                {MATERIAL_METADATA[item.material]?.icon ?? ''} {item.material}
-              </Text>
-              <Text style={styles.cardMeta}>
-                {item.demand} demand · {item.trend === "up" ? '↗️' : item.trend === "down" ? '↘️' : '➡️'} {item.changePercent > 0 ? '+' : ''}{item.changePercent}% today
-                {item.isHazard ? ' · ⚠️ Hazardous' : ''}
-              </Text>
-            </View>
-            <View style={styles.scoreCol}>
-              <Text style={[styles.scoreValue, { color: GRADE_COLOR[item.grade] ?? colors.orange }]}>{item.score}</Text>
-              <View style={[styles.gradeSmall, { backgroundColor: GRADE_COLOR[item.grade] ?? colors.orange }]}>
-                <Text style={styles.gradeSmallText}>{item.grade}</Text>
+              <View style={{ marginTop: space.md }}>
+                <ProgressBar progress={item.score / 100} height={4} color={GRADE[item.grade]} track={P("rgba(248,250,247,0.08)")} />
               </View>
-            </View>
-          </View>
-
-          <View style={styles.track}>
-            <View style={[styles.progress, { width: `${item.score}%` }]} />
-          </View>
-
-          <View style={styles.cardStatsRow}>
-            <View style={styles.cardStat}>
-              <Text style={styles.cardStatLabel}>PRICE/kg</Text>
-              <Text style={styles.cardStatValue}>{currency(item.currentPricePerKg)}</Text>
-            </View>
-            <View style={styles.cardStat}>
-              <Text style={styles.cardStatLabel}>MOMENTUM</Text>
-              <Text style={styles.cardStatValue}>{item.signals.momentum}/100</Text>
-            </View>
-            <View style={styles.cardStat}>
-              <Text style={styles.cardStatLabel}>URGENCY</Text>
-              <Text style={[styles.cardStatValueGreen, { color: item.signals.urgency > 70 ? colors.green : colors.orange }]}>
-                {item.signals.urgency}/100
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.cardReasoning} numberOfLines={2}>
-            {language === "hi" ? item.reasoningHi : language === "mr" ? item.reasoningMr : item.reasoning}
-          </Text>
-        </TouchableOpacity>
+              <View style={styles.cardStats}>
+                <Text style={styles.cardStat}>{currency(item.currentPricePerKg)}{t("perKg")}</Text>
+                <Text style={styles.cardStat}>{t("momentum")} {item.signals.momentum}</Text>
+                <Text style={styles.cardStat}>{t("urgency")} {item.signals.urgency}</Text>
+                {item.isHazard ? <Badge label={t("hazardAlert")} tone="warn" icon="warning-outline" /> : null}
+              </View>
+              <Text style={styles.cardReason} numberOfLines={2}>{reason(item)}</Text>
+            </Card>
+          </PressScale>
+        </Animated.View>
       ))}
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          AI scores computed locally · 5 signals: Price Momentum, Demand Urgency, Capacity Match, Logistics Net, Scarcity Premium
-        </Text>
-      </View>
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: 19, paddingBottom: 40 },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.cream,
-    padding: 30,
-  },
-  loadingText: { marginTop: 10, color: colors.muted, fontSize: 12 },
-  errorIcon: { fontSize: 40, marginBottom: 10 },
-  errorTitle: { fontSize: 16, fontWeight: "800", color: colors.ink, marginBottom: 6 },
-  errorBody: { fontSize: 12, color: colors.muted, textAlign: "center", marginBottom: 20 },
-  retryBtn: {
-    paddingHorizontal: 24, paddingVertical: 11,
-    borderRadius: 10, backgroundColor: colors.green,
-  },
-  retryText: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  iconBtn: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: P("#020705"), borderWidth: 1, borderColor: C.border },
 
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  kicker: { color: "#84948B", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
-  title: { marginTop: 4, color: colors.ink, fontSize: 24, fontWeight: "800", letterSpacing: -0.5 },
-  subtitle: { marginTop: 4, color: colors.muted, fontSize: 12 },
-  speakBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.greenLight,
-    alignItems: "center", justifyContent: "center",
-  },
-  speakIcon: { fontSize: 18 },
+  heroTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  heroKicker: { fontSize: 13, fontWeight: "500", color: C.textSoft },
+  heroName: { flexDirection: "row", alignItems: "center", gap: space.md, marginTop: space.md },
+  heroMaterial: { flex: 1, ...type.h1, color: C.text },
+  heroStats: { flexDirection: "row", marginTop: space.lg, paddingVertical: space.md, borderTopWidth: 1, borderBottomWidth: 1, borderColor: P("rgba(248,250,247,0.08)") },
+  heroStat: { flex: 1, paddingHorizontal: space.sm },
+  heroStatDivider: { borderLeftWidth: 1, borderLeftColor: P("rgba(248,250,247,0.08)") },
+  heroStatLabel: { fontSize: 12, color: C.textFaint },
+  heroStatValue: { fontSize: 16, fontWeight: "600", color: C.text, marginTop: 2 },
+  signals: { gap: space.sm, marginTop: space.lg },
+  signal: { flexDirection: "row", alignItems: "center", gap: space.md },
+  signalLabel: { width: 96, fontSize: 13, color: C.textSoft },
+  signalVal: { width: 28, fontSize: 13, fontWeight: "600", color: C.text, textAlign: "right" },
+  heroReason: { fontSize: 14, lineHeight: 21, color: C.textSoft, marginTop: space.lg },
 
-  hero: {
-    padding: 18, borderRadius: 20,
-    backgroundColor: colors.green,
-    marginBottom: 20,
-  },
-  heroTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  heroKicker: { color: "#C2E8CB", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
-  gradeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  gradeText: { color: "#fff", fontSize: 10, fontWeight: "900" },
-  heroMaterial: { color: colors.white, fontSize: 22, fontWeight: "900", letterSpacing: -0.5 },
-  heroStats: { flexDirection: "row", gap: 8, marginTop: 12 },
-  heroStat: {
-    flex: 1, padding: 10, borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.10)",
-  },
-  heroStatLabel: { color: "#B8DFC2", fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
-  heroStatValue: { marginTop: 4, color: colors.white, fontSize: 13, fontWeight: "900" },
-
-  // Signal breakdown
-  signalRow: { marginTop: 12, gap: 5 },
-  signal: { flexDirection: "row", alignItems: "center", gap: 6 },
-  signalLabel: { width: 55, fontSize: 8, color: "rgba(255,255,255,.65)", fontWeight: "700" },
-  signalTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,.15)", overflow: "hidden" },
-  signalBar: { height: "100%", borderRadius: 3, backgroundColor: "#86EFAC" },
-  signalVal: { width: 22, fontSize: 8, color: "rgba(255,255,255,.65)", fontWeight: "700", textAlign: "right" },
-
-  heroReason: { marginTop: 12, color: "#D0E6D7", fontSize: 10, lineHeight: 15 },
-  heroCta: {
-    marginTop: 14, padding: 12, borderRadius: 12,
-    backgroundColor: "#F8E5AE",
-    alignItems: "center",
-  },
-  heroCtaText: { color: colors.green, fontSize: 12, fontWeight: "900" },
-
-  sectionTitle: {
-    marginTop: 6, marginBottom: 10,
-    color: colors.ink, fontSize: 17, fontWeight: "800",
-  },
-
-  card: {
-    marginBottom: 10, padding: 14,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    borderWidth: 1, borderColor: colors.line,
-  },
-  cardHazard: { borderColor: "#FDBA74", backgroundColor: "#FFFBEB" },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
-  rankBadge: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: colors.greenLight,
-    alignItems: "center", justifyContent: "center",
-  },
-  rankText: { color: colors.green, fontSize: 11, fontWeight: "900" },
-  cardMaterial: { fontSize: 13, fontWeight: "800", color: colors.ink },
-  cardMeta: { fontSize: 9, color: colors.muted, marginTop: 2 },
-  scoreCol: { alignItems: "center", gap: 3 },
-  scoreValue: { color: colors.orange, fontSize: 18, fontWeight: "900" },
-  scoreLabel: { color: colors.muted, fontSize: 8, fontWeight: "700", letterSpacing: 0.5 },
-  gradeSmall: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
-  gradeSmallText: { color: "#fff", fontSize: 8, fontWeight: "900" },
-
-  track: {
-    height: 6, borderRadius: 3,
-    backgroundColor: "#E6EDE7",
-    overflow: "hidden",
-    marginBottom: 10,
-  },
-  progress: {
-    height: "100%",
-    backgroundColor: "#49A36B",
-    borderRadius: 3,
-  },
-
-  cardStatsRow: { flexDirection: "row", gap: 6, marginBottom: 8 },
-  cardStat: { flex: 1, padding: 8, borderRadius: 9, backgroundColor: "#F6F9F6" },
-  cardStatLabel: { fontSize: 8, fontWeight: "800", color: colors.muted, letterSpacing: 0.5 },
-  cardStatValue: { marginTop: 3, fontSize: 11, fontWeight: "900", color: colors.ink },
-  cardStatValueGreen: { marginTop: 3, fontSize: 11, fontWeight: "900", color: colors.green },
-
-  cardReasoning: { fontSize: 9, color: colors.muted, lineHeight: 13, fontStyle: "italic" },
-
-  footer: { marginTop: 16, alignItems: "center" },
-  footerText: { fontSize: 9, color: colors.muted, textAlign: "center" },
+  card: { marginBottom: space.md },
+  cardHead: { flexDirection: "row", alignItems: "center", gap: space.md },
+  rank: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: P("#020705"), borderWidth: 1 },
+  rankText: { fontSize: 12, fontWeight: "700" },
+  cardName: { fontSize: 16, fontWeight: "600", color: C.text },
+  cardMeta: { fontSize: 13, color: C.textSoft, marginTop: 2 },
+  score: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4 },
+  grade: { fontSize: 12, color: C.textFaint },
+  cardStats: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.md, marginTop: space.md },
+  cardStat: { fontSize: 13, color: C.textSoft },
+  cardReason: { fontSize: 13, lineHeight: 19, color: C.textFaint, marginTop: space.sm },
 });

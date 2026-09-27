@@ -1,22 +1,30 @@
 # apps/backend/services/ml_classifier.py
 """
-Real zero-shot image classification using OpenAI CLIP (ViT-B/32).
+E-waste material classifier — zero-shot, no training data needed.
 
-This replaces the previous filename-keyword stub. CLIP is an open-source
-vision-language model that classifies images into ANY set of text labels
-you give it — no training required.
+Providers are tried in order (see settings.VISION_BACKEND):
+  1. Hugging Face Inference API (free token) — CLIP ViT-L/14 in the cloud.
+     Fast, nothing to download, works on any laptop.
+  2. Local CLIP ViT-B/32 via transformers + torch (if installed).
+     Fully offline; first run downloads ~600 MB to ~/.cache/huggingface/.
+  3. Safe fallback — confidence 0 so the app asks the collector to choose.
 
-First run downloads ~600 MB of model weights to ~/.cache/huggingface/
-Subsequent runs are fast (~1–2 s per image on CPU).
+Images arrive as base64 (what the mobile app sends). A local file path is
+still accepted for scripts/tests running on the same machine.
 """
 
 from __future__ import annotations
 
+import base64
+import binascii
+import io
 import os
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
-from models.domain import MLMaterialPrediction
+import settings
+from models.domain import MaterialAlternative, MLMaterialPrediction
+from services.ai_providers import AIProviderError, hf_available, hf_zero_shot_image
 
 
 # ─── Safety rules (business rules, not ML) ───────────────────────────────────
@@ -94,6 +102,42 @@ MATERIAL_HAZARDS: Dict[str, Dict[str, Any]] = {
         "category": "Electronics",
         "default_quality": "low",
     },
+    "Newspaper": {
+        "hazard": False,
+        "safety_message": "Safe to handle: keep dry — wet paper is weighed down and fetches less.",
+        "category": "Paper",
+        "default_quality": "medium",
+    },
+    "Books & notebooks": {
+        "hazard": False,
+        "safety_message": "Safe to handle: remove plastic covers and spiral bindings for a better rate.",
+        "category": "Paper",
+        "default_quality": "medium",
+    },
+    "Cardboard": {
+        "hazard": False,
+        "safety_message": "Safe to handle: flatten boxes and keep them dry.",
+        "category": "Paper",
+        "default_quality": "medium",
+    },
+    "Mixed plastic": {
+        "hazard": False,
+        "safety_message": "Safe to handle: empty and rinse containers; keep bags and thin film separate.",
+        "category": "Plastic",
+        "default_quality": "medium",
+    },
+    "PET bottles": {
+        "hazard": False,
+        "safety_message": "Safe to handle: empty bottles, remove caps if possible, crush to save space.",
+        "category": "Plastic",
+        "default_quality": "medium",
+    },
+    "Stainless steel": {
+        "hazard": False,
+        "safety_message": "Safe to handle: watch for sharp edges on cut sheets and broken utensils.",
+        "category": "Metals",
+        "default_quality": "medium",
+    },
 }
 
 
@@ -114,109 +158,151 @@ CANDIDATE_PROMPTS: List[Dict[str, str]] = [
     {"material": "CRT & monitor glass",           "prompt": "a cathode ray tube television or old glass monitor"},
     {"material": "Lead acid batteries",           "prompt": "a large lead-acid car battery with acid caps"},
     {"material": "Compressors & cooling units",   "prompt": "a refrigerator compressor or air conditioner cooling unit"},
+    {"material": "Newspaper",                     "prompt": "a stack of old folded newspapers"},
+    {"material": "Books & notebooks",             "prompt": "a pile of old books and school notebooks"},
+    {"material": "Cardboard",                     "prompt": "flattened brown cardboard boxes and cartons"},
+    {"material": "Mixed plastic",                 "prompt": "old plastic buckets, tubs and household plastic containers"},
+    {"material": "PET bottles",                   "prompt": "empty clear plastic water and soft drink bottles"},
+    {"material": "Stainless steel",               "prompt": "shiny stainless steel utensils, vessels and kitchen scrap"},
 ]
 
 
-# ─── Lazy model loading ──────────────────────────────────────────────────────
+# ─── Image decoding ──────────────────────────────────────────────────────────
+
+MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+
+def decode_image(image_base64: Optional[str] = None, image_uri: Optional[str] = None) -> Optional[bytes]:
+    """Return raw image bytes from a base64 string / data URL, or a local path."""
+    if image_base64:
+        data = image_base64.split(",", 1)[1] if image_base64.startswith("data:") else image_base64
+        try:
+            raw = base64.b64decode(data, validate=False)
+        except (binascii.Error, ValueError):
+            return None
+        return raw if 0 < len(raw) <= MAX_IMAGE_BYTES else None
+
+    if image_uri:
+        path = image_uri.replace("file://", "")
+        if os.path.isfile(path) and os.path.getsize(path) <= MAX_IMAGE_BYTES:
+            with open(path, "rb") as f:
+                return f.read()
+    return None
+
+
+# ─── Local CLIP (optional) ───────────────────────────────────────────────────
 
 @lru_cache(maxsize=1)
 def _load_clip():
     """Load CLIP model + processor once, cache forever."""
-    try:
-        import torch  # noqa: F401
-        from transformers import CLIPModel, CLIPProcessor
-    except ImportError as exc:
-        raise RuntimeError(
-            "CLIP dependencies missing. Run:\n"
-            "  pip install torch --index-url https://download.pytorch.org/whl/cpu\n"
-            "  pip install transformers pillow"
-        ) from exc
+    from transformers import CLIPModel, CLIPProcessor  # noqa: WPS433 (optional dependency)
 
     model_name = "openai/clip-vit-base-patch32"
-    print(f"[MHK ML] Loading CLIP model '{model_name}' (first call only)...")
-
+    print(f"[MHK ML] Loading local CLIP '{model_name}' (first call only)...")
     model = CLIPModel.from_pretrained(model_name)
     processor = CLIPProcessor.from_pretrained(model_name)
     model.eval()
-
-    print("[MHK ML] CLIP model ready.")
+    print("[MHK ML] Local CLIP ready.")
     return model, processor
+
+
+def local_clip_installed() -> bool:
+    if not settings.ENABLE_LOCAL_CLIP:
+        return False
+    try:
+        import torch  # noqa: F401
+        import transformers  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _classify_local(image_bytes: bytes) -> List[Tuple[str, float]]:
+    import torch
+    from PIL import Image
+
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    model, processor = _load_clip()
+    prompts = [c["prompt"] for c in CANDIDATE_PROMPTS]
+    inputs = processor(text=prompts, images=image, return_tensors="pt", padding=True)
+    with torch.no_grad():
+        probs = model(**inputs).logits_per_image.softmax(dim=1)[0]
+    scored = [(CANDIDATE_PROMPTS[i]["material"], float(probs[i].item())) for i in range(len(prompts))]
+    return sorted(scored, key=lambda x: x[1], reverse=True)
+
+
+def _classify_hf(image_bytes: bytes) -> List[Tuple[str, float]]:
+    by_prompt = {c["prompt"]: c["material"] for c in CANDIDATE_PROMPTS}
+    results = hf_zero_shot_image(image_bytes, list(by_prompt.keys()))
+    return [(by_prompt[r["label"]], float(r["score"])) for r in results if r.get("label") in by_prompt]
 
 
 # ─── Public classifier ───────────────────────────────────────────────────────
 
-class CLIPMaterialClassifier:
-    """
-    Zero-shot e-waste material classifier using OpenAI CLIP.
-    """
-
-    def __init__(self):
-        self.model_version = "openai/clip-vit-base-patch32 (zero-shot)"
+class MaterialClassifier:
+    def __init__(self) -> None:
         self.classes = [c["material"] for c in CANDIDATE_PROMPTS]
 
+    def status(self) -> Dict[str, Any]:
+        return {
+            "backend": settings.VISION_BACKEND,
+            "huggingface_api": settings.HF_VISION_MODEL if hf_available() else None,
+            "local_clip": local_clip_installed(),
+        }
+
+    def classify(self, image_bytes: Optional[bytes]) -> MLMaterialPrediction:
+        if not image_bytes:
+            return self._fallback("No readable image received. Please retake the photo.")
+
+        backend = settings.VISION_BACKEND
+        attempts: List[Tuple[str, Any]] = []
+        if backend in ("auto", "hf") and hf_available():
+            attempts.append((f"huggingface:{settings.HF_VISION_MODEL}", _classify_hf))
+        if backend in ("auto", "local") and local_clip_installed():
+            attempts.append(("local:openai/clip-vit-base-patch32", _classify_local))
+
+        errors: List[str] = []
+        for source, fn in attempts:
+            try:
+                ranked = fn(image_bytes)
+                if ranked:
+                    return self._build(ranked, source)
+            except (AIProviderError, Exception) as exc:  # any provider failure → try next
+                print(f"[MHK ML] {source} failed: {exc}")
+                errors.append(f"{source}: {exc}")
+
+        if not attempts:
+            return self._fallback(
+                "AI vision is not configured. Add a free HF_API_TOKEN to the backend .env, "
+                "or choose the material manually."
+            )
+        return self._fallback("AI could not analyse this photo. Please choose the material manually.")
+
+    # Kept for scripts that pass a path.
     def classify_image(self, image_uri: str) -> MLMaterialPrediction:
-        try:
-            from PIL import Image
-        except ImportError as exc:
-            raise RuntimeError("Pillow is required. Run: pip install pillow") from exc
+        return self.classify(decode_image(image_uri=image_uri))
 
-        # Accept both "file:///C:/..." and "C:/..." paths
-        path = image_uri.replace("file://", "")
-
-        if not os.path.exists(path):
-            print(f"[MHK ML] Image path not found: {path} — returning safe default.")
-            return self._fallback_prediction()
-
-        try:
-            image = Image.open(path).convert("RGB")
-        except Exception as exc:
-            print(f"[MHK ML] Failed to open image '{path}': {exc}")
-            return self._fallback_prediction()
-
-        try:
-            import torch
-            model, processor = _load_clip()
-
-            prompts = [c["prompt"] for c in CANDIDATE_PROMPTS]
-            inputs = processor(
-                text=prompts,
-                images=image,
-                return_tensors="pt",
-                padding=True,
-            )
-
-            with torch.no_grad():
-                outputs = model(**inputs)
-                probs = outputs.logits_per_image.softmax(dim=1)[0]
-
-            best_idx = int(torch.argmax(probs).item())
-            confidence = float(probs[best_idx].item())
-            material_name = CANDIDATE_PROMPTS[best_idx]["material"]
-
-            print(
-                f"[MHK ML] CLIP classified '{os.path.basename(path)}' as "
-                f"'{material_name}' ({confidence:.2%})"
-            )
-
-        except Exception as exc:
-            print(f"[MHK ML] CLIP inference failed: {exc}")
-            return self._fallback_prediction()
-
-        meta = MATERIAL_HAZARDS.get(material_name, MATERIAL_HAZARDS["Mixed e-waste"])
-
+    def _build(self, ranked: List[Tuple[str, float]], source: str) -> MLMaterialPrediction:
+        material, confidence = ranked[0]
+        meta = MATERIAL_HAZARDS.get(material, MATERIAL_HAZARDS["Mixed e-waste"])
+        print(f"[MHK ML] {source} → {material} ({confidence:.1%})")
         return MLMaterialPrediction(
-            material=material_name,  # type: ignore[arg-type]
+            material=material,  # type: ignore[arg-type]
             category=meta["category"],
             quality=meta["default_quality"],
             hazard=meta["hazard"],
             confidence=round(confidence, 4),
             safety_message=meta["safety_message"],
-            bounding_box=None,
-            model_version=self.model_version,
+            alternatives=[
+                MaterialAlternative(material=m, confidence=round(c, 4))  # type: ignore[arg-type]
+                for m, c in ranked[1:4]
+            ],
+            model_version=source,
+            source=source.split(":", 1)[0],
         )
 
-    def _fallback_prediction(self) -> MLMaterialPrediction:
-        """Safe default if image can't be loaded. Confidence=0.0 so callers know."""
+    def _fallback(self, message: str) -> MLMaterialPrediction:
+        """Confidence=0 tells the client to ask the collector instead of trusting it."""
         meta = MATERIAL_HAZARDS["Mixed e-waste"]
         return MLMaterialPrediction(
             material="Mixed e-waste",
@@ -224,10 +310,11 @@ class CLIPMaterialClassifier:
             quality="low",
             hazard=False,
             confidence=0.0,
-            safety_message="Could not analyse image. Please retake photo in clear light.",
-            bounding_box=None,
-            model_version=self.model_version + " (fallback)",
+            safety_message=message,
+            alternatives=[],
+            model_version="fallback",
+            source="fallback",
         )
 
 
-ml_classifier = CLIPMaterialClassifier()
+ml_classifier = MaterialClassifier()

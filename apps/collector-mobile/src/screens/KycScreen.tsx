@@ -1,268 +1,135 @@
-// src/screens/KycScreen.tsx
+// src/screens/KycScreen.tsx — simulated KYC (Aadhaar last4 → PAN → bank last4 → selfie).
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
+import { Text } from "../ui/Text";
+import Animated, { BounceIn, FadeInRight, FadeOutLeft } from "react-native-reanimated";
 
-import { colors } from "../constants/theme";
-import { kycStart, kycVerify } from "../services/api/client";
+import { colors, radius, space, type } from "../constants/theme";
+import { useTranslation } from "../hooks/useTranslation";
+import type { TranslationKey } from "../i18n";
+import { ApiError, kycStart, kycVerify } from "../services/api/client";
 import { useAuthStore } from "../store/authStore";
+import { toast } from "../ui/feedback";
+import { Float, ProgressBar } from "../ui/motion";
+import { Button, Card, IconTile, type IconName, Screen, textStyles } from "../ui/primitives";
 
-type Props = {
-  onComplete: () => void;
-};
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
-export function KycScreen({ onComplete }: Props) {
+/** Never send the full PAN: keep first 5 + last 1 characters. */
+const maskPan = (pan: string) => `${pan.slice(0, 5)}****${pan.slice(9)}`;
+
+const STEPS: Array<{ icon: IconName; title: TranslationKey; help: TranslationKey }> = [
+  { icon: "finger-print", title: "aadhaarTitle", help: "aadhaarHelp" },
+  { icon: "card", title: "panTitle", help: "panHelp" },
+  { icon: "business", title: "bankTitle", help: "bankHelp" },
+  { icon: "happy", title: "selfieTitle", help: "selfieHelp" },
+];
+
+export function KycScreen() {
+  const { t } = useTranslation();
   const collector = useAuthStore((s) => s.collector);
   const setCollector = useAuthStore((s) => s.setCollector);
+  const signOut = useAuthStore((s) => s.signOut);
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [aadhaarLast4, setAadhaarLast4] = useState("");
-  const [panMasked, setPanMasked] = useState("");
-  const [bankLast4, setBankLast4] = useState("");
-  const [isBusy, setIsBusy] = useState(false);
+  const [step, setStep] = useState(collector?.kyc_status === "IN_PROGRESS" ? 3 : 0);
+  const [aadhaar, setAadhaar] = useState("");
+  const [pan, setPan] = useState("");
+  const [bank, setBank] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
-  const canStep2 = aadhaarLast4.length === 4;
-  const canStep3 = panMasked.length >= 6;
-  const canStep4 = bankLast4.length === 4;
+  const panValid = PAN_RE.test(pan);
+  const current = STEPS[step]!;
 
-  const handleStart = async () => {
+  const submitDetails = async () => {
     if (!collector) return;
-    setIsBusy(true);
+    setBusy(true);
     try {
-      const updated = await kycStart(collector.id, {
-        aadhaar_last4: aadhaarLast4,
-        pan_masked: panMasked,
-        bank_account_last4: bankLast4,
-      });
+      const updated = await kycStart(collector.id, { aadhaar_last4: aadhaar, pan_masked: maskPan(pan), bank_account_last4: bank });
       await setCollector(updated);
-      setStep(4);
-    } catch (err: any) {
-      Alert.alert("KYC failed", err?.message ?? "Please check your connection.");
+      setStep(3);
+    } catch (err) {
+      toast.error(t("serverDown"), err instanceof ApiError ? err.message : t("serverDownMsg"));
     } finally {
-      setIsBusy(false);
+      setBusy(false);
     }
   };
 
-  const handleVerify = async () => {
+  const verify = async () => {
     if (!collector) return;
-    setIsBusy(true);
+    setBusy(true);
     try {
-      // Selfie is simulated — no camera capture in this demo
       const updated = await kycVerify(collector.id, undefined);
-      await setCollector(updated);
-      Alert.alert(
-        "KYC verified ✓",
-        "Your account is now verified. You can start collecting!",
-        [{ text: "Continue", onPress: onComplete }]
-      );
-    } catch (err: any) {
-      Alert.alert("Verification failed", err?.message ?? "Please try again.");
-    } finally {
-      setIsBusy(false);
+      setDone(true);
+      toast.success(t("kycDone"));
+      // Let the celebration play before the navigator swaps to the main app.
+      setTimeout(() => void setCollector(updated), 1200);
+    } catch (err) {
+      toast.error(t("serverDown"), err instanceof ApiError ? err.message : t("serverDownMsg"));
+      setBusy(false);
     }
   };
+
+  if (done) {
+    return (
+      <Screen contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
+        <View style={{ alignItems: "center" }}>
+          <Animated.View entering={BounceIn.duration(900)} style={styles.doneCircle}>
+            <Ionicons name="shield-checkmark" size={64} color={colors.white} />
+          </Animated.View>
+          <Text style={[styles.title, { marginTop: space.xl, textAlign: "center" }]}>{t("kycDone")}</Text>
+        </View>
+      </Screen>
+    );
+  }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.brand}>♻ KYC Verification</Text>
-      <Text style={styles.subtitle}>
-        Government ID verification keeps the platform trusted for everyone.
-        This demo uses simulated verification.
-      </Text>
-
-      <View style={styles.stepper}>
-        {[1, 2, 3, 4].map((n) => (
-          <View key={n} style={[styles.stepDot, step >= n && styles.stepDotOn]} />
-        ))}
+    <Screen>
+      <Text style={textStyles.kicker}>KYC · {step + 1}/4</Text>
+      <Text style={styles.title}>{t("kycTitle")}</Text>
+      <Text style={[textStyles.body, { marginTop: 6 }]}>{t("kycSubtitle")}</Text>
+      <View style={{ marginVertical: space.xl }}>
+        <ProgressBar progress={(step + 1) / 4} height={6} />
       </View>
 
-      {step === 1 && (
-        <>
-          <Text style={styles.stepTitle}>Aadhaar (last 4 digits)</Text>
-          <Text style={styles.stepHelp}>
-            We never store your full Aadhaar number — only the last 4 digits for
-            reference. Real verification would use UIDAI's API.
-          </Text>
-          <TextInput
-            style={styles.otpInput}
-            placeholder="• • • •"
-            placeholderTextColor={colors.muted}
-            keyboardType="number-pad"
-            maxLength={4}
-            value={aadhaarLast4}
-            onChangeText={(t) => setAadhaarLast4(t.replace(/\D/g, ""))}
-          />
-          <TouchableOpacity
-            style={[styles.cta, !canStep2 && styles.ctaDisabled]}
-            onPress={() => setStep(2)}
-            disabled={!canStep2}
-          >
-            <Text style={styles.ctaText}>Next →</Text>
-          </TouchableOpacity>
-        </>
-      )}
+      <Animated.View key={step} entering={FadeInRight.springify().damping(18)} exiting={FadeOutLeft}>
+        <Card style={{ alignItems: "center", paddingVertical: space.xxl }}>
+          <Float><IconTile icon={current.icon} size={72} /></Float>
+          <Text style={[styles.stepTitle, { marginTop: space.lg }]}>{t(current.title)}</Text>
+          <Text style={[textStyles.small, { textAlign: "center", marginTop: 6 }]}>{t(current.help)}</Text>
 
-      {step === 2 && (
-        <>
-          <Text style={styles.stepTitle}>PAN card number</Text>
-          <Text style={styles.stepHelp}>
-            Format: 5 letters, 4 digits, 1 letter (e.g. ABCPX1234K).
-            We'll mask the middle for storage.
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="ABCDE1234F"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="characters"
-            maxLength={10}
-            value={panMasked}
-            onChangeText={(t) => setPanMasked(t.toUpperCase())}
-          />
-          <TouchableOpacity
-            style={[styles.cta, !canStep3 && styles.ctaDisabled]}
-            onPress={() => setStep(3)}
-            disabled={!canStep3}
-          >
-            <Text style={styles.ctaText}>Next →</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setStep(1)} style={styles.backLink}>
-            <Text style={styles.backLinkText}>← Back</Text>
-          </TouchableOpacity>
-        </>
-      )}
+          {step === 0 && (
+            <TextInput style={styles.codeInput} value={aadhaar} onChangeText={(v) => setAadhaar(v.replace(/\D/g, "").slice(0, 4))} keyboardType="number-pad" maxLength={4} placeholder="• • • •" placeholderTextColor={colors.faint} autoFocus accessibilityLabel={t("aadhaarTitle")} />
+          )}
+          {step === 1 && (
+            <>
+              <TextInput style={[styles.codeInput, { letterSpacing: 3, fontSize: 22 }]} value={pan} onChangeText={(v) => setPan(v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10))} autoCapitalize="characters" maxLength={10} placeholder="ABCDE1234F" placeholderTextColor={colors.faint} autoFocus accessibilityLabel={t("panTitle")} />
+              {pan.length === 10 && !panValid ? <Text style={styles.error}>{t("panInvalid")}</Text> : null}
+            </>
+          )}
+          {step === 2 && (
+            <TextInput style={styles.codeInput} value={bank} onChangeText={(v) => setBank(v.replace(/\D/g, "").slice(0, 4))} keyboardType="number-pad" maxLength={4} placeholder="• • • •" placeholderTextColor={colors.faint} autoFocus accessibilityLabel={t("bankTitle")} />
+          )}
+        </Card>
 
-      {step === 3 && (
-        <>
-          <Text style={styles.stepTitle}>Bank account (last 4 digits)</Text>
-          <Text style={styles.stepHelp}>
-            Payouts are settled directly to your bank/UPI. We only store the last
-            4 digits.
-          </Text>
-          <TextInput
-            style={styles.otpInput}
-            placeholder="• • • •"
-            placeholderTextColor={colors.muted}
-            keyboardType="number-pad"
-            maxLength={4}
-            value={bankLast4}
-            onChangeText={(t) => setBankLast4(t.replace(/\D/g, ""))}
-          />
-          <TouchableOpacity
-            style={[styles.cta, (!canStep4 || isBusy) && styles.ctaDisabled]}
-            onPress={handleStart}
-            disabled={!canStep4 || isBusy}
-          >
-            {isBusy ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.ctaText}>Submit details</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setStep(2)} style={styles.backLink}>
-            <Text style={styles.backLinkText}>← Back</Text>
-          </TouchableOpacity>
-        </>
-      )}
-
-      {step === 4 && (
-        <>
-          <View style={styles.successCircle}>
-            <Text style={styles.successIcon}>📷</Text>
-          </View>
-          <Text style={styles.stepTitle}>Selfie verification</Text>
-          <Text style={styles.stepHelp}>
-            In a real app you'd take a selfie now for liveness + face match. For
-            this demo we skip the camera and verify instantly.
-          </Text>
-          <TouchableOpacity
-            style={[styles.cta, isBusy && styles.ctaDisabled]}
-            onPress={handleVerify}
-            disabled={isBusy}
-          >
-            {isBusy ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.ctaText}>✓ Verify instantly (simulated)</Text>
-            )}
-          </TouchableOpacity>
-        </>
-      )}
-    </ScrollView>
+        <View style={{ marginTop: space.xl, gap: space.md }}>
+          {step === 0 && <Button label={t("next")} icon="arrow-forward" disabled={aadhaar.length !== 4} onPress={() => setStep(1)} />}
+          {step === 1 && <Button label={t("next")} icon="arrow-forward" disabled={!panValid} onPress={() => setStep(2)} />}
+          {step === 2 && <Button label={t("submit")} icon="cloud-upload" disabled={bank.length !== 4} loading={busy} onPress={submitDetails} />}
+          {step === 3 && <Button label={t("verifyNow")} icon="shield-checkmark" loading={busy} onPress={verify} />}
+          {step > 0 && step < 3 ? <Button label={t("back")} variant="ghost" icon="arrow-back" onPress={() => setStep(step - 1)} /> : null}
+          {step === 0 ? <Button label={t("signOut")} variant="ghost" icon="log-out-outline" onPress={() => void signOut()} /> : null}
+        </View>
+      </Animated.View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: 24, paddingBottom: 40 },
-
-  brand: { fontSize: 22, fontWeight: "900", color: colors.green },
-  subtitle: { marginTop: 8, fontSize: 12, color: colors.muted, lineHeight: 17 },
-
-  stepper: { flexDirection: "row", gap: 6, marginTop: 20, marginBottom: 28 },
-  stepDot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: "#DBE3DC" },
-  stepDotOn: { backgroundColor: colors.orange },
-
-  stepTitle: { fontSize: 17, fontWeight: "800", color: colors.ink },
-  stepHelp: { marginTop: 6, marginBottom: 16, fontSize: 12, color: colors.muted, lineHeight: 17 },
-
-  input: {
-    height: 52,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.green,
-    backgroundColor: colors.white,
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 3,
-    color: colors.ink,
-    textAlign: "center",
-  },
-  otpInput: {
-    height: 64,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: colors.green,
-    backgroundColor: colors.white,
-    fontSize: 28,
-    letterSpacing: 14,
-    fontWeight: "900",
-    textAlign: "center",
-    color: colors.green,
-  },
-
-  cta: {
-    marginTop: 20,
-    paddingVertical: 15,
-    borderRadius: 14,
-    backgroundColor: colors.green,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaDisabled: { backgroundColor: "#B7C7BC" },
-  ctaText: { color: colors.white, fontSize: 14, fontWeight: "800" },
-
-  backLink: { marginTop: 14, alignItems: "center" },
-  backLinkText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-
-  successCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.greenLight,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  successIcon: { fontSize: 38 },
+  title: { ...type.h1, color: colors.ink, marginTop: 4 },
+  stepTitle: { ...type.h2, color: colors.ink, textAlign: "center" },
+  codeInput: { marginTop: space.xl, minWidth: 200, textAlign: "center", fontSize: 30, fontWeight: "800", letterSpacing: 10, color: colors.ink, paddingVertical: 14, paddingHorizontal: 20, borderRadius: radius.md, borderWidth: 2, borderColor: colors.line, backgroundColor: colors.bg },
+  error: { marginTop: space.sm, color: colors.danger, fontWeight: "700" },
+  doneCircle: { width: 130, height: 130, borderRadius: 65, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
 });

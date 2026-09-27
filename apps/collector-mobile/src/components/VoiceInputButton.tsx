@@ -1,17 +1,19 @@
 // src/components/VoiceInputButton.tsx
+import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
 import type { Language } from "../types/domain";
 import { startListening, type RecognitionHandle } from "../services/voice/speechRecognition";
 
+import { P } from "../constants/palette";
 type Props = {
   language: Language;
   label: string;
@@ -78,7 +80,7 @@ export function VoiceInputButton({
         {isListening ? (
           <ActivityIndicator color={colors.white} size="small" />
         ) : (
-          <Text style={styles.icon}>🎤</Text>
+          <Ionicons name="mic-outline" size={16} color={P("#E5B86A")} />
         )}
         <Text style={[styles.label, size === "large" && styles.labelLarge]}>
           {isListening ? listeningLabel : label}
@@ -99,14 +101,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#FFF0D8",
+    backgroundColor: P("rgba(248,250,247,0.06)"),
     borderWidth: 1,
-    borderColor: "#F3C889",
+    borderColor: P("rgba(229,184,106,0.35)"),
   },
   btnLarge: { paddingHorizontal: 20, paddingVertical: 14 },
-  btnActive: { backgroundColor: "#E53E3E", borderColor: "#C53030" },
+  btnActive: { backgroundColor: P("#E7898F"), borderColor: P("#E7898F") },
   icon: { fontSize: 16 },
-  label: { color: "#835A17", fontSize: 12, fontWeight: "700" },
+  label: { color: P("#E5B86A"), fontSize: 12, fontWeight: "700" },
   labelLarge: { fontSize: 14 },
-  error: { marginTop: 4, fontSize: 10, color: "#C53030", fontWeight: "700" },
+  error: { marginTop: 4, fontSize: 10, color: P("#E7898F"), fontWeight: "700" },
 });

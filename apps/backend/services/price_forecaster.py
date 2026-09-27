@@ -14,7 +14,14 @@ BASE_PRICES: Dict[str, float] = {
     "Lead acid batteries": 98.0,
     "CRT & monitor glass": 18.0,
     "Compressors & cooling units": 165.0,
-    "Mixed e-waste": 85.0
+    "Mixed e-waste": 85.0,
+    # Household scrap: national median doorstep rate ÷ 0.70 (data/india_rate_cards.json) — fallback only
+    "Newspaper": 14.3,
+    "Books & notebooks": 14.3,
+    "Cardboard": 12.9,
+    "Mixed plastic": 11.4,
+    "PET bottles": 21.4,
+    "Stainless steel": 57.1
 }
 
 # Seasonal monthly and regional variance factors
@@ -30,7 +37,8 @@ def generate_arima_forecast(material: MaterialType, zone: str = "Pune MIDC") -> 
     Simulates ARIMA(2,1,1) + Holt-Winters seasonal drift forecasting for 7 days ahead.
     Incorporates historical copper smelter demand, exchange rate shifts, and regional scrap inflows.
     """
-    base = BASE_PRICES.get(material, 100.0)
+    from services.market_price_service import market_price  # local import: market service imports BASE_PRICES
+    base = market_price(material)[0] or BASE_PRICES.get(material, 100.0)
     multiplier = ZONE_MULTIPLIERS.get(zone, 1.0)
     current_price = round(base * multiplier, 1)
 

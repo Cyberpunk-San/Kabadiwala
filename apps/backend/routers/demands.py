@@ -12,6 +12,7 @@ from models.domain import (
     DemandResponse,
 )
 from services import demand_service
+from services.recycler_console_service import require_active
 
 router = APIRouter(prefix="/api/v1/demands", tags=["Reverse Marketplace"])
 
@@ -19,15 +20,19 @@ router = APIRouter(prefix="/api/v1/demands", tags=["Reverse Marketplace"])
 @router.post("", response_model=DemandResponse, status_code=201)
 def create_demand(data: DemandCreate, db: Session = Depends(get_db)):
     """Recycler posts a new demand."""
+    require_active(db, data.recycler_id)
     return demand_service.create(db, data)
 
 
 @router.get("", response_model=List[DemandResponse])
 def list_demands(
     material: Optional[str] = Query(None),
+    recycler_id: Optional[str] = Query(None, description="One recycler's demands, in every status"),
     db: Session = Depends(get_db),
 ):
-    """List open + partial demands, optionally filtered by material."""
+    """List open + partial demands, optionally filtered by material — or all of one recycler's demands."""
+    if recycler_id:
+        return demand_service.list_for_recycler(db, recycler_id)
     return demand_service.list_open(db, material=material)
 
 

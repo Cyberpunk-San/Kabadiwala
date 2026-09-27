@@ -18,6 +18,13 @@ CARBON_OFFSET_FACTORS: Dict[str, float] = {
     "CRT & monitor glass": 0.8,
     "Compressors & cooling units": 4.1,
     "Mixed e-waste": 3.0,
+    # Household scrap — approximate recycled-vs-virgin savings
+    "Newspaper": 1.0,
+    "Books & notebooks": 1.0,
+    "Cardboard": 1.0,
+    "Mixed plastic": 1.5,
+    "PET bottles": 1.5,
+    "Stainless steel": 1.5,
 }
 
 

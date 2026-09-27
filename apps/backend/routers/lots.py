@@ -11,6 +11,7 @@ Endpoints:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -30,10 +31,11 @@ def create_lot(lot: LotCreate, db: Session = Depends(get_db)):
 @router.get("", response_model=List[LotResponse])
 def get_all_lots(
     status: Optional[str] = Query(None, description="Filter by lot status"),
+    collector_id: Optional[str] = Query(None, description="Only this collector's lots"),
     db: Session = Depends(get_db),
 ):
-    """List all lots, newest first, optionally filtered by status."""
-    return lot_service.list_lots(db, status=status)
+    """List lots, newest first, optionally filtered by status / collector."""
+    return lot_service.list_lots(db, status=status, collector_id=collector_id)
 
 
 @router.get("/{lot_id}", response_model=LotResponse)
@@ -70,3 +72,22 @@ def update_lot_status(
     if not updated:
         raise HTTPException(status_code=404, detail=f"Lot {lot_id} not found")
     return updated
+
+
+class LotOfferUpdate(BaseModel):
+    expected_net_earnings: float = Field(..., ge=0)
+
+
+@router.patch("/{lot_id}/offer", response_model=LotResponse)
+def set_lot_offer(lot_id: str, data: LotOfferUpdate, db: Session = Depends(get_db)):
+    """Record the take-home amount after the collector picks a buyer for an existing lot."""
+    from db import LotRow
+
+    row = db.query(LotRow).filter(LotRow.id == lot_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Lot {lot_id} not found")
+    if row.status in ("PAID", "SOLD"):
+        raise HTTPException(status_code=409, detail="Lot already sold")
+    row.expected_net_earnings = data.expected_net_earnings
+    db.commit()
+    return lot_service.get_lot(db, lot_id)

@@ -1,4 +1,7 @@
+import { usePriceStore } from "../store/priceStore";
 import type { BazarPriceItem, Material } from "../types/domain";
+
+// Built-in reference rates — used only until the phone has fetched today's prices from the server.
 
 export const BAZAR_PRICES: BazarPriceItem[] = [
   {
@@ -268,9 +271,15 @@ export const BAZAR_PRICES: BazarPriceItem[] = [
 ];
 
 export function getPriceByMaterial(material: Material): BazarPriceItem | undefined {
-  return BAZAR_PRICES.find((item) => item.material === material);
+  return getAllBazarPrices().find((item) => item.material === material);
 }
 
+/** Today's prices: live from the server when available, else the built-in reference rates. */
 export function getAllBazarPrices(): BazarPriceItem[] {
-  return BAZAR_PRICES;
+  return usePriceStore.getState().items ?? BAZAR_PRICES;
+}
+
+/** Same as getAllBazarPrices, but re-renders when new prices arrive. */
+export function useBazarPrices(): BazarPriceItem[] {
+  return usePriceStore((s) => s.items) ?? BAZAR_PRICES;
 }

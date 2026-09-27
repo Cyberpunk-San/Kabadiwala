@@ -1,13 +1,14 @@
 // src/components/VoiceCommandBar.tsx
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
   Modal,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
 import type { Language } from "../types/domain";
@@ -15,6 +16,7 @@ import { matchMaterial, parseSpokenNumber, isConfirmIntent, isCancelIntent } fro
 import { speak } from "../services/voice/speech";
 import { VoiceInputButton } from "./VoiceInputButton";
 
+import { P } from "../constants/palette";
 type Props = {
   visible: boolean;
   language: Language;
@@ -96,7 +98,7 @@ export function VoiceCommandBar({
           <View style={styles.header}>
             <Text style={styles.title}>Voice Command</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.close}>✕</Text>
+              <Ionicons name="close" size={20} color={P("rgba(248,250,247,0.62)")} />
             </TouchableOpacity>
           </View>
 
@@ -112,7 +114,7 @@ export function VoiceCommandBar({
             {lastTranscript ? (
               <View style={styles.resultBox}>
                 <Text style={styles.resultLabel}>HEARD</Text>
-                <Text style={styles.resultText}>"{lastTranscript}"</Text>
+                <Text style={styles.resultText}>“{lastTranscript}”</Text>
                 {lastIntent ? (
                   <>
                     <Text style={[styles.resultLabel, { marginTop: 10 }]}>PARSED</Text>
@@ -123,11 +125,11 @@ export function VoiceCommandBar({
             ) : (
               <View style={styles.hints}>
                 <Text style={styles.hintTitle}>Try saying:</Text>
-                <Text style={styles.hint}>• "Copper cable, thirty five kg"</Text>
-                <Text style={styles.hint}>• "तांबा पैंतीस किलो"</Text>
-                <Text style={styles.hint}>• "तांबे पस्तीस किलो"</Text>
-                <Text style={styles.hint}>• "Confirm" / "हाँ" / "हो"</Text>
-                <Text style={styles.hint}>• "Cancel" / "रद्द"</Text>
+                <Text style={styles.hint}>• “Copper cable, thirty five kg”</Text>
+                <Text style={styles.hint}>• “तांबा पैंतीस किलो”</Text>
+                <Text style={styles.hint}>• “तांबे पस्तीस किलो”</Text>
+                <Text style={styles.hint}>• “Confirm” / “हाँ” / “हो”</Text>
+                <Text style={styles.hint}>• “Cancel” / “रद्द”</Text>
               </View>
             )}
           </ScrollView>
@@ -138,7 +140,7 @@ export function VoiceCommandBar({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+  backdrop: { flex: 1, backgroundColor: P("rgba(0,0,0,0.55)"), justifyContent: "flex-end" },
   sheet: {
     backgroundColor: colors.cream,
     borderTopLeftRadius: 24,
@@ -157,7 +159,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     padding: 16,
     borderRadius: 14,
-    backgroundColor: colors.white,
+    backgroundColor: P("#0B1A17"),
     borderWidth: 1,
     borderColor: colors.line,
     alignSelf: "stretch",
@@ -170,7 +172,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     padding: 16,
     borderRadius: 14,
-    backgroundColor: colors.white,
+    backgroundColor: P("#0B1A17"),
     borderWidth: 1,
     borderColor: colors.line,
     alignSelf: "stretch",

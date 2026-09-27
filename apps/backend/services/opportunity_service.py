@@ -12,6 +12,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from db import DemandRow, RecyclerRow
+from services import market_price_service
 from models.domain import OpportunityFeedResponse, OpportunityItem
 
 
@@ -25,6 +26,10 @@ MATERIALS_FOR_OPPORTUNITY = [
     "Printed Circuit Boards (PCB)",
     "Electric motors",
     "Iron & steel scrap",
+    "Newspaper",
+    "Mixed plastic",
+    "PET bottles",
+    "Cardboard",
 ]
 
 
@@ -33,7 +38,7 @@ def _avg_listed_price_for_material(db: Session, material: str) -> float:
     prices = []
     for r in rows:
         try:
-            p = json.loads(r.prices_json).get(material)
+            p = market_price_service.buyer_prices(db, r).get(material)
             if p:
                 prices.append(float(p))
         except Exception:
@@ -46,7 +51,7 @@ def _best_net_price_for_material(db: Session, material: str, weight_kg: float) -
     best_net_per_kg = 0.0
     for r in rows:
         try:
-            listed = float(json.loads(r.prices_json).get(material) or 0.0)
+            listed = float(market_price_service.buyer_prices(db, r).get(material) or 0.0)
         except Exception:
             listed = 0.0
         if listed <= 0:

@@ -1,0 +1,48 @@
+{
+  "_comment": "Industry clusters used for regional e-waste intelligence. Names are real, publicly known industrial areas; coordinates are APPROXIMATE area centroids. 'sector_profiles' are heuristic relative material shares per sector (unitless, not measured tonnages). Replace or extend with official data (MIDC industrial area list, Udyam/MSME registrations, CPCB state inventories) — no code change needed.",
+  "source": {
+    "name": "Curated seed — public knowledge of Pune-region industrial areas",
+    "approximate": true,
+    "retrieved_on": "2026-09-27"
+  },
+  "sector_profiles": {
+    "it": {
+      "label": "IT / data centres",
+      "materials": { "Server boards": 0.30, "Printed Circuit Boards (PCB)": 0.20, "Mixed e-waste": 0.20, "Lithium-ion batteries": 0.15, "CRT & monitor glass": 0.10, "Copper cable": 0.05 }
+    },
+    "automobile": {
+      "label": "Automobile & components",
+      "materials": { "Iron & steel scrap": 0.30, "Aluminium": 0.25, "Lead acid batteries": 0.15, "Copper cable": 0.15, "Electric motors": 0.10, "Printed Circuit Boards (PCB)": 0.05 }
+    },
+    "manufacturing": {
+      "label": "Engineering & manufacturing",
+      "materials": { "Iron & steel scrap": 0.30, "Copper cable": 0.20, "Electric motors": 0.20, "Brass fittings": 0.15, "Aluminium": 0.10, "Mixed e-waste": 0.05 }
+    },
+    "white_goods": {
+      "label": "Appliances / white goods",
+      "materials": { "Compressors & cooling units": 0.30, "Copper cable": 0.20, "Printed Circuit Boards (PCB)": 0.15, "CRT & monitor glass": 0.10, "Iron & steel scrap": 0.15, "Aluminium": 0.10 }
+    },
+    "electronics_market": {
+      "label": "Electronics retail & repair market",
+      "materials": { "Mixed e-waste": 0.30, "Lithium-ion batteries": 0.20, "Printed Circuit Boards (PCB)": 0.20, "CRT & monitor glass": 0.15, "Copper cable": 0.15 }
+    },
+    "telecom": {
+      "label": "Telecom & power infrastructure",
+      "materials": { "Copper cable": 0.35, "Lead acid batteries": 0.25, "Printed Circuit Boards (PCB)": 0.15, "Lithium-ion batteries": 0.15, "Aluminium": 0.10 }
+    }
+  },
+  "clusters": [
+    { "id": "hinjewadi-it", "name": "Hinjewadi IT Park", "sector": "it", "latitude": 18.5913, "longitude": 73.7389, "size": 3 },
+    { "id": "kharadi-it", "name": "Kharadi IT cluster", "sector": "it", "latitude": 18.5515, "longitude": 73.9454, "size": 2 },
+    { "id": "magarpatta-it", "name": "Magarpatta / Hadapsar IT", "sector": "it", "latitude": 18.5157, "longitude": 73.9272, "size": 2 },
+    { "id": "talawade-it", "name": "Talawade IT Park", "sector": "it", "latitude": 18.6720, "longitude": 73.7920, "size": 1 },
+    { "id": "bhosari-midc", "name": "Bhosari MIDC", "sector": "manufacturing", "latitude": 18.6279, "longitude": 73.8488, "size": 3 },
+    { "id": "pimpri-chinchwad-midc", "name": "Pimpri-Chinchwad MIDC", "sector": "automobile", "latitude": 18.6298, "longitude": 73.7997, "size": 3 },
+    { "id": "chakan-midc", "name": "Chakan MIDC", "sector": "automobile", "latitude": 18.7606, "longitude": 73.8636, "size": 3 },
+    { "id": "talegaon-midc", "name": "Talegaon MIDC", "sector": "automobile", "latitude": 18.7197, "longitude": 73.6878, "size": 2 },
+    { "id": "ranjangaon-midc", "name": "Ranjangaon MIDC", "sector": "white_goods", "latitude": 18.7560, "longitude": 74.2430, "size": 2 },
+    { "id": "hadapsar-industrial", "name": "Hadapsar Industrial Estate", "sector": "manufacturing", "latitude": 18.5089, "longitude": 73.9260, "size": 1 },
+    { "id": "budhwar-peth-market", "name": "Budhwar Peth electronics market", "sector": "electronics_market", "latitude": 18.5160, "longitude": 73.8580, "size": 2 },
+    { "id": "shivajinagar-telecom", "name": "Shivajinagar telecom & power hub", "sector": "telecom", "latitude": 18.5308, "longitude": 73.8475, "size": 1 }
+  ]
+}

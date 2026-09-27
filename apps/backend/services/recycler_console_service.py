@@ -7,13 +7,16 @@ import json
 import math
 import uuid
 from datetime import datetime, timedelta
-from typing import List
+from typing import Dict, List
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from db import HandoverRow, LotRow, RecyclerOfferRow, RecyclerRow
+from services import market_price_service
 from models.domain import (
     RecyclerAnalytics,
+    RecyclerPrices,
     RecyclerIncomingLot,
     RecyclerOfferCreate,
     RecyclerOfferResponse,
@@ -46,7 +49,39 @@ def _offer_to_response(db: Session, o: RecyclerOfferRow) -> RecyclerOfferRespons
     )
 
 
+def require_active(db: Session, recycler_id: str) -> RecyclerRow:
+    """The recycler must exist and be active — buyer companies stay inactive until admin approval."""
+    row = db.query(RecyclerRow).filter(RecyclerRow.id == recycler_id).first()
+    if not row:
+        raise HTTPException(404, "Recycler not found")
+    if not row.is_active:
+        raise HTTPException(403, "This buyer account is awaiting admin approval")
+    return row
+
+
+def get_prices(db: Session, recycler_id: str) -> RecyclerPrices:
+    row = db.query(RecyclerRow).filter(RecyclerRow.id == recycler_id).first()
+    if not row:
+        raise HTTPException(404, "Recycler not found")
+    return RecyclerPrices(recycler_id=row.id, recycler_name=row.recycler_name, is_active=bool(row.is_active),
+                          prices=market_price_service.buyer_prices(db, row), market_linked=market_price_service.market_linked(row))
+
+
+def set_prices(db: Session, recycler_id: str, prices: Dict[str, float]) -> RecyclerPrices:
+    """Update buy prices (₹/kg). Marketplace matching reads them live, so offers change immediately."""
+    row = require_active(db, recycler_id)
+    current = json.loads(row.prices_json)
+    current.update({m: round(p, 1) for m, p in prices.items()})
+    row.prices_json = json.dumps(current)
+    # A price the buyer typed is fixed from now on; the rest keep following the market.
+    spreads = json.loads(row.price_spread_json or "{}")
+    row.price_spread_json = json.dumps({m: s for m, s in spreads.items() if m not in prices})
+    db.commit()
+    return get_prices(db, recycler_id)
+
+
 def create_offer(db: Session, data: RecyclerOfferCreate) -> RecyclerOfferResponse:
+    require_active(db, data.recycler_id)
     expires = datetime.utcnow() + timedelta(hours=data.expires_in_hours)
     row = RecyclerOfferRow(
         id=f"offer_{uuid.uuid4().hex[:10]}",

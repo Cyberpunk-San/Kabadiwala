@@ -2,7 +2,8 @@
 """
 Lightweight, explainable ML — valuation + demand prediction.
 
-Valuation: fair_price = avg_recycler_price × quality_mult × volume_mult
+Valuation: fair_price = local market price × quality_mult × volume_mult
+  (local market price = live metals-market value × nearby-industry premium — see market_price_service)
 Demand prediction: time-weighted moving average with trend label.
 """
 
@@ -15,6 +16,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from db import DemandRow, RecyclerRow
+from services import market_price_service
 from models.domain import (
     DemandPredictionPoint,
     DemandPredictionResponse,
@@ -23,6 +25,8 @@ from models.domain import (
     ValuationResponse,
 )
 
+
+DEFAULT_LAT, DEFAULT_LON = 18.5204, 73.8567  # Pune, when the caller has no location
 
 QUALITY_MULT = {"low": 0.72, "medium": 1.00, "high": 1.28}
 
@@ -47,7 +51,7 @@ def _avg_recycler_price(db: Session, material: str) -> float:
     prices: List[float] = []
     for r in db.query(RecyclerRow).filter(RecyclerRow.is_active == 1).all():
         try:
-            p = json.loads(r.prices_json).get(material)
+            p = market_price_service.buyer_prices(db, r).get(material)
             if p:
                 prices.append(float(p))
         except Exception:
@@ -60,14 +64,13 @@ def valuate(
     material: MaterialType,
     quality: QualityLevel,
     weight_kg: float,
+    latitude: float = DEFAULT_LAT,
+    longitude: float = DEFAULT_LON,
 ) -> ValuationResponse:
-    base = _avg_recycler_price(db, material)
-    if base <= 0:
-        return ValuationResponse(
-            material=material, weight_kg=weight_kg, quality=quality,
-            fair_price_per_kg=0.0, fair_payout=0.0, confidence=0.0,
-            reasoning=f"No active recyclers listing {material}.",
-        )
+    market, basis, _ = market_price_service.market_price(material, lat=latitude, lon=longitude)
+    source = market_price_service.price_source(material, latitude, longitude)
+    premium, _ = market_price_service.local_premium(db, material, latitude, longitude)
+    base = market * (1 + premium / 100)
 
     q = QUALITY_MULT[quality]
     v = _volume_multiplier(weight_kg)
@@ -75,6 +78,8 @@ def valuate(
     payout = fair_per_kg * weight_kg
 
     conf = 0.88 if 10 <= weight_kg <= 200 else (0.72 if weight_kg < 10 else 0.80)
+    if basis == "reference":
+        conf -= 0.15
 
     return ValuationResponse(
         material=material, weight_kg=weight_kg, quality=quality,
@@ -82,7 +87,8 @@ def valuate(
         fair_payout=round(payout, 1),
         confidence=round(conf, 2),
         reasoning=(
-            f"Market avg ₹{base:.0f}/kg × quality {quality} (×{q:.2f}) "
+            f"{source[:1].upper() + source[1:]} ₹{market:.0f}/kg "
+            f"+ {premium:.1f}% nearby industry = ₹{base:.0f}/kg × quality {quality} (×{q:.2f}) "
             f"× volume {weight_kg}kg (×{v:.2f}) = ₹{fair_per_kg:.1f}/kg"
         ),
     )
@@ -110,6 +116,7 @@ def predict_demand(db: Session) -> DemandPredictionResponse:
         "Copper cable", "Server boards", "Aluminium", "Mixed e-waste",
         "Lithium-ion batteries", "Brass fittings", "Printed Circuit Boards (PCB)",
         "Electric motors", "Iron & steel scrap",
+        "Newspaper", "Books & notebooks", "Cardboard", "Mixed plastic", "PET bottles", "Stainless steel",
     ]
     points: List[DemandPredictionPoint] = []
     for mat in materials:

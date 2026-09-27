@@ -1,573 +1,224 @@
-// apps/collector-mobile/src/screens/HandoverScreen.tsx
-import { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+// src/screens/HandoverScreen.tsx — QR + PIN pass the recycler uses to verify and pay.
+import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../ui/Text";
+import QRCode from "react-native-qrcode-svg";
+import Animated, { BounceIn, FadeInDown, ZoomIn } from "react-native-reanimated";
 
-import { RiskBanner } from "../components/RiskBanner";
-import { colors } from "../constants/theme";
+import { colors, gradients, radius, space, type } from "../constants/theme";
+import { useScreenNarration } from "../hooks/useScreenNarration";
 import { useTranslation } from "../hooks/useTranslation";
-import { confirmHandover, getLotPin } from "../services/api/client";
+import { goTab } from "../navigation/ref";
+import type { RootStackParamList } from "../navigation/types";
+import { ApiError, confirmHandover, getLotPin, type HandoverReceipt } from "../services/api/client";
 import { useAppStore } from "../store/appStore";
+import { useAuthStore } from "../store/authStore";
+import { materialName } from "../types/domain";
+import { EmptyState, toast } from "../ui/feedback";
+import { MaterialAvatar } from "../ui/materials";
+import { Float, Skeleton } from "../ui/motion";
+import { Badge, Button, Card, enter, GradientCard, Screen, TopBar, textStyles } from "../ui/primitives";
 import { currency } from "../utils/format";
-import type { Material } from "../types/domain";
 
-interface HandoverProps {
-  navigation: {
-    navigate: (screen: string, params?: any) => void;
-    goBack: () => void;
-  };
-  route: {
-    params?: {
-      lotId?: string;
-      material?: Material;
-      weightKg?: number;
-      netAmount?: number;
-    };
-  };
-}
+import { P } from "../constants/palette";
+type Props = NativeStackScreenProps<RootStackParamList, "Handover">;
 
-export function HandoverScreen({ navigation, route }: HandoverProps) {
-  const { t } = useTranslation();
-  const lots = useAppStore((state) => state.lots);
-  const updateLotStatus = useAppStore((state) => state.updateLotStatus);
+export function HandoverScreen({ route, navigation }: Props) {
+  const { t, language } = useTranslation();
+  useScreenNarration("Handover");
+  const lot = useAppStore((s) => s.lots.find((l) => l.id === route.params.lotId));
+  const updateLotStatus = useAppStore((s) => s.updateLotStatus);
+  const syncNow = useAppStore((s) => s.syncNow);
+  const collectorId = useAuthStore((s) => s.collector?.id);
+  const refreshAuth = useAuthStore((s) => s.refresh);
+  const [receipt, setReceipt] = useState<HandoverReceipt | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
-  const lotId = route.params?.lotId ?? lots[0]?.id ?? "lot_demo_copper_01";
-  const currentLot = lots.find((l) => l.id === lotId) ?? {
-    id: lotId,
-    material: route.params?.material ?? "Copper cable",
-    weightKg: route.params?.weightKg ?? 35,
-    quality: "medium" as const,
-    expectedNetEarnings: route.params?.netAmount ?? 18450,
-    status: "PICKUP_SCHEDULED" as const,
-  };
+  const pending = lot?.syncState === "PENDING";
+  const pinQuery = useQuery({
+    queryKey: ["pin", lot?.id],
+    queryFn: () => getLotPin(lot!.id),
+    enabled: !!lot && !pending,
+    staleTime: Infinity,
+  });
 
-  const [pickupPin, setPickupPin] = useState<string | null>(null);
-  const [pinError, setPinError] = useState<string | null>(null);
-  const [isSettled, setIsSettled] = useState(
-    currentLot.status === "SOLD" || currentLot.status === "PAID"
-  );
-  const [utrNumber, setUtrNumber] = useState<string>("");
-  const [eprCertId, setEprCertId] = useState<string>("");
-  const [isBusy, setIsBusy] = useState(false);
+  if (!lot) {
+    return (
+      <Screen>
+        <TopBar title={t("handoverPass")} onBack={() => navigation.goBack()} />
+        <EmptyState icon="alert-circle-outline" title={t("pinError")} />
+      </Screen>
+    );
+  }
 
-  // ─── Fetch the server-owned PIN for this lot ─────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-    setPickupPin(null);
-    setPinError(null);
+  const settled = !!receipt || lot.status === "PAID" || lot.status === "SOLD";
+  const pin = pinQuery.data;
+  const qrValue = JSON.stringify({ lotId: lot.id, pin: pin ?? "" });
 
-    getLotPin(currentLot.id)
-      .then((pin) => {
-        if (!cancelled) setPickupPin(pin);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          console.warn("[handover] PIN fetch failed:", err);
-          setPinError("Could not load PIN — check backend connection.");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentLot.id]);
-
-  // QR payload includes the real PIN + lot metadata.
-  const qrPayload = useMemo(
-    () =>
-      JSON.stringify({
-        lotId: currentLot.id,
-        material: currentLot.material,
-        weightKg: currentLot.weightKg,
-        amount: currentLot.expectedNetEarnings,
-        pin: pickupPin ?? "----",
-        hub: "Pune Bhosari Cluster",
-        sig: "MHK_OK",
-      }),
-    [currentLot, pickupPin]
-  );
-
-  // Pseudo-QR visual grid (deterministic from qrPayload hash)
-  const qrModules = useMemo(() => {
-    const size = 21;
-    const grid: boolean[][] = Array(size)
-      .fill(false)
-      .map(() => Array(size).fill(false));
-
-    const drawFinder = (r: number, c: number) => {
-      for (let i = 0; i < 7; i++) {
-        for (let j = 0; j < 7; j++) {
-          if (
-            i === 0 || i === 6 || j === 0 || j === 6 ||
-            (i >= 2 && i <= 4 && j >= 2 && j <= 4)
-          ) {
-            grid[r + i]![c + j] = true;
-          }
-        }
-      }
-    };
-
-    drawFinder(0, 0);
-    drawFinder(0, 14);
-    drawFinder(14, 0);
-
-    let hash = 0;
-    for (let i = 0; i < qrPayload.length; i++) {
-      hash = (hash * 31 + qrPayload.charCodeAt(i)) % 1000000007;
-    }
-
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        if ((r < 8 && c < 8) || (r < 8 && c >= 13) || (r >= 13 && c < 8)) continue;
-        const bit = ((hash ^ (r * 19 + c * 37)) >> ((r + c) % 16)) & 1;
-        grid[r]![c] = bit === 1;
-      }
-    }
-    return grid;
-  }, [qrPayload]);
-
-  // ─── Confirm handover via the backend ────────────────────────────────────
-  const confirmHandoverAction = async () => {
-    if (!pickupPin) {
-      Alert.alert("Please wait", "PIN not loaded yet.");
-      return;
-    }
-    setIsBusy(true);
+  const confirm = async () => {
+    if (!pin) return;
+    setBusy(true);
     try {
-      const receipt = await confirmHandover({
-        lotId: currentLot.id,
-        pickupPin,
-        recyclerId: "REC-PUNE-01",
-        recyclerName: "EcoCycle Recyclers Pvt Ltd",
-        auditedWeightKg: currentLot.weightKg,
-        agreedPayout: currentLot.expectedNetEarnings ?? 0,
+      const r = await confirmHandover({
+        lotId: lot.id,
+        pickupPin: pin,
+        recyclerId: lot.recyclerId,
+        recyclerName: lot.recyclerName,
+        auditedWeightKg: lot.weightKg,
+        agreedPayout: lot.expectedNetEarnings ?? 0,
         paymentMode: "UPI",
       });
-
-      setUtrNumber(receipt.utr_number);
-      setEprCertId(receipt.epr_certificate_id);
-      setIsSettled(true);
-      await updateLotStatus(currentLot.id, "PAID");
-
-      Alert.alert(
-        "✓ " + t("handoverSuccess"),
-        `${t("instantPayoutSim")}\nUTR: ${receipt.utr_number}\nAmount: ${currency(receipt.amount_paid)}`,
-        [
-          { text: "View Earnings", onPress: () => navigation.navigate("Earnings") },
-          { text: "Back to Home", onPress: () => navigation.navigate("Home") },
-        ]
-      );
-    } catch (err: any) {
-      Alert.alert(
-        "Handover failed",
-        err?.message ?? "Could not reach the backend. Check your connection."
-      );
+      setReceipt(r);
+      await updateLotStatus(lot.id, "PAID");
+      void refreshAuth();
+      toast.success(t("handoverSuccess"), currency(r.amount_paid));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        await updateLotStatus(lot.id, "PAID");
+        toast.info(t("alreadyPaid"));
+      } else {
+        toast.error(t("serverDown"), err instanceof ApiError ? err.message : t("serverDownMsg"));
+      }
     } finally {
-      setIsBusy(false);
+      setBusy(false);
     }
+  };
+
+  const sync = async () => {
+    setSyncing(true);
+    await syncNow(collectorId);
+    setSyncing(false);
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Risk alerts for this lot (if any) */}
-      <RiskBanner lotId={currentLot.id} />
+    <Screen>
+      <TopBar kicker={t("handoverKicker")} title={t("handoverPass")} onBack={() => navigation.goBack()} />
 
-      {/* Top bar */}
-      <View style={styles.topRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <View style={styles.verifiedBadge}>
-          <Text style={styles.verifiedBadgeText}>✓ {t("traceabilityPass")}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.kicker}>SECURE DIGITAL HANDOVER</Text>
-      <Text style={styles.title}>{t("handoverPass")}</Text>
-
-      {/* Pass Card */}
-      <View style={styles.passCard}>
-        <View style={styles.passHeader}>
-          <View>
-            <Text style={styles.brandTitle}>MAI HU KABADIWALA</Text>
-            <Text style={styles.lotIdText}>{currentLot.id}</Text>
+      <Animated.View entering={enter(1)}>
+        <GradientCard colorsList={settled ? gradients.emerald : gradients.night} style={{ alignItems: "center" }}>
+          <View style={styles.passHead}>
+            <MaterialAvatar material={lot.material} size={44} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.passMaterial} numberOfLines={1}>{materialName(lot.material, language)}</Text>
+              <Text style={styles.passId} numberOfLines={1}>{lot.id}</Text>
+            </View>
+            <Badge label={settled ? t("paid") : pending ? t("waitingSync") : t("readyDropoff")} tone="light" icon={settled ? "checkmark-circle" : "time"} />
           </View>
-          <View style={styles.statusPill}>
-            <Text style={styles.statusPillText}>
-              {isSettled ? "PAID & SETTLED" : "READY FOR DROP-OFF"}
-            </Text>
-          </View>
-        </View>
 
-        {/* QR */}
-        <View style={styles.qrWrapper}>
-          <View style={styles.qrGrid}>
-            {qrModules.map((row, rIdx) => (
-              <View key={`row_${rIdx}`} style={styles.qrRow}>
-                {row.map((active, cIdx) => (
-                  <View
-                    key={`col_${rIdx}_${cIdx}`}
-                    style={[styles.qrCell, active ? styles.qrCellDark : styles.qrCellLight]}
-                  />
-                ))}
+          {settled ? (
+            <Animated.View entering={BounceIn.duration(800)} style={styles.paidCircle}>
+              <Ionicons name="checkmark" size={72} color={colors.onPrimary} />
+            </Animated.View>
+          ) : pending ? (
+            <View style={styles.qrPlaceholder}>
+              <Float><Ionicons name="cloud-upload-outline" size={56} color={P("#A8E8C9")} /></Float>
+              <Text style={styles.waitText}>{t("waitingSyncMsg")}</Text>
+              <Button label={t("syncNow")} icon="sync" variant="light" size="md" loading={syncing} onPress={sync} style={{ marginTop: space.md }} />
+            </View>
+          ) : (
+            <>
+              <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.qrBox}>
+                {pin ? <QRCode value={qrValue} size={210} color="#04120F" backgroundColor="#FFFFFF" quietZone={8} ecl="M" /> : <Skeleton height={226} width={226} />}
+              </Animated.View>
+              <Text style={styles.scanHint}>{t("scanQr")}</Text>
+              <Text style={styles.orPin}>{t("orPin")}</Text>
+              <View style={styles.pinRow}>
+                {pinQuery.isError ? (
+                  <Button label={t("retry")} icon="refresh" variant="light" size="md" onPress={() => void pinQuery.refetch()} />
+                ) : (
+                  (pin ?? "····").split("").map((d, i) => (
+                    <Animated.View key={i} entering={FadeInDown.delay(200 + i * 90).springify()} style={styles.pinDigit}>
+                      <Text style={styles.pinText}>{d}</Text>
+                    </Animated.View>
+                  ))
+                )}
+              </View>
+            </>
+          )}
+        </GradientCard>
+      </Animated.View>
+
+      <Animated.View entering={enter(2)}>
+        <Card style={{ marginTop: space.md }}>
+          <View style={styles.grid}>
+            {[
+              [t("weight"), `${lot.weightKg} ${t("kg")}`],
+              [t("quality"), t(lot.quality)],
+              [t("takeHome"), currency(receipt?.amount_paid ?? lot.expectedNetEarnings ?? 0)],
+              [t("recyclerLbl"), lot.recyclerName ?? "—"],
+            ].map(([label, value]) => (
+              <View key={label} style={styles.gridItem}>
+                <Text style={styles.gridLabel}>{label}</Text>
+                <Text style={styles.gridValue} numberOfLines={2}>{value}</Text>
               </View>
             ))}
           </View>
-          <View style={styles.qrOverlayLogo}>
-            <Text style={styles.qrLogoText}>⚡</Text>
-          </View>
-        </View>
-
-        <Text style={styles.scanHint}>{t("scanQrPrompt")}</Text>
-
-        {/* PIN */}
-        <View style={styles.pinBox}>
-          <Text style={styles.pinLabel}>{t("orSharePin")}:</Text>
-          {pickupPin ? (
-            <View style={styles.pinDigits}>
-              {pickupPin.split("").map((digit, index) => (
-                <View key={index} style={styles.pinBoxDigit}>
-                  <Text style={styles.pinDigitText}>{digit}</Text>
-                </View>
-              ))}
-            </View>
-          ) : pinError ? (
-            <Text style={styles.pinError}>{pinError}</Text>
-          ) : (
-            <ActivityIndicator color={colors.green} style={{ marginVertical: 8 }} />
-          )}
-        </View>
-
-        {/* Details */}
-        <View style={styles.detailsGrid}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>{t("material")}</Text>
-            <Text style={styles.detailVal}>{currentLot.material}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>{t("weight")}</Text>
-            <Text style={styles.detailVal}>{currentLot.weightKg} kg</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Quality</Text>
-            <Text style={styles.detailVal}>{currentLot.quality.toUpperCase()}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>{t("takeHome")}</Text>
-            <Text style={styles.detailValGreen}>
-              {currency(currentLot.expectedNetEarnings ?? 0)}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Settlement */}
-      {isSettled ? (
-        <View style={styles.receiptCard}>
-          <View style={styles.receiptHeader}>
-            <Text style={styles.receiptIcon}>✓</Text>
-            <View>
-              <Text style={styles.receiptTitle}>{t("instantPayoutSim")}</Text>
-              <Text style={styles.receiptStatus}>Payment Complete</Text>
-            </View>
-          </View>
-          <View style={styles.receiptDivider} />
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>{t("utrNumber")}:</Text>
-            <Text style={styles.receiptVal}>{utrNumber || "—"}</Text>
-          </View>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>EPR Certificate:</Text>
-            <Text style={styles.receiptVal}>{eprCertId || "—"}</Text>
-          </View>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Mode:</Text>
-            <Text style={styles.receiptVal}>UPI Instant / Auto-Clear</Text>
-          </View>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={[styles.actionBtn, (!pickupPin || isBusy) && styles.actionBtnDisabled]}
-          onPress={confirmHandoverAction}
-          disabled={!pickupPin || isBusy}
-        >
-          {isBusy ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
+          {lot.imageUris?.length ? (
             <>
-              <Text style={styles.actionBtnText}>🤝 {t("confirmHandover")}</Text>
-              <Text style={styles.actionSubtext}>
-                Simulate Recycler Verification & Instant Credit
-              </Text>
+              <Text style={[styles.gridLabel, { marginTop: space.md }]}>{t("lotPhotos")}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+                {lot.imageUris.map((uri, i) => (
+                  <Image key={uri + i} source={{ uri }} style={styles.photo} accessibilityLabel={`${t("lotPhotos")} ${i + 1}`} />
+                ))}
+              </ScrollView>
             </>
-          )}
-        </TouchableOpacity>
-      )}
+          ) : null}
+        </Card>
+      </Animated.View>
 
-      {/* Web guide */}
-      <View style={styles.webGuideCard}>
-        <Text style={styles.webGuideTitle}>Recycler Web Integration</Text>
-        <Text style={styles.webGuideText}>
-          Recyclers open{" "}
-          <Text style={styles.bold}>apps/recycler-web/index.html</Text> in any browser,
-          enter Lot ID <Text style={styles.bold}>{currentLot.id}</Text> and PIN{" "}
-          <Text style={styles.bold}>{pickupPin ?? "----"}</Text> to inspect and approve
-          this lot.
-        </Text>
-      </View>
-    </ScrollView>
+      {receipt ? (
+        <Animated.View entering={FadeInDown.springify()}>
+          <Card tone="soft" style={{ marginTop: space.md }}>
+            <Text style={styles.receiptTitle}>{t("settled")}</Text>
+            {[
+              [t("utr"), receipt.utr_number],
+              [t("epr"), receipt.epr_certificate_id],
+              [t("carbon"), `${receipt.carbon_offset_kg} kg`],
+              [t("mode"), receipt.payment_mode],
+            ].map(([label, value]) => (
+              <View key={label} style={styles.receiptRow}>
+                <Text style={textStyles.small}>{label}</Text>
+                <Text style={styles.receiptValue} selectable>{value}</Text>
+              </View>
+            ))}
+          </Card>
+          <Button label={t("earningsTitle")} icon="wallet" onPress={() => goTab("Earnings")} style={{ marginTop: space.lg }} />
+        </Animated.View>
+      ) : !settled && !pending ? (
+        <Animated.View entering={enter(3)}>
+          <Text style={[textStyles.small, { textAlign: "center", marginTop: space.lg }]}>{t("confirmHint")}</Text>
+          <Button label={t("confirmHandover")} icon="hand-left" onPress={confirm} loading={busy} disabled={!pin} style={{ marginTop: space.sm }} />
+          {pin ? <Text style={[textStyles.small, { textAlign: "center", marginTop: space.md }]}>{t("recyclerGuide", { lot: lot.id, pin })}</Text> : null}
+        </Animated.View>
+      ) : null}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: 18, paddingBottom: 40 },
-
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  backBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: "#E2EBE4",
-  },
-  backBtnText: { color: colors.ink, fontSize: 11, fontWeight: "700" },
-  verifiedBadge: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: colors.greenLight,
-  },
-  verifiedBadgeText: { color: colors.green, fontSize: 10, fontWeight: "800" },
-
-  kicker: { color: "#84948B", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
-  title: {
-    marginTop: 4,
-    marginBottom: 14,
-    color: colors.ink,
-    fontSize: 24,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-
-  passCard: {
-    backgroundColor: colors.white,
-    borderRadius: 22,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: "center",
-  },
-  passHeader: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEF2EE",
-  },
-  brandTitle: {
-    fontSize: 11,
-    fontWeight: "900",
-    color: colors.green,
-    letterSpacing: 0.8,
-  },
-  lotIdText: {
-    fontSize: 10,
-    color: colors.muted,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "#FDF2E9",
-  },
-  statusPillText: { fontSize: 8, fontWeight: "800", color: "#C05621" },
-
-  qrWrapper: {
-    position: "relative",
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.ink,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  qrGrid: { width: 168, height: 168, flexDirection: "column" },
-  qrRow: { flex: 1, flexDirection: "row" },
-  qrCell: { flex: 1 },
-  qrCellDark: { backgroundColor: colors.ink },
-  qrCellLight: { backgroundColor: colors.white },
-  qrOverlayLogo: {
-    position: "absolute",
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.green,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
-  qrLogoText: { fontSize: 16, color: colors.white },
-  scanHint: {
-    fontSize: 11,
-    color: colors.muted,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-
-  pinBox: {
-    width: "100%",
-    backgroundColor: "#F8FAF9",
-    borderRadius: 14,
-    padding: 12,
-    alignItems: "center",
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E2EAE3",
-  },
-  pinLabel: {
-    fontSize: 10,
-    color: colors.muted,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  pinDigits: { flexDirection: "row", gap: 8 },
-  pinBoxDigit: {
-    width: 38,
-    height: 42,
-    borderRadius: 8,
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.green,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pinDigitText: { fontSize: 20, fontWeight: "900", color: colors.green },
-  pinError: {
-    fontSize: 11,
-    color: "#C53030",
-    fontWeight: "700",
-    paddingVertical: 6,
-  },
-
-  detailsGrid: {
-    width: "100%",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    borderTopWidth: 1,
-    borderTopColor: "#EEF2EE",
-    paddingTop: 12,
-  },
-  detailItem: { width: "50%", paddingVertical: 6 },
-  detailLabel: { fontSize: 9, color: colors.muted, fontWeight: "700" },
-  detailVal: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: colors.ink,
-    marginTop: 2,
-  },
-  detailValGreen: {
-    fontSize: 15,
-    fontWeight: "900",
-    color: colors.green,
-    marginTop: 2,
-  },
-
-  actionBtn: {
-    marginTop: 14,
-    backgroundColor: colors.green,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    alignItems: "center",
-  },
-  actionBtnDisabled: { backgroundColor: "#B7C7BC" },
-  actionBtnText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: 0.3,
-  },
-  actionSubtext: { color: "#D1EADB", fontSize: 10, marginTop: 3 },
-
-  receiptCard: {
-    marginTop: 14,
-    backgroundColor: "#EDFDF3",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: "#A3E6B9",
-  },
-  receiptHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  receiptIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.green,
-    color: colors.white,
-    textAlign: "center",
-    paddingTop: 4,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  receiptTitle: { fontSize: 14, fontWeight: "900", color: colors.green },
-  receiptStatus: { fontSize: 10, color: "#2B7A4B", fontWeight: "700" },
-  receiptDivider: {
-    height: 1,
-    backgroundColor: "#C3EDD2",
-    marginVertical: 10,
-  },
-  receiptRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 3,
-  },
-  receiptLabel: { fontSize: 10, color: "#2B7A4B", fontWeight: "600" },
-  receiptVal: {
-    fontSize: 10,
-    color: colors.ink,
-    fontWeight: "800",
-    maxWidth: "60%",
-    textAlign: "right",
-  },
-
-  webGuideCard: {
-    marginTop: 14,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  webGuideTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: colors.ink,
-    marginBottom: 4,
-  },
-  webGuideText: { fontSize: 10, color: colors.muted, lineHeight: 15 },
-  bold: { fontWeight: "800", color: colors.green },
+  photoRow: { gap: space.sm, marginTop: space.sm },
+  photo: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
+  passHead: { flexDirection: "row", alignItems: "center", gap: space.md, alignSelf: "stretch" },
+  passMaterial: { fontSize: 17, fontWeight: "800", color: P("#F8FAF7") },
+  passId: { fontSize: 11, color: P("#A8E8C9"), fontFamily: "monospace" },
+  qrBox: { marginTop: space.xl, padding: 14, borderRadius: radius.lg, backgroundColor: colors.white },
+  scanHint: { marginTop: space.md, color: P("rgba(248,250,247,0.62)"), fontSize: 13, fontWeight: "600" },
+  orPin: { marginTop: space.lg, color: P("#A8E8C9"), fontSize: 12, fontWeight: "700", letterSpacing: 1 },
+  pinRow: { flexDirection: "row", gap: space.sm, marginTop: space.sm },
+  pinDigit: { width: 54, height: 64, borderRadius: radius.md, backgroundColor: P("rgba(255,255,255,0.14)"), borderWidth: 1, borderColor: P("rgba(255,255,255,0.3)"), alignItems: "center", justifyContent: "center" },
+  pinText: { fontSize: 32, fontWeight: "800", color: P("#F8FAF7") },
+  qrPlaceholder: { alignItems: "center", paddingVertical: space.xxl },
+  waitText: { marginTop: space.md, color: P("rgba(248,250,247,0.62)"), textAlign: "center", fontSize: 14 },
+  paidCircle: { marginVertical: space.xxl, width: 130, height: 130, borderRadius: 65, backgroundColor: P("#A8E8C9"), alignItems: "center", justifyContent: "center" },
+  grid: { flexDirection: "row", flexWrap: "wrap", rowGap: space.md },
+  gridItem: { width: "50%" },
+  gridLabel: { fontSize: 11, fontWeight: "700", color: colors.muted },
+  gridValue: { marginTop: 3, fontSize: 15, fontWeight: "800", color: colors.ink },
+  receiptTitle: { ...type.h3, color: colors.primary, marginBottom: space.sm },
+  receiptRow: { flexDirection: "row", justifyContent: "space-between", gap: space.md, paddingVertical: 6 },
+  receiptValue: { flexShrink: 1, fontSize: 13, fontWeight: "700", color: colors.ink, textAlign: "right" },
 });

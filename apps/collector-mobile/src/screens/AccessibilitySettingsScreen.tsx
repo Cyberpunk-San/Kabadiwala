@@ -1,11 +1,15 @@
 // src/screens/AccessibilitySettingsScreen.tsx
-import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { StyleSheet, Switch, View } from "react-native";
+import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
 import { useAccessibilityStore } from "../store/accessibilityStore";
 import { speak } from "../services/voice/speech";
 import { useAppStore } from "../store/appStore";
+import { goBack } from "../navigation/ref";
+import { Screen, TopBar } from "../ui/primitives";
 
+import { P } from "../constants/palette";
 export function AccessibilitySettingsScreen() {
   const language = useAppStore((s) => s.language);
 
@@ -18,9 +22,8 @@ export function AccessibilitySettingsScreen() {
   const toggleSimpleMode = useAccessibilityStore((s) => s.toggleSimpleMode);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.kicker}>ACCESSIBILITY</Text>
-      <Text style={styles.title}>Make the app work for you</Text>
+    <Screen>
+      <TopBar kicker="Accessibility" title="Make the app work for you" onBack={goBack} />
 
       <Row
         title="Voice-guided navigation"
@@ -57,7 +60,7 @@ export function AccessibilitySettingsScreen() {
           speak(simpleMode ? "Simple mode off" : "Simple mode on", language);
         }}
       />
-    </ScrollView>
+    </Screen>
   );
 }
 
@@ -81,30 +84,26 @@ function Row({
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: "#C5D0C7", true: "#74AF8A" }}
-        thumbColor={colors.white}
+        trackColor={{ false: P("rgba(248,250,247,0.15)"), true: P("#19A982") }}
+        thumbColor={value ? P("#A8E8C9") : P("#F8FAF7")}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: 19, paddingBottom: 40 },
-  kicker: { color: "#84948B", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
-  title: { marginTop: 4, marginBottom: 16, color: colors.ink, fontSize: 22, fontWeight: "800" },
 
   card: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
-    marginBottom: 10,
-    borderRadius: 14,
-    backgroundColor: colors.white,
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: P("rgba(248,250,247,0.045)"),
     borderWidth: 1,
     borderColor: colors.line,
   },
-  cardTitle: { fontSize: 13, fontWeight: "800", color: colors.ink },
-  cardSub: { fontSize: 10, color: colors.muted, marginTop: 3, lineHeight: 14 },
+  cardTitle: { fontSize: 15, fontWeight: "600", color: colors.ink },
+  cardSub: { fontSize: 13, color: colors.muted, marginTop: 3, lineHeight: 18 },
 });

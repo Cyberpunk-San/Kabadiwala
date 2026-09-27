@@ -33,6 +33,21 @@ export const SCREEN_NARRATIONS: Record<string, Record<Language, string>> = {
     hi: "कमाई स्क्रीन। आपकी साप्ताहिक आय और सामग्री का विवरण।",
     mr: "कमाई स्क्रीन. तुमची साप्ताहिक उत्पन्न आणि साहित्याचे विभाजन.",
   },
+  Regional: {
+    en: "Regional map. Scrap hotspots, industry areas and the best prices near you.",
+    hi: "इलाके का नक्शा। पास के कबाड़ हॉटस्पॉट, औद्योगिक क्षेत्र और सबसे अच्छे दाम।",
+    mr: "परिसराचा नकाशा. जवळचे भंगार हॉटस्पॉट, औद्योगिक क्षेत्रे आणि सर्वोत्तम दर.",
+  },
+  Assistant: {
+    en: "Kabadi Sahayak. Ask any question about prices, buyers or safety.",
+    hi: "कबाड़ी सहायक। भाव, खरीदार या सुरक्षा के बारे में कोई भी सवाल पूछें।",
+    mr: "कबाडी सहायक. दर, खरेदीदार किंवा सुरक्षेबद्दल कोणताही प्रश्न विचारा.",
+  },
+  Handover: {
+    en: "Handover pass. Show the QR code or tell the PIN to the recycler.",
+    hi: "हैंडओवर पास। रीसाइक्लर को QR कोड दिखाएँ या PIN बताएँ।",
+    mr: "हँडओव्हर पास. रीसायकलरला QR कोड दाखवा किंवा PIN सांगा.",
+  },
   Profile: {
     en: "Profile screen. Your identity card, KYC status, and settings.",
     hi: "प्रोफ़ाइल स्क्रीन। आपका पहचान पत्र, केवाईसी स्थिति और सेटिंग्स।",

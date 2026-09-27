@@ -27,9 +27,16 @@
     .live-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 1.6s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
+    /* Account bar */
+    .account{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .account-avatar{width:44px;height:44px;border-radius:12px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .account-name{font-size:15px;font-weight:900}
+    .account-id{font-size:10px;color:var(--muted);font-family:monospace;margin-top:2px}
+
     /* Tabs */
     .tabs{display:flex;gap:6px;margin-bottom:16px;padding:5px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow-x:auto}
     .tab{flex:1;min-width:100px;padding:9px 14px;font-size:11px;font-weight:800;color:var(--muted);background:none;border:none;border-radius:10px;cursor:pointer;font-family:inherit;letter-spacing:.2px;white-space:nowrap}
+    .tab:hover{background:#f5f8f5}
     .tab.active{background:var(--primary);color:#fff}
 
     /* Card */
@@ -37,12 +44,16 @@
     .kicker{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
     h2{font-size:20px;font-weight:900;color:var(--ink);letter-spacing:-.4px;margin-bottom:14px}
     h3{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:10px}
+    .muted{font-size:11px;color:var(--muted)}
 
     /* Inputs */
     .field-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+    .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
     .field-label{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
-    input,select{font-family:inherit;font-size:14px;font-weight:700;padding:12px 14px;border:2px solid var(--line);border-radius:11px;background:#f8faf9;color:var(--ink);outline:none;transition:border-color .2s;width:100%}
-    input:focus,select:focus{border-color:var(--primary);background:#fff}
+    input,select,textarea{font-family:inherit;font-size:14px;font-weight:700;padding:12px 14px;border:2px solid var(--line);border-radius:11px;background:#f8faf9;color:var(--ink);outline:none;transition:border-color .2s;width:100%}
+    input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#fff}
+    textarea{resize:vertical;min-height:60px}
+    input.price{padding:8px 10px;font-size:13px;max-width:130px}
 
     button{font-family:inherit;font-size:13px;font-weight:800;padding:12px 20px;border:none;border-radius:11px;cursor:pointer;transition:background .15s,transform .08s;background:var(--primary);color:#fff;letter-spacing:.2px}
     button:hover{background:var(--primary-mid)}
@@ -52,6 +63,7 @@
     button.secondary:hover{background:#d3ebdc}
     button.danger{background:var(--red-light);color:var(--red)}
     button.small{padding:8px 14px;font-size:11px}
+    button.link{background:none;color:var(--primary);padding:6px 0;text-decoration:underline}
 
     .btn-row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
     .btn-row button{flex:1}
@@ -64,6 +76,7 @@
     .alert.success{background:var(--green-light);color:#15803d;border:1px solid #86efac}
 
     /* Tables */
+    .table-scroll{overflow-x:auto}
     table{width:100%;border-collapse:collapse;font-size:12px}
     th{background:#f8faf9;color:var(--ink);font-weight:800;font-size:9px;letter-spacing:.5px;text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}
     th:first-child{border-radius:8px 0 0 0}
@@ -95,15 +108,26 @@
     .detail-item .val.green{color:var(--green)}
     .detail-item .val.mono{font-family:monospace;font-size:12px}
 
+    /* Progress */
+    .progress{height:6px;border-radius:3px;background:#eef2ee;overflow:hidden;margin-top:4px;min-width:80px}
+    .progress>div{height:100%;background:var(--green)}
+
     .hidden{display:none !important}
     .loading{text-align:center;color:var(--muted);font-size:12px;padding:30px}
     .error-msg{text-align:center;color:var(--red);font-size:12px;padding:30px}
 
     @media(max-width:600px){
-      .detail-grid{grid-template-columns:1fr}
+      .detail-grid,.field-grid{grid-template-columns:1fr}
       .btn-row{flex-direction:column}
       .tabs{flex-wrap:nowrap}
     }
+    .scan-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+    .scan-row button{flex:1;min-width:140px}
+    .scan-box{position:relative;margin-bottom:14px;border-radius:12px;overflow:hidden;background:#000}
+    .scan-box video{display:block;width:100%;max-height:340px;object-fit:cover}
+    .scan-box .frame{position:absolute;inset:18% 22%;border:3px solid #fff;border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+    .scan-box button{position:absolute;right:10px;bottom:10px;width:auto}
+    .or-sep{text-align:center;color:#888;font-size:12px;margin:4px 0 12px}
   </style>
 </head>
 <body>
@@ -118,18 +142,14 @@
     </div>
   </header>
 
-  <!-- Recycler selector -->
-  <div class="card" style="padding:14px 18px">
-    <div class="field-row" style="margin-bottom:0">
-      <label class="field-label">Active Recycler ID</label>
-      <input id="recyclerId" value="eco-cycle" onchange="onRecyclerChange()" />
-    </div>
-  </div>
+  <div id="account-card" class="card" style="padding:14px 18px"></div>
 
-  <div class="tabs">
+  <div id="tabs" class="tabs hidden">
     <button class="tab active" data-tab="verify" onclick="switchTab('verify')">✓ Verify</button>
     <button class="tab" data-tab="incoming" onclick="switchTab('incoming')">📥 Incoming</button>
     <button class="tab" data-tab="offers" onclick="switchTab('offers')">💰 Offers</button>
+    <button class="tab" data-tab="demands" onclick="switchTab('demands')">📢 Demands</button>
+    <button class="tab" data-tab="prices" onclick="switchTab('prices')">🏷 Prices</button>
     <button class="tab" data-tab="history" onclick="switchTab('history')">📜 History</button>
     <button class="tab" data-tab="analytics" onclick="switchTab('analytics')">📊 Analytics</button>
   </div>
@@ -139,10 +159,21 @@
   </div>
 </div>
 
+<script src="vendor/jsQR.js"></script>
 <script>
-  const API_BASE = "http://localhost:8000";
+  // Same machine that served this page, port 8000 — so the portal works from any device on the network.
+  // Override with ?api=http://host:port when the API lives elsewhere (e.g. a tunnel URL).
+  const API_BASE = new URLSearchParams(location.search).get("api")
+    || `${location.protocol === "https:" ? "https:" : "http:"}//${!location.hostname || location.hostname === "localhost" ? "127.0.0.1" : location.hostname}:8000`;
+  const ACCOUNT_KEY = "mhk_recycler_account";
+  const DEMO_RECYCLERS = ["eco-cycle", "green-loop", "urban-recover", "maha-e-metals"];
+  const QUALITIES = ["low", "medium", "high"];
+
   let currentTab = "verify";
   let currentLot = null;
+  let loginMode = "login"; // login | register
+  // { id, name, active, phone? } — the recycler this console acts as.
+  let account = null;
 
   function money(n) {
     if (n >= 1_00_00_000) return "₹" + (n / 1_00_00_000).toFixed(2) + " Cr";
@@ -150,27 +181,195 @@
     return "₹" + Math.round(n).toLocaleString("en-IN");
   }
   function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function dateIN(iso) { return iso ? new Date(iso.endsWith("Z") ? iso : iso + "Z").toLocaleDateString("en-IN") : "—"; }
   async function api(path, opts) {
     const res = await fetch(`${API_BASE}${path}`, opts);
-    if (!res.ok) throw new Error(`${res.status} ${path}`);
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).detail; } catch { /* not JSON */ }
+      const msg = typeof detail === "string" && detail ? detail : Array.isArray(detail) ? detail.map(d => d.msg).join("; ") : `${res.status} ${path}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      throw err;
+    }
     return res.json();
   }
-  function getRecyclerId() { return document.getElementById("recyclerId").value.trim() || "eco-cycle"; }
+  const json = (method, body) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  function getRecyclerId() { return account.id; }
+
+  // ─── Account ─────────────────────────────────────────────────────────────
+  function saveAccount(a) {
+    account = a;
+    try { a ? localStorage.setItem(ACCOUNT_KEY, JSON.stringify(a)) : localStorage.removeItem(ACCOUNT_KEY); } catch { /* storage blocked */ }
+  }
+
+  /** Re-read name + approval from the server (an admin may have approved us since). */
+  async function refreshAccount() {
+    if (!account) return;
+    try {
+      const p = await api(`/api/v1/recycler/${encodeURIComponent(account.id)}/prices`);
+      saveAccount({ ...account, name: p.recycler_name, active: p.is_active });
+    } catch (err) {
+      if (err.status === 404) saveAccount(null);
+    }
+  }
+
+  function renderAccountCard() {
+    const el = document.getElementById("account-card");
+    if (!account) { el.classList.add("hidden"); return; }
+    el.classList.remove("hidden");
+    el.innerHTML = `
+      <div class="account">
+        <div class="account-avatar">🏭</div>
+        <div style="flex:1;min-width:160px">
+          <div class="account-name">${esc(account.name)}</div>
+          <div class="account-id">${esc(account.id)}${account.phone ? " · " + esc(account.phone) : ""}</div>
+        </div>
+        <span class="badge ${account.active ? "badge-green" : "badge-amber"}">${account.active ? "APPROVED" : "AWAITING APPROVAL"}</span>
+        <button class="small secondary" onclick="signOut()">Switch account</button>
+      </div>
+      ${account.active ? "" : `<div class="alert warning" style="margin:12px 0 0">Your company is waiting for admin approval. You can look around, but posting demand, making offers, setting prices and settling handovers unlock once approved.</div>`}
+    `;
+  }
+
+  function renderLogin() {
+    return `
+      <div class="card">
+        <p class="kicker">Buyer / Recycler Sign-in</p>
+        <h2>${loginMode === "login" ? "Sign in to your console" : "Register your recycling company"}</h2>
+        <div id="login-error" class="alert error hidden"></div>
+        ${loginMode === "login" ? `
+          <div class="field-row">
+            <label class="field-label">Registered phone number</label>
+            <input id="loginPhone" placeholder="+91 98xxxxxxxx" inputmode="tel" autocomplete="tel" />
+          </div>
+          <button id="btn-login" onclick="loginByPhone()">Sign in →</button>
+          <p class="muted" style="margin-top:12px">Registered as a buyer company in the app? Use the same phone. New here?
+            <button class="link" onclick="loginMode='register';render()">Register your company</button></p>
+        ` : `
+          <div class="field-grid">
+            <div class="field-row"><label class="field-label">Company name *</label><input id="regName" maxlength="120" /></div>
+            <div class="field-row"><label class="field-label">Phone *</label><input id="regPhone" inputmode="tel" placeholder="+91 98xxxxxxxx" /></div>
+            <div class="field-row"><label class="field-label">Contact person</label><input id="regContact" maxlength="80" /></div>
+            <div class="field-row"><label class="field-label">Company type</label>
+              <select id="regType"><option value="buyer">We buy scrap (recycler)</option><option value="both">We buy and also have e-waste</option></select></div>
+            <div class="field-row"><label class="field-label">GSTIN</label><input id="regGstin" maxlength="15" placeholder="27ABCDE1234F1Z5" /></div>
+            <div class="field-row"><label class="field-label">CPCB authorisation no.</label><input id="regCpcb" maxlength="40" /></div>
+          </div>
+          <div class="field-row"><label class="field-label">Address</label><input id="regAddress" maxlength="200" /></div>
+          <button id="btn-register" onclick="registerCompany()">Register company →</button>
+          <p class="muted" style="margin-top:12px">An admin checks your CPCB authorisation before you go live.
+            <button class="link" onclick="loginMode='login';render()">I already have an account</button></p>
+        `}
+      </div>
+      <div class="card">
+        <p class="kicker">Demo</p>
+        <h3>Try a sample recycler</h3>
+        <div class="btn-row">
+          ${DEMO_RECYCLERS.map(id => `<button class="small secondary" onclick="useDemo('${id}')">${esc(id)}</button>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function showLoginError(msg) {
+    const el = document.getElementById("login-error");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
+
+  function companyToAccount(c) {
+    return { id: c.id, name: c.name, active: !!c.approved, phone: c.phone };
+  }
+
+  async function loginByPhone() {
+    const phone = document.getElementById("loginPhone").value.trim();
+    if (phone.replace(/\D/g, "").length < 10) return showLoginError("Enter a 10-digit phone number.");
+    const btn = document.getElementById("btn-login"); btn.disabled = true;
+    try {
+      const r = await api("/api/v1/auth/login", json("POST", { phone }));
+      if (r.role !== "company" || !r.company) {
+        return showLoginError(r.role === "kabadiwala" ? "This number belongs to a kabadiwala — use the mobile app." : "This number belongs to a household — use the mobile app.");
+      }
+      if (r.company.company_type === "seller") {
+        return showLoginError("This company is registered as an e-waste seller, not a buyer. Request pickups from the mobile app instead.");
+      }
+      saveAccount(companyToAccount(r.company));
+      await refreshAccount();
+      render();
+    } catch (err) {
+      showLoginError(err.status === 404 ? "No account with this number. Register your company below." : "❌ " + err.message);
+    } finally { btn.disabled = false; }
+  }
+
+  async function registerCompany() {
+    const val = id => document.getElementById(id).value.trim();
+    const name = val("regName"), phone = val("regPhone");
+    if (name.length < 2) return showLoginError("Enter the company name.");
+    if (phone.replace(/\D/g, "").length < 10) return showLoginError("Enter a 10-digit phone number.");
+    const btn = document.getElementById("btn-register"); btn.disabled = true;
+    try {
+      const c = await api("/api/v1/companies/register", json("POST", {
+        name, phone,
+        contact_name: val("regContact") || null,
+        company_type: val("regType"),
+        gstin: val("regGstin") || null,
+        cpcb_license: val("regCpcb") || null,
+        address: val("regAddress") || null,
+      }));
+      if (c.company_type === "seller") return showLoginError("This phone is already registered as an e-waste seller.");
+      saveAccount(companyToAccount(c));
+      await refreshAccount();
+      render();
+    } catch (err) {
+      showLoginError("❌ " + err.message);
+    } finally { btn.disabled = false; }
+  }
+
+  async function useDemo(id) {
+    saveAccount({ id, name: id, active: true });
+    await refreshAccount();
+    render();
+  }
+
+  function signOut() {
+    saveAccount(null);
+    currentTab = "verify";
+    render();
+  }
+
+  function needsApproval() {
+    return account && !account.active
+      ? `<div class="alert warning">Available after admin approval.</div>`
+      : "";
+  }
 
   function switchTab(tab) {
+    stopCameraScan();
     currentTab = tab;
     document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
     render();
   }
-  function onRecyclerChange() { render(); }
 
   // ─── VERIFY TAB ──────────────────────────────────────────────────────────
   function renderVerify() {
     return `
+      ${needsApproval()}
       <div class="card">
         <p class="kicker">Verify Incoming Lot</p>
-        <h2>Enter Lot ID & PIN</h2>
+        <h2>Scan the pass or enter Lot ID & PIN</h2>
         <div id="verify-error" class="alert error hidden"></div>
+        <div class="scan-row">
+          <button class="secondary" onclick="startCameraScan()">📷 Scan QR with camera</button>
+          <button class="secondary" onclick="document.getElementById('qrPhoto').click()">🖼 Scan from photo</button>
+          <input id="qrPhoto" type="file" accept="image/*" capture="environment" hidden onchange="scanPhoto(this)" />
+        </div>
+        <div id="scan-box" class="scan-box hidden">
+          <video id="scan-video" playsinline muted></video>
+          <div class="frame"></div>
+          <button class="secondary" onclick="stopCameraScan()">Cancel</button>
+        </div>
+        <p class="or-sep">or type it</p>
         <div class="field-row">
           <label class="field-label">Lot ID</label>
           <input id="lotIdInput" placeholder="e.g. lot_demo_copper_01" autocomplete="off" />
@@ -186,6 +385,83 @@
     `;
   }
 
+  // ─── QR SCAN ─────────────────────────────────────────────────────────────
+  // The kabadiwala's handover pass encodes {"lotId": "...", "pin": "1234"}.
+  let scanStream = null;
+
+  function showVerifyError(msg) {
+    const el = document.getElementById("verify-error");
+    el.textContent = msg; el.classList.remove("hidden");
+  }
+
+  function applyScan(text) {
+    let lotId, pin;
+    try { ({ lotId, pin } = JSON.parse(text)); } catch { /* not our QR */ }
+    if (!lotId || !/^\d{4}$/.test(String(pin ?? ""))) { showVerifyError("❌ This QR is not a Mai Hu Kabadiwala handover pass."); return false; }
+    document.getElementById("lotIdInput").value = lotId;
+    document.getElementById("pinInput").value = pin;
+    verifyLot();
+    return true;
+  }
+
+  function decodeFrom(source, w, h) {
+    const scale = Math.min(1, 1000 / Math.max(w, h));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    return jsQR(img.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
+  }
+
+  async function startCameraScan() {
+    document.getElementById("verify-error").classList.add("hidden");
+    // Browsers only allow the live camera on https or localhost; on a LAN address use the photo option.
+    if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+      document.getElementById("qrPhoto").click();
+      return;
+    }
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    } catch {
+      showVerifyError("Camera not available — use “Scan from photo” or type the Lot ID and PIN.");
+      return;
+    }
+    const video = document.getElementById("scan-video");
+    video.srcObject = scanStream;
+    await video.play();
+    document.getElementById("scan-box").classList.remove("hidden");
+    const tick = () => {
+      if (!scanStream) return;
+      if (video.readyState >= 2) {
+        const code = decodeFrom(video, video.videoWidth, video.videoHeight);
+        if (code) { stopCameraScan(); applyScan(code.data); return; }
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  function stopCameraScan() {
+    scanStream?.getTracks().forEach(t => t.stop());
+    scanStream = null;
+    document.getElementById("scan-box")?.classList.add("hidden");
+  }
+
+  function scanPhoto(input) {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const code = decodeFrom(img, img.naturalWidth, img.naturalHeight);
+      URL.revokeObjectURL(img.src);
+      if (code) applyScan(code.data);
+      else showVerifyError("❌ No QR found in that photo. Hold the phone closer, with the whole QR in view.");
+    };
+    img.src = URL.createObjectURL(file);
+  }
+
   async function verifyLot() {
     const el = document.getElementById("verify-error");
     el.classList.add("hidden");
@@ -195,15 +471,12 @@
     if (!/^\d{4}$/.test(pin)) { el.textContent = "PIN must be 4 digits."; el.classList.remove("hidden"); return; }
     const btn = document.getElementById("btn-verify"); btn.disabled = true; btn.textContent = "Verifying…";
     try {
-      const data = await api("/api/v1/handover/verify", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lot_id: lotId, pickup_pin: pin }),
-      });
+      const data = await api("/api/v1/handover/verify", json("POST", { lot_id: lotId, pickup_pin: pin }));
       currentLot = { ...data, pin };
       document.getElementById("settle-section").innerHTML = renderSettle();
       document.getElementById("success-section").innerHTML = "";
     } catch (err) {
-      el.textContent = err.message.includes("401") ? "❌ Invalid PIN" : "❌ " + err.message;
+      el.textContent = err.status === 401 ? "❌ Invalid PIN" : "❌ " + err.message;
       el.classList.remove("hidden");
     } finally { btn.disabled = false; btn.textContent = "Verify PIN →"; }
   }
@@ -227,11 +500,17 @@
         <p class="kicker">Physical Audit</p>
         <h2>Enter Verified Weight</h2>
         <div id="audit-error" class="alert error hidden"></div>
-        <div class="field-row">
-          <label class="field-label">Verified Weight (kg)</label>
-          <input id="weightInput" type="number" step="0.1" min="0.1" value="${d.declared_weight_kg}" />
+        <div class="field-grid">
+          <div class="field-row">
+            <label class="field-label">Verified Weight (kg)</label>
+            <input id="weightInput" type="number" step="0.1" min="0.1" value="${d.declared_weight_kg}" />
+          </div>
+          <div class="field-row">
+            <label class="field-label">Payment mode</label>
+            <select id="payModeInput"><option value="UPI">UPI</option><option value="BANK_TRANSFER">Bank transfer</option><option value="CASH">Cash</option></select>
+          </div>
         </div>
-        <button id="btn-confirm" onclick="confirmSettle()">✓ Confirm Receipt & Release Payment</button>
+        <button id="btn-confirm" onclick="confirmSettle()" ${account.active ? "" : "disabled"}>✓ Confirm Receipt & Release Payment</button>
       </div>
     `;
   }
@@ -244,18 +523,15 @@
     if (!weight || weight <= 0) { el.textContent = "Enter a valid weight."; el.classList.remove("hidden"); return; }
     const btn = document.getElementById("btn-confirm"); btn.disabled = true; btn.textContent = "Releasing…";
     try {
-      const receipt = await api("/api/v1/handover/confirm", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lot_id: currentLot.lot_id,
-          pickup_pin: currentLot.pin,
-          recycler_id: getRecyclerId(),
-          recycler_name: "EcoCycle Recyclers Pvt Ltd",
-          audited_weight_kg: weight,
-          agreed_payout: currentLot.expected_net_earnings || 0,
-          payment_mode: "UPI",
-        }),
-      });
+      const receipt = await api("/api/v1/handover/confirm", json("POST", {
+        lot_id: currentLot.lot_id,
+        pickup_pin: currentLot.pin,
+        recycler_id: getRecyclerId(),
+        recycler_name: account.name,
+        audited_weight_kg: weight,
+        agreed_payout: currentLot.expected_net_earnings || 0,
+        payment_mode: document.getElementById("payModeInput").value,
+      }));
       document.getElementById("settle-section").innerHTML = "";
       document.getElementById("success-section").innerHTML = renderSuccess(receipt);
       currentLot = null;
@@ -289,10 +565,11 @@
       const lots = await api(`/api/v1/recycler/${getRecyclerId()}/incoming-lots`);
       if (lots.length === 0) return `<div class="card"><p class="loading">No incoming lots available</p></div>`;
       return `
+        ${needsApproval()}
         <div class="card">
           <p class="kicker">Incoming Lots</p>
           <h2>${lots.length} available lots</h2>
-          <table>
+          <div class="table-scroll"><table>
             <thead><tr><th>Lot ID</th><th>Material</th><th>Weight</th><th>Distance</th><th>Collector</th><th>Action</th></tr></thead>
             <tbody>
               ${lots.map(l => `
@@ -303,12 +580,12 @@
                   <td>${l.distance_km != null ? l.distance_km + " km" : "—"}</td>
                   <td>${esc(l.collector_name)}<br><span style="font-size:9px;color:var(--muted);font-family:monospace">${esc(l.collector_id)}</span></td>
                   <td>
-                    <button class="small secondary" onclick="quickOffer('${esc(l.id)}')">Make Offer</button>
+                    <button class="small secondary" onclick="quickOffer('${esc(l.id)}')" ${account.active ? "" : "disabled"}>Make Offer</button>
                   </td>
                 </tr>
               `).join("")}
             </tbody>
-          </table>
+          </table></div>
         </div>
       `;
     } catch (err) {
@@ -322,16 +599,13 @@
     const price = parseFloat(priceStr);
     if (!price || price <= 0) return alert("Invalid price");
     try {
-      await api("/api/v1/recycler/offers", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recycler_id: getRecyclerId(),
-          lot_id: lotId,
-          offered_price_per_kg: price,
-          pickup_cost: 180, handling_cost: 70, platform_fee: 120,
-          expires_in_hours: 48,
-        }),
-      });
+      await api("/api/v1/recycler/offers", json("POST", {
+        recycler_id: getRecyclerId(),
+        lot_id: lotId,
+        offered_price_per_kg: price,
+        pickup_cost: 180, handling_cost: 70, platform_fee: 120,
+        expires_in_hours: 48,
+      }));
       alert("Offer sent!");
       render();
     } catch (err) { alert("Failed: " + err.message); }
@@ -346,7 +620,7 @@
         <div class="card">
           <p class="kicker">My Offers</p>
           <h2>${offers.length} total</h2>
-          <table>
+          <div class="table-scroll"><table>
             <thead><tr><th>Offer ID</th><th>Lot</th><th>₹/kg</th><th>Net</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               ${offers.map(o => `
@@ -369,7 +643,7 @@
                 </tr>
               `).join("")}
             </tbody>
-          </table>
+          </table></div>
         </div>
       `;
     } catch (err) {
@@ -384,6 +658,184 @@
     } catch (err) { alert("Failed: " + err.message); }
   }
 
+  // ─── DEMANDS TAB (reverse marketplace) ───────────────────────────────────
+  const DEMAND_BADGE = { OPEN: "badge-amber", PARTIAL: "badge-blue", FULFILLED: "badge-green", EXPIRED: "badge-gray" };
+
+  async function renderDemands() {
+    try {
+      const [demands, prices] = await Promise.all([
+        api(`/api/v1/demands?recycler_id=${encodeURIComponent(getRecyclerId())}`),
+        api(`/api/v1/recycler/${encodeURIComponent(getRecyclerId())}/prices`),
+      ]);
+      const materials = Object.keys(prices.prices);
+      return `
+        <div class="card">
+          <p class="kicker">Reverse Marketplace</p>
+          <h2>Post what you need</h2>
+          <p class="muted" style="margin-bottom:14px">Kabadiwalas see open demands in their app and collect for you.</p>
+          ${needsApproval()}
+          <div id="demand-msg" class="alert hidden"></div>
+          <div class="field-grid">
+            <div class="field-row"><label class="field-label">Material</label>
+              <select id="dMaterial" onchange="document.getElementById('dPrice').value=(${esc(JSON.stringify(prices.prices))})[this.value]||''">
+                ${materials.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("")}
+              </select></div>
+            <div class="field-row"><label class="field-label">Minimum quality</label>
+              <select id="dQuality">${QUALITIES.map(q => `<option value="${q}" ${q === "medium" ? "selected" : ""}>${q}</option>`).join("")}</select></div>
+            <div class="field-row"><label class="field-label">Quantity (kg)</label><input id="dQty" type="number" min="1" step="1" value="500" /></div>
+            <div class="field-row"><label class="field-label">Your price (₹/kg)</label><input id="dPrice" type="number" min="1" step="0.5" value="${prices.prices[materials[0]] ?? ""}" /></div>
+            <div class="field-row"><label class="field-label">Deadline (days)</label><input id="dDays" type="number" min="1" max="90" value="7" /></div>
+            <div class="field-row"><label class="field-label">Drop-off hub</label><input id="dHub" maxlength="80" placeholder="e.g. Bhosari MIDC gate 3" /></div>
+          </div>
+          <div class="field-row"><label class="field-label">Notes for collectors</label><textarea id="dNotes" maxlength="500" placeholder="Stripped copper only, no insulation…"></textarea></div>
+          <button id="btn-demand" onclick="postDemand()" ${account.active ? "" : "disabled"}>📢 Post demand</button>
+        </div>
+
+        <div class="card">
+          <p class="kicker">My Demands</p>
+          <h2>${demands.length} posted</h2>
+          ${demands.length === 0 ? `<p class="loading">No demands yet.</p>` : `
+          <div class="table-scroll"><table>
+            <thead><tr><th>Material</th><th>Wanted</th><th>Filled</th><th>₹/kg</th><th>Deadline</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${demands.map(d => `
+                <tr>
+                  <td><strong>${esc(d.material)}</strong><br><span style="font-size:9px;color:var(--muted)">${esc(d.quality_required)} quality${d.hub ? " · " + esc(d.hub) : ""}</span></td>
+                  <td>${d.quantity_kg} kg</td>
+                  <td>${d.filled_kg} kg<div class="progress"><div style="width:${Math.min(100, (d.filled_kg / d.quantity_kg) * 100)}%"></div></div></td>
+                  <td>${money(d.offered_price_per_kg)}</td>
+                  <td>${dateIN(d.deadline)}</td>
+                  <td><span class="badge ${DEMAND_BADGE[d.status] || "badge-gray"}">${esc(d.status)}</span></td>
+                  <td>${d.status === "OPEN" || d.status === "PARTIAL" ? `<button class="small secondary" onclick="showMatches('${esc(d.id)}')">Find lots</button>` : "—"}</td>
+                </tr>
+                <tr class="hidden" id="matches-${esc(d.id)}"><td colspan="7"></td></tr>
+              `).join("")}
+            </tbody>
+          </table></div>`}
+        </div>
+      `;
+    } catch (err) {
+      return `<div class="card"><p class="error-msg">Could not load: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  async function postDemand() {
+    const msg = document.getElementById("demand-msg");
+    const show = (cls, text) => { msg.className = "alert " + cls; msg.textContent = text; };
+    const qty = parseFloat(document.getElementById("dQty").value);
+    const price = parseFloat(document.getElementById("dPrice").value);
+    const days = parseInt(document.getElementById("dDays").value, 10);
+    if (!(qty > 0)) return show("error", "Enter the quantity in kg.");
+    if (!(price > 0)) return show("error", "Enter your price per kg.");
+    if (!(days >= 1 && days <= 90)) return show("error", "Deadline must be 1–90 days.");
+    const btn = document.getElementById("btn-demand"); btn.disabled = true;
+    try {
+      await api("/api/v1/demands", json("POST", {
+        recycler_id: getRecyclerId(),
+        recycler_name: account.name,
+        material: document.getElementById("dMaterial").value,
+        quality_required: document.getElementById("dQuality").value,
+        quantity_kg: qty,
+        offered_price_per_kg: price,
+        deadline_days: days,
+        hub: document.getElementById("dHub").value.trim() || null,
+        notes: document.getElementById("dNotes").value.trim() || null,
+      }));
+      render();
+    } catch (err) {
+      show("error", "❌ " + err.message);
+      btn.disabled = false;
+    }
+  }
+
+  async function showMatches(demandId) {
+    const row = document.getElementById("matches-" + demandId);
+    if (!row.classList.contains("hidden")) { row.classList.add("hidden"); return; }
+    row.classList.remove("hidden");
+    const cell = row.firstElementChild;
+    cell.innerHTML = `<div class="loading" style="padding:10px">Finding lots…</div>`;
+    try {
+      const matches = await api(`/api/v1/demands/${encodeURIComponent(demandId)}/matches`);
+      cell.innerHTML = matches.length === 0
+        ? `<div class="muted" style="padding:6px">No matching lots available right now.</div>`
+        : `<table>
+            <thead><tr><th>Lot</th><th>Collector</th><th>Weight</th><th>Match</th><th></th></tr></thead>
+            <tbody>${matches.map(m => `
+              <tr>
+                <td style="font-family:monospace;font-size:10px">${esc(m.lot_id)}</td>
+                <td style="font-family:monospace;font-size:10px">${esc(m.collector_id)}</td>
+                <td>${m.weight_kg} kg</td>
+                <td><strong>${Math.round(m.match_score)}</strong><br><span style="font-size:9px;color:var(--muted)">${esc(m.match_reasons.join(" · "))}</span></td>
+                <td><button class="small" onclick="reserveLot('${esc(demandId)}','${esc(m.lot_id)}')" ${account.active ? "" : "disabled"}>Reserve</button></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>`;
+    } catch (err) {
+      cell.innerHTML = `<div class="error-msg" style="padding:6px">${esc(err.message)}</div>`;
+    }
+  }
+
+  async function reserveLot(demandId, lotId) {
+    try {
+      await api(`/api/v1/demands/${encodeURIComponent(demandId)}/match/${encodeURIComponent(lotId)}`, { method: "POST" });
+      render();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
+  // ─── PRICES TAB ──────────────────────────────────────────────────────────
+  async function renderPrices() {
+    try {
+      const [p, daily] = await Promise.all([
+        api(`/api/v1/recycler/${encodeURIComponent(getRecyclerId())}/prices`),
+        api(`/api/v1/prices/daily`).catch(() => null),
+      ]);
+      const mandi = {};
+      (daily?.prices ?? []).forEach(r => { mandi[r.material] = r.current_price; });
+      const rows = Object.entries(p.prices);
+      return `
+        <div class="card">
+          <p class="kicker">Price Setting</p>
+          <h2>Your buy prices (₹/kg)</h2>
+          <p class="muted" style="margin-bottom:14px">Kabadiwalas' offers are ranked on these prices the moment you save.</p>
+          ${needsApproval()}
+          <div id="price-msg" class="alert hidden"></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Material</th><th>Mandi rate</th><th>Your price</th></tr></thead>
+            <tbody>
+              ${rows.map(([m, v]) => `
+                <tr>
+                  <td><strong>${esc(m)}</strong></td>
+                  <td class="muted">${mandi[m] != null ? money(mandi[m]) : "—"}</td>
+                  <td><input class="price" type="number" min="0.5" step="0.5" data-material="${esc(m)}" value="${v}" ${p.is_active ? "" : "disabled"} /></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table></div>
+          <button id="btn-prices" style="margin-top:14px" onclick="savePrices()" ${p.is_active ? "" : "disabled"}>Save prices</button>
+        </div>
+      `;
+    } catch (err) {
+      return `<div class="card"><p class="error-msg">Could not load: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  async function savePrices() {
+    const msg = document.getElementById("price-msg");
+    const prices = {};
+    for (const input of document.querySelectorAll("input.price")) {
+      const v = parseFloat(input.value);
+      if (!(v > 0)) { msg.className = "alert error"; msg.textContent = `Enter a valid price for ${input.dataset.material}.`; return; }
+      prices[input.dataset.material] = v;
+    }
+    const btn = document.getElementById("btn-prices"); btn.disabled = true;
+    try {
+      await api(`/api/v1/recycler/${encodeURIComponent(getRecyclerId())}/prices`, json("PUT", { prices }));
+      msg.className = "alert success"; msg.textContent = "✓ Prices saved — live in the marketplace.";
+    } catch (err) {
+      msg.className = "alert error"; msg.textContent = "❌ " + err.message;
+    } finally { btn.disabled = false; }
+  }
+
   // ─── HISTORY TAB ─────────────────────────────────────────────────────────
   async function renderHistory() {
     try {
@@ -393,7 +845,7 @@
         <div class="card">
           <p class="kicker">Transaction History</p>
           <h2>${tx.length} settled lot${tx.length > 1 ? "s" : ""}</h2>
-          <table>
+          <div class="table-scroll"><table>
             <thead><tr><th>UTR</th><th>Lot</th><th>Weight</th><th>Amount</th><th>EPR Cert</th><th>Mode</th><th>Date</th></tr></thead>
             <tbody>
               ${tx.map(t => `
@@ -408,7 +860,7 @@
                 </tr>
               `).join("")}
             </tbody>
-          </table>
+          </table></div>
         </div>
       `;
     } catch (err) {
@@ -442,13 +894,19 @@
 
   // ─── RENDER ──────────────────────────────────────────────────────────────
   async function render() {
+    renderAccountCard();
+    document.getElementById("tabs").classList.toggle("hidden", !account);
     const el = document.getElementById("content");
+    if (!account) { el.innerHTML = renderLogin(); return; }
+
     el.innerHTML = `<div class="loading">Loading…</div>`;
     let html = "";
     try {
       if (currentTab === "verify") html = renderVerify();
       else if (currentTab === "incoming") html = await renderIncoming();
       else if (currentTab === "offers") html = await renderOffers();
+      else if (currentTab === "demands") html = await renderDemands();
+      else if (currentTab === "prices") html = await renderPrices();
       else if (currentTab === "history") html = await renderHistory();
       else if (currentTab === "analytics") html = await renderAnalytics();
       el.innerHTML = html;
@@ -457,7 +915,11 @@
     }
   }
 
-  window.addEventListener("DOMContentLoaded", () => render());
+  window.addEventListener("DOMContentLoaded", async () => {
+    try { account = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "null"); } catch { account = null; }
+    await refreshAccount();
+    render();
+  });
 </script>
 </body>
 </html>

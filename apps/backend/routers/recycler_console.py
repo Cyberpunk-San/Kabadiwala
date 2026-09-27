@@ -9,6 +9,8 @@ from models.domain import (
     RecyclerIncomingLot,
     RecyclerOfferCreate,
     RecyclerOfferResponse,
+    RecyclerPrices,
+    RecyclerPricesUpdate,
     RecyclerTransaction,
 )
 from services import recycler_console_service as rc
@@ -50,6 +52,17 @@ def incoming_lots(recycler_id: str, db: Session = Depends(get_db)):
 @router.get("/{recycler_id}/transactions", response_model=List[RecyclerTransaction])
 def transactions(recycler_id: str, db: Session = Depends(get_db)):
     return rc.transactions(db, recycler_id)
+
+
+@router.get("/{recycler_id}/prices", response_model=RecyclerPrices)
+def get_prices(recycler_id: str, db: Session = Depends(get_db)):
+    return rc.get_prices(db, recycler_id)
+
+
+@router.put("/{recycler_id}/prices", response_model=RecyclerPrices)
+def set_prices(recycler_id: str, data: RecyclerPricesUpdate, db: Session = Depends(get_db)):
+    """Recycler sets its own buy prices (₹/kg) per material."""
+    return rc.set_prices(db, recycler_id, data.prices)
 
 
 @router.get("/{recycler_id}/analytics", response_model=RecyclerAnalytics)

@@ -79,12 +79,14 @@ export function findOptimalCluster(
     // Scoring model
     const acceptanceScore = acceptsMaterial ? 100 : 20;
     const demandScore = demandPressure * 100;
-    const distancePenalty = Math.max(0, 100 - distKm * 4); // -4pts per km
+    // Travel cost dominates for a collector on a cycle/cart: 100 at the door,
+    // ~37 at 25 km, ~0 beyond 100 km (a hub in another city can't win).
+    const distanceScore = 100 * Math.exp(-distKm / 25);
 
     const score = Math.round(
-      acceptanceScore * 0.40 +
-      demandScore     * 0.35 +
-      distancePenalty * 0.25
+      acceptanceScore * 0.30 +
+      demandScore     * 0.20 +
+      distanceScore   * 0.50
     );
 
     const eta = estimateETAMinutes(distKm);

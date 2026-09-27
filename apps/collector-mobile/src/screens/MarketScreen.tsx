@@ -1,397 +1,327 @@
-// src/screens/MarketScreen.tsx
+// src/screens/MarketScreen.tsx — live buyer offers ranked by take-home money.
+import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "../ui/Text";
+import Animated, { FadeInDown, Layout } from "react-native-reanimated";
 
-import { MaterialCard } from "../components/MaterialCard";
-import { PriceCard } from "../components/PriceCard";
-import { colors } from "../constants/theme";
-import { appendLotEvent } from "../database/sqlite";
+import { colors, radius, space, type } from "../constants/theme";
 import { calculateNetEarnings, sortOffersByNetEarnings } from "../features/lots/lotCalculator";
 import { valuateLot } from "../features/lots/valuationEngine";
+import { useScreenNarration } from "../hooks/useScreenNarration";
 import { useTranslation } from "../hooks/useTranslation";
+import { go } from "../navigation/ref";
 import type { RootTabParamList } from "../navigation/types";
-import { createLotRemote } from "../services/api/client";
 import { localOffers } from "../services/ai/demandOffers";
-import { getTopOpportunities } from "../services/ai/opportunityScorer";
-import { useAuthStore } from "../store/authStore";
+import { ApiError, createLotRemote, getOffers, setLotOffer } from "../services/api/client";
+import { enqueue, makeIdempotencyKey } from "../services/sync/syncService";
+import { makeId } from "../database/sqlite";
 import { useAppStore } from "../store/appStore";
+import { useAuthStore } from "../store/authStore";
+import { materialName, type RecyclerOffer } from "../types/domain";
+import { dialog, EmptyState, toast } from "../ui/feedback";
+import { MaterialAvatar } from "../ui/materials";
+import { AnimatedNumber, SkeletonCard } from "../ui/motion";
+import { Badge, Button, Card, enter, InkTitle, PressScale, Screen, textStyles } from "../ui/primitives";
 import { currency } from "../utils/format";
 
-type Props = BottomTabScreenProps<RootTabParamList, "Market"> & {
-  navigation: { navigate: (screen: any, params?: any) => void };
-};
+import { P } from "../constants/palette";
+type Props = BottomTabScreenProps<RootTabParamList, "Market">;
 
-export function MarketScreen({ navigation, route }: Props) {
-  const { language, t } = useTranslation();
-  const addLot = useAppStore((state) => state.addLot);
-  const collector = useAuthStore((state) => state.collector);
+export function MarketScreen({ route, navigation }: Props) {
+  const { t, language } = useTranslation();
+  useScreenNarration("Market");
+  const addLot = useAppStore((s) => s.addLot);
+  const refreshLots = useAppStore((s) => s.refreshLots);
+  const collector = useAuthStore((s) => s.collector);
+  const [choosing, setChoosing] = useState<string | null>(null);
+  const [showLoss, setShowLoss] = useState(false);
 
-  const material = route.params?.material ?? "Copper cable";
+  const material = route.params?.material;
   const quality = route.params?.quality ?? "medium";
   const weightKg = route.params?.weightKg ?? 35;
   const imageUri = route.params?.imageUri;
+  const imageUris = route.params?.imageUris;
+  const existingLotId = route.params?.lotId;
+  const coords = collector?.latitude && collector?.longitude ? { latitude: collector.latitude, longitude: collector.longitude } : undefined;
 
-  const [showLossDetails, setShowLossDetails] = useState(true);
+  const offersQuery = useQuery({
+    queryKey: ["offers", material, weightKg, coords?.latitude, coords?.longitude],
+    queryFn: () => getOffers({ material: material!, weightKg, ...coords }),
+    enabled: !!material,
+    retry: 0,
+  });
 
-  // ── Local ML offers (primary — offline, instant) ────────────────────────────
-  const coords = collector?.latitude && collector?.longitude
-    ? { latitude: collector.latitude, longitude: collector.longitude }
-    : undefined;
-
-  const offers = sortOffersByNetEarnings(
-    localOffers(material as any, weightKg, coords),
-    weightKg
-  );
-
-  // ── ML Valuation ─────────────────────────────────────────────────────────────
-  const valuation = valuateLot(material as any, quality, weightKg, offers[0]?.listedPricePerKg);
-
-  // ── Next best material from ML scorer ────────────────────────────────────────
-  const nextBestOpps = getTopOpportunities(3).filter(o => o.material !== material);
-  const nextBest = nextBestOpps[0];
-
-  if (offers.length === 0) {
+  if (!material) {
     return (
-      <View style={styles.loadingWrap}>
-        <Text style={styles.errorIcon}>⚠</Text>
-        <Text style={styles.errorTitle}>No offers available</Text>
-        <Text style={styles.errorBody}>No recyclers cover this material yet.</Text>
-      </View>
+      <Screen withTabBar contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
+        <EmptyState icon="storefront-outline" title={t("noItemTitle")} message={t("noItemMsg")} action={t("startScan")} onAction={() => navigation.navigate("Collect")} />
+      </Screen>
     );
   }
 
-  const bestOffer = offers[0]!;
-  const bestNetEarnings = calculateNetEarnings(bestOffer, weightKg).net;
+  // Offline → show clearly-labelled estimates from the on-device model.
+  const offline = offersQuery.isError;
+  const offers: RecyclerOffer[] = sortOffersByNetEarnings(
+    offline ? localOffers(material, weightKg, coords) : offersQuery.data ?? [],
+    weightKg
+  );
+  const best = offers[0];
+  const bestNet = best ? calculateNetEarnings(best, weightKg).net : 0;
+  const valuation = valuateLot(material, quality, weightKg, best?.listedPricePerKg);
 
-  // Middleman loss calculator (unchanged)
-  const scaleTamperKg = Math.round(weightKg * 0.08 * 10) / 10;
-  const scaleTamperLoss = Math.round(scaleTamperKg * bestOffer.listedPricePerKg);
-  const middlemanMarginCut = Math.round(weightKg * 35);
-  const middlemanInformalDeduction = 150;
-  const totalMiddlemanLoss = scaleTamperLoss + middlemanMarginCut + middlemanInformalDeduction;
-  const middlemanEstimatedPayout = Math.max(0, bestNetEarnings - totalMiddlemanLoss);
+  // Typical informal-market leakage, shown so collectors see what they save.
+  const scaleLoss = best ? Math.round(weightKg * 0.08 * best.listedPricePerKg) : 0;
+  const commission = Math.round(weightKg * 35);
+  const transport = 150;
+  const middlemanTotal = Math.max(0, bestNet - scaleLoss - commission - transport);
 
-  // ─── Choose offer handler ────────────────────────────────────────────────
-  const chooseOffer = async (offerId: string) => {
-    const offer = offers.find((candidate) => candidate.id === offerId);
-    if (!offer) return;
-
+  const choose = async (offer: RecyclerOffer) => {
+    if (!collector) return;
+    setChoosing(offer.id);
     const { net } = calculateNetEarnings(offer, weightKg);
-
-    // 1. Save locally (offline-first)
-    const lot = await addLot({
-      material,
-      quality,
-      weightKg,
-      imageUri,
-      expectedNetEarnings: net,
-      status: "PICKUP_SCHEDULED",
-    });
-    await appendLotEvent(lot.id, "OFFER_ACCEPTED", {
-      offerId: offer.id,
-      recyclerName: offer.recyclerName,
-      expectedNetEarnings: net,
-    });
-
-    // 2. Push to backend (best-effort — don't block local flow)
-    if (collector) {
-      try {
-        await createLotRemote({
-          material,
-          quality,
-          weightKg,
-          collectorId: collector.id,
-          collectorName: collector.name,
-          latitude: collector.latitude ?? undefined,
-          longitude: collector.longitude ?? undefined,
-          imageUri,
-          expectedNetEarnings: net,
-        });
-      } catch (err) {
-        console.warn("[market] backend lot sync failed:", err);
+    const base = { material, quality, weightKg, imageUri, imageUris, expectedNetEarnings: net, recyclerId: offer.id, recyclerName: offer.recyclerName };
+    try {
+      let lotId: string;
+      let savedOffline = false;
+      if (existingLotId) {
+        // Selling a lot that already exists (e.g. from a completed pickup) — don't create another.
+        try {
+          await setLotOffer(existingLotId, net);
+        } catch (err) {
+          toast.error(t("serverDown"), err instanceof ApiError ? err.message : t("serverDownMsg"));
+          return;
+        }
+        await refreshLots(collector.id);
+        useAppStore.setState((s) => ({
+          lots: s.lots.map((l) => (l.id === existingLotId ? { ...l, expectedNetEarnings: net, recyclerId: offer.id, recyclerName: offer.recyclerName } : l)),
+        }));
+        lotId = existingLotId;
+      } else {
+        try {
+          const remote = await createLotRemote({
+            material, quality, weightKg,
+            collectorId: collector.id, collectorName: collector.name,
+            latitude: coords?.latitude, longitude: coords?.longitude,
+            expectedNetEarnings: net,
+          });
+          const lot = await addLot({ ...base, id: remote.id, status: "AVAILABLE", syncState: "SYNCED", createdAt: remote.created_at.endsWith("Z") ? remote.created_at : `${remote.created_at}Z` });
+          lotId = lot.id;
+        } catch {
+          // No server: keep it on the phone and let the sync loop create it later — same id.
+          const id = makeId("lot_off");
+          await enqueue({
+            entity: "lot",
+            entity_id: id,
+            idempotency_key: makeIdempotencyKey("lot"),
+            payload: {
+              material, quality, weight_kg: weightKg,
+              collector_id: collector.id, collector_name: collector.name,
+              latitude: coords?.latitude, longitude: coords?.longitude,
+              expected_net_earnings: net,
+            },
+            client_created_at: new Date().toISOString(),
+          });
+          await addLot({ ...base, id, status: "AVAILABLE", syncState: "PENDING" });
+          useAppStore.setState((s) => ({ pendingSync: s.pendingSync + 1 }));
+          lotId = id;
+          savedOffline = true;
+        }
       }
-    }
 
-    Alert.alert(
-      t("upcoming"),
-      `${offer.recyclerName} will confirm the pickup. Digital Handover Pass created!`,
-      [
-        {
-          text: "View Handover Pass",
-          onPress: () =>
-            navigation.navigate("Handover", {
-              lotId: lot.id,
-              material: lot.material,
-              weightKg: lot.weightKg,
-              netAmount: net,
-            }),
-        },
-        { text: "Go to Home", onPress: () => navigation.navigate("Home") },
-      ]
-    );
+      dialog.show({
+        icon: savedOffline ? "cloud-offline" : "checkmark-circle",
+        tone: savedOffline ? "warn" : "primary",
+        title: savedOffline ? t("savedOffline") : t("offerAccepted"),
+        message: savedOffline ? t("savedOfflineMsg") : t("offerAcceptedMsg", { recycler: offer.recyclerName }),
+        actions: [
+          { label: t("viewPass"), onPress: () => go("Handover", { lotId }) },
+          { label: t("goHome"), variant: "ghost", onPress: () => navigation.navigate("Home") },
+        ],
+      });
+      navigation.setParams({ material: undefined, weightKg: undefined, imageUri: undefined, imageUris: undefined, quality: undefined, lotId: undefined });
+    } finally {
+      setChoosing(null);
+    }
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={styles.kicker}>MARKETPLACE</Text>
-      <Text style={styles.title}>{t("buyerOffers")}</Text>
+    <Screen withTabBar>
+      <Animated.View entering={enter(0)}>
+        <Text style={textStyles.kicker}>{t("marketKicker")}</Text>
+        <InkTitle style={styles.title}>{t("marketTitle")}</InkTitle>
+      </Animated.View>
 
-      <View style={styles.summary}>
-        <View style={styles.summaryCopy}>
-          <Text style={styles.summaryTitle}>{material}</Text>
-          <Text style={styles.summaryMeta}>
-            {weightKg} kg · {quality} quality
+      {/* Item summary */}
+      <Animated.View entering={enter(1)}>
+        <Card style={styles.summary}>
+          <MaterialAvatar material={material} size={52} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.summaryTitle} numberOfLines={1}>{materialName(material, language)}</Text>
+            <Text style={textStyles.small}>{weightKg} {t("kg")} · {t(quality)}</Text>
+          </View>
+          <Button label={t("changeItem")} variant="secondary" size="md" onPress={() => navigation.navigate("Collect")} />
+        </Card>
+      </Animated.View>
+
+      {offline ? (
+        <Animated.View entering={FadeInDown}>
+          <Card tone="warn" style={{ marginTop: space.md, flexDirection: "row", gap: 10, alignItems: "center" }}>
+            <Ionicons name="cloud-offline" size={20} color={P("#E5B86A")} />
+            <Text style={[textStyles.body, { flex: 1, color: P("#E5B86A") }]}>{t("estimatedOffers")}</Text>
+          </Card>
+        </Animated.View>
+      ) : null}
+
+      {offersQuery.isLoading ? (
+        <View style={{ marginTop: space.lg }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ) : !best ? (
+        <View style={{ marginTop: space.lg }}>
+          <EmptyState icon="search" title={t("noOffers")} message={t("noOffersMsg")} action={t("changeItem")} onAction={() => navigation.navigate("Collect")} />
+        </View>
+      ) : (
+        <>
+          {/* Fair price vs best offer */}
+          <Animated.View entering={enter(2)}>
+            <Card tone={valuation.warningBelowFair ? "warn" : "soft"} style={{ marginTop: space.md }}>
+              <View style={{ flexDirection: "row" }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={textStyles.kicker}>{t("fairPrice")}</Text>
+                  <Text style={styles.metric}>{currency(valuation.fairPricePerKg)}{t("perKg")}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={textStyles.kicker}>{t("bestOffer")}</Text>
+                  <Text style={[styles.metric, { color: colors.primary }]}>{currency(best.listedPricePerKg)}{t("perKg")}</Text>
+                </View>
+              </View>
+              <Badge label={valuation.warningBelowFair ? t("belowFair") : t("fairOk")} tone={valuation.warningBelowFair ? "warn" : "primary"} icon={valuation.warningBelowFair ? "alert-circle" : "checkmark-circle"} />
+            </Card>
+          </Animated.View>
+
+          {/* Middleman comparison */}
+          <Animated.View entering={enter(3)}>
+            <PressScale onPress={() => setShowLoss((v) => !v)} style={[styles.lossCard]} accessibilityRole="button">
+              <Text style={styles.lossTitle}>{t("lossTitle")}</Text>
+              <View style={styles.vsRow}>
+                <View style={[styles.vsBox, { backgroundColor: colors.dangerSoft }]}>
+                  <Text style={styles.vsLabel}>{t("middleman")}</Text>
+                  <Text style={[styles.vsValue, { color: colors.danger }]}>{currency(middlemanTotal)}</Text>
+                </View>
+                <View style={styles.vsCircle}><Text style={styles.vsText}>VS</Text></View>
+                <View style={[styles.vsBox, { backgroundColor: colors.primarySoft }]}>
+                  <Text style={styles.vsLabel}>{t("withUs")}</Text>
+                  <AnimatedNumber value={bestNet} format={currency} style={[styles.vsValue, { color: colors.primary }]} />
+                </View>
+              </View>
+              <Text style={styles.gain}>{t("youGetMore", { amount: currency(bestNet - middlemanTotal) })}</Text>
+              {showLoss ? (
+                <Animated.View entering={FadeInDown} style={{ marginTop: space.md, gap: 6 }}>
+                  {[
+                    [t("scaleCheating"), scaleLoss],
+                    [t("commission"), commission],
+                    [t("transportCut"), transport],
+                  ].map(([label, amt]) => (
+                    <View key={String(label)} style={styles.lossRow}>
+                      <Text style={textStyles.small}>{label}</Text>
+                      <Text style={styles.lossAmt}>− {currency(Number(amt))}</Text>
+                    </View>
+                  ))}
+                </Animated.View>
+              ) : null}
+              <Ionicons name={showLoss ? "chevron-up" : "chevron-down"} size={18} color={colors.muted} style={{ alignSelf: "center", marginTop: 4 }} />
+            </PressScale>
+          </Animated.View>
+
+          <Text style={[textStyles.small, { marginTop: space.lg, marginBottom: space.sm }]}>
+            <Ionicons name="sparkles" size={12} color={colors.primary} /> {t("rankedByNet")}
           </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.bazarShortcut}
-          onPress={() => navigation.navigate("BazarBhav")}
-        >
-          <Text style={styles.bazarShortcutText}>📊 {t("bazarBhav")}</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* ML Fair Price Valuation Banner */}
-      <View style={[
-        styles.valuationBanner,
-        valuation.warningBelowFair && styles.valuationBannerWarn
-      ]}>
-        <View style={styles.valuationRow}>
-          <View style={styles.valuationItem}>
-            <Text style={styles.valuationLabel}>ML FAIR PRICE</Text>
-            <Text style={styles.valuationPrice}>₹{valuation.fairPricePerKg}/kg</Text>
-            <Text style={styles.valuationConf}>Confidence: {Math.round(valuation.confidence * 100)}%</Text>
-          </View>
-          <View style={styles.valuationItem}>
-            <Text style={styles.valuationLabel}>BEST OFFER</Text>
-            <Text style={[styles.valuationPrice, { color: colors.green }]}>₹{bestOffer.listedPricePerKg}/kg</Text>
-            <Text style={[styles.valuationConf, { color: valuation.warningBelowFair ? '#DC2626' : colors.muted }]}>
-              {valuation.warningBelowFair ? '⚠ Below fair price' : '✓ Fair'}
-            </Text>
-          </View>
-          <View style={styles.valuationItem}>
-            <Text style={styles.valuationLabel}>FAIR PAYOUT</Text>
-            <Text style={styles.valuationPrice}>{currency(valuation.fairPayout)}</Text>
-            <Text style={styles.valuationConf}>For {weightKg} kg</Text>
-          </View>
-        </View>
-        <Text style={styles.valuationReason} numberOfLines={2}>
-          {language === "hi" ? valuation.reasoningHi : language === "mr" ? valuation.reasoningMr : valuation.reasoning}
-        </Text>
-      </View>
-
-      {/* Loss calculator */}
-      <View style={styles.lossCard}>
-        <View style={styles.lossHeader}>
-          <View style={styles.lossBadgeWrap}>
-            <Text style={styles.lossBadgeText}>⚠ TRAP ALERT</Text>
-          </View>
-          <TouchableOpacity onPress={() => setShowLossDetails(!showLossDetails)}>
-            <Text style={styles.toggleText}>
-              {showLossDetails ? "Hide breakdown ▲" : "Show details ▼"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.lossTitle}>{t("lossCalculator")}</Text>
-        <Text style={styles.lossSubtitle}>{t("lossCalculatorSubtitle")}</Text>
-
-        <View style={styles.comparisonRow}>
-          <View style={[styles.comparisonBox, styles.middlemanBox]}>
-            <Text style={styles.compLabel}>Local Middleman</Text>
-            <Text style={styles.middlemanValue}>{currency(middlemanEstimatedPayout)}</Text>
-            <Text style={styles.middlemanDiff}>- {currency(totalMiddlemanLoss)} lost</Text>
-          </View>
-
-          <View style={styles.vsCircle}>
-            <Text style={styles.vsText}>VS</Text>
-          </View>
-
-          <View style={[styles.comparisonBox, styles.appBox]}>
-            <Text style={styles.compLabelGreen}>Mai Hu Kabadiwala</Text>
-            <Text style={styles.appValue}>{currency(bestNetEarnings)}</Text>
-            <Text style={styles.appDiff}>+ {currency(totalMiddlemanLoss)} extra!</Text>
-          </View>
-        </View>
-
-        {showLossDetails && (
-          <View style={styles.lossBreakdown}>
-            <Text style={styles.breakdownHeader}>Where you lose money with informal buyers:</Text>
-            <View style={styles.lossRow}>
-              <Text style={styles.lossRowLabel}>⚖️ {t("scaleCheating")}</Text>
-              <Text style={styles.lossRowVal}>- {currency(scaleTamperLoss)}</Text>
-            </View>
-            <View style={styles.lossRow}>
-              <Text style={styles.lossRowLabel}>✂️ {t("middlemanCommission")}</Text>
-              <Text style={styles.lossRowVal}>- {currency(middlemanMarginCut)}</Text>
-            </View>
-            <View style={styles.lossRow}>
-              <Text style={styles.lossRowLabel}>🚚 Unregulated transport cut</Text>
-              <Text style={styles.lossRowVal}>- {currency(middlemanInformalDeduction)}</Text>
-            </View>
-            <View style={styles.savingsBanner}>
-              <Text style={styles.savingsBannerText}>✓ {t("guaranteedSavings")}</Text>
-            </View>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.notice}>
-        <Text style={styles.noticeIcon}>✦</Text>
-        <Text style={styles.noticeText}>{t("rankedByNet")}</Text>
-      </View>
-
-      {offers.map((offer, index) => {
-        const earnings = calculateNetEarnings(offer, weightKg);
-        return (
-          <PriceCard
-            key={offer.id}
-            offer={offer}
-            costs={earnings.costs}
-            net={earnings.net}
-            best={index === 0}
-            chooseLabel={t("choose")}
-            onChoose={() => chooseOffer(offer.id)}
-          />
-        );
-      })}
-
-      <View style={styles.explainer}>
-        <Text style={styles.explainerKicker}>{t("bestNet")}</Text>
-        <Text style={styles.explainerTitle}>
-          {currency(bestNetEarnings)} estimated take-home
-        </Text>
-        <Text style={styles.explainerText}>
-          {t("listedPrice")} × {weightKg} kg − {t("pickupCost").toLowerCase()} − platform fee.
-          The collector sees transparent pricing before accepting.
-        </Text>
-      </View>
-
-      <View style={styles.demand}>
-        <Text style={styles.demandTitle}>{t("nearbyDemand")}</Text>
-        {nextBest ? (
-          <TouchableOpacity onPress={() => navigation.navigate("Market", { material: nextBest.material, quality: "medium", weightKg: 35 })}>
-            <MaterialCard
-              material={nextBest.material}
-              price={`₹${nextBest.currentPricePerKg}`}
-              note={`Score ${nextBest.score}/100 · ${nextBest.demand} demand · Grade ${nextBest.grade}`}
-              badge={nextBest.grade === "S" || nextBest.grade === "A" ? "HOT DEMAND" : "ACTIVE DEMAND"}
-            />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={() => navigation.navigate("Collect")}>
-            <MaterialCard
-              material="Server boards"
-              price="₹510"
-              note={t("highDemand")}
-              badge="ACTIVE DEMAND"
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-    </ScrollView>
+          {offers.map((offer, i) => {
+            const { net, costs } = calculateNetEarnings(offer, weightKg);
+            const isBest = i === 0;
+            return (
+              <Animated.View key={offer.id} entering={enter(4 + i)} layout={Layout.springify()}>
+                <View style={[styles.offer, isBest && styles.offerBest]}>
+                  {isBest ? (
+                    <View style={styles.bestRibbon}>
+                      <Ionicons name="trophy" size={12} color={colors.white} />
+                      <Text style={styles.bestText}>{t("best")}</Text>
+                    </View>
+                  ) : null}
+                  <View style={styles.offerHead}>
+                    <View style={styles.logo}><Ionicons name="business-outline" size={20} color={P("#A8E8C9")} /></View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.offerName} numberOfLines={1}>{offer.recyclerName} {offer.verified ? "✓" : ""}</Text>
+                      <Text style={textStyles.small}>★ {offer.rating} · {t("kmAway", { n: offer.distanceKm })} · {t("reliable", { n: offer.paymentReliability })}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.offerGrid}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.gridLabel}>{t("listedPrice")}</Text>
+                      <Text style={styles.gridValue}>{currency(offer.listedPricePerKg)}{t("perKg")}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.gridLabel}>{t("pickupCosts")}</Text>
+                      <Text style={[styles.gridValue, { color: colors.danger }]}>−{currency(costs)}</Text>
+                    </View>
+                    <View style={{ flex: 1, alignItems: "flex-end" }}>
+                      <Text style={styles.gridLabel}>{t("takeHome")}</Text>
+                      <Text style={[styles.gridValue, styles.net]}>{currency(net)}</Text>
+                    </View>
+                  </View>
+                  <Button
+                    label={t("choose")}
+                    icon="checkmark-circle"
+                    variant={isBest ? "primary" : "secondary"}
+                    size="md"
+                    loading={choosing === offer.id}
+                    disabled={!!choosing && choosing !== offer.id}
+                    onPress={() => void choose(offer)}
+                    style={{ marginTop: space.md }}
+                  />
+                </View>
+              </Animated.View>
+            );
+          })}
+        </>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: 19, paddingBottom: 31, gap: 10 },
-  kicker: { color: "#84948B", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
-  title: { marginTop: -6, marginBottom: 9, color: colors.ink, fontSize: 25, fontWeight: "800", letterSpacing: -0.5 },
+  title: { ...type.h1, color: colors.ink, marginTop: 2 },
+  summary: { flexDirection: "row", alignItems: "center", gap: space.md, marginTop: space.lg },
+  summaryTitle: { fontSize: 17, fontWeight: "800", color: colors.ink },
+  metric: { marginTop: 4, marginBottom: space.sm, fontSize: 20, fontWeight: "800", color: colors.ink },
 
-  loadingWrap: {
-    flex: 1,
-    backgroundColor: colors.cream,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 30,
-  },
-  loadingText: { marginTop: 10, color: colors.muted, fontSize: 12 },
-  errorIcon: { fontSize: 40, marginBottom: 10 },
-  errorTitle: { fontSize: 16, fontWeight: "800", color: colors.ink, marginBottom: 6 },
-  errorBody: { fontSize: 12, color: colors.muted, textAlign: "center", lineHeight: 17, marginBottom: 20 },
-  retryBtn: {
-    paddingHorizontal: 24, paddingVertical: 11,
-    borderRadius: 10, backgroundColor: colors.green,
-  },
-  retryBtnText: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  lossCard: { marginTop: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
+  lossTitle: { fontSize: 15, fontWeight: "800", color: colors.ink },
+  vsRow: { flexDirection: "row", alignItems: "center", marginTop: space.md },
+  vsBox: { flex: 1, padding: space.md, borderRadius: radius.md, alignItems: "center" },
+  vsLabel: { fontSize: 12, fontWeight: "700", color: colors.inkSoft },
+  vsValue: { marginTop: 4, fontSize: 20, fontWeight: "800" },
+  vsCircle: { width: 34, height: 34, borderRadius: 17, marginHorizontal: -8, zIndex: 1, alignItems: "center", justifyContent: "center", backgroundColor: P("#020705"), borderWidth: 1, borderColor: P("rgba(248,250,247,0.14)") },
+  vsText: { color: P("#A8E8C9"), fontSize: 11, fontWeight: "700" },
+  gain: { marginTop: space.md, textAlign: "center", fontSize: 14, fontWeight: "800", color: colors.primary },
+  lossRow: { flexDirection: "row", justifyContent: "space-between" },
+  lossAmt: { fontSize: 13, fontWeight: "800", color: colors.danger },
 
-  summary: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    padding: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 16,
-    backgroundColor: colors.white,
-  },
-  summaryCopy: { flex: 1 },
-  summaryTitle: { color: colors.ink, fontSize: 14, fontWeight: "800" },
-  summaryMeta: { marginTop: 3, color: colors.muted, fontSize: 10 },
-  bazarShortcut: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.greenLight },
-  bazarShortcutText: { color: colors.green, fontSize: 10, fontWeight: "800" },
-
-  lossCard: { padding: 15, borderRadius: 18, backgroundColor: "#FFF7ED", borderWidth: 1.5, borderColor: "#FDBA74" },
-  lossHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  lossBadgeWrap: { backgroundColor: "#EA580C", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
-  lossBadgeText: { color: colors.white, fontSize: 8, fontWeight: "900", letterSpacing: 0.5 },
-  toggleText: { color: "#C2410C", fontSize: 10, fontWeight: "700" },
-  lossTitle: { fontSize: 16, fontWeight: "900", color: "#9A3412" },
-  lossSubtitle: { fontSize: 10, color: "#C2410C", marginTop: 2, marginBottom: 12 },
-  comparisonRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
-  comparisonBox: { flex: 1, padding: 10, borderRadius: 12, borderWidth: 1 },
-  middlemanBox: { backgroundColor: "#FEE2E2", borderColor: "#FCA5A5" },
-  appBox: { backgroundColor: "#DCFCE7", borderColor: "#86EFAC" },
-  compLabel: { fontSize: 9, color: "#991B1B", fontWeight: "700" },
-  compLabelGreen: { fontSize: 9, color: "#166534", fontWeight: "800" },
-  middlemanValue: { fontSize: 16, fontWeight: "900", color: "#991B1B", marginTop: 3 },
-  middlemanDiff: { fontSize: 9, fontWeight: "800", color: "#B91C1C", marginTop: 2 },
-  appValue: { fontSize: 16, fontWeight: "900", color: "#166534", marginTop: 3 },
-  appDiff: { fontSize: 9, fontWeight: "900", color: "#15803D", marginTop: 2 },
-  vsCircle: { width: 26, height: 26, borderRadius: 13, backgroundColor: "#FED7AA", alignItems: "center", justifyContent: "center" },
-  vsText: { fontSize: 8, fontWeight: "900", color: "#9A3412" },
-  lossBreakdown: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#FED7AA" },
-  breakdownHeader: { fontSize: 10, fontWeight: "800", color: "#9A3412", marginBottom: 6 },
-  lossRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
-  lossRowLabel: { fontSize: 10, color: "#7C2D12", fontWeight: "600" },
-  lossRowVal: { fontSize: 10, color: "#DC2626", fontWeight: "800" },
-  savingsBanner: { marginTop: 8, padding: 8, borderRadius: 8, backgroundColor: "#ECFDF5", borderWidth: 1, borderColor: "#A7F3D0" },
-  savingsBannerText: { fontSize: 9, color: "#065F46", fontWeight: "800", textAlign: "center" },
-
-  notice: { flexDirection: "row", gap: 7, alignItems: "center", paddingHorizontal: 3, paddingBottom: 2 },
-  noticeIcon: { color: colors.orange, fontSize: 14 },
-  noticeText: { flex: 1, color: "#5B7066", fontSize: 10, lineHeight: 14 },
-
-  explainer: { marginTop: 3, padding: 15, borderRadius: 16, backgroundColor: "#E5F3E9" },
-  explainerKicker: { color: "#4E7A5D", fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
-  explainerTitle: { marginTop: 5, color: colors.green, fontSize: 17, fontWeight: "800" },
-  explainerText: { marginTop: 6, color: "#537066", fontSize: 10, lineHeight: 14 },
-
-  demand: { marginTop: 12 },
-  demandTitle: { marginBottom: 9, color: colors.ink, fontSize: 17, fontWeight: "800" },
-
-  // ML valuation banner
-  valuationBanner: {
-    padding: 13, borderRadius: 16,
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1, borderColor: "#BFDBFE",
-  },
-  valuationBannerWarn: {
-    backgroundColor: "#FFF7ED",
-    borderColor: "#FDBA74",
-  },
-  valuationRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  valuationItem: { flex: 1 },
-  valuationLabel: { fontSize: 8, fontWeight: "800", color: "#3B82F6", letterSpacing: 0.5, marginBottom: 2 },
-  valuationPrice: { fontSize: 14, fontWeight: "900", color: colors.ink },
-  valuationConf: { fontSize: 9, color: colors.muted, marginTop: 2 },
-  valuationReason: { fontSize: 10, color: "#374151", lineHeight: 14, fontStyle: "italic" },
+  offer: { padding: space.lg, marginBottom: space.md, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
+  offerBest: { borderWidth: 2, borderColor: colors.primary },
+  bestRibbon: { position: "absolute", top: -11, right: 16, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: colors.primary },
+  bestText: { color: colors.white, fontSize: 11, fontWeight: "900", letterSpacing: 0.5 },
+  offerHead: { flexDirection: "row", alignItems: "center", gap: space.md },
+  logo: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft },
+  offerName: { fontSize: 15, fontWeight: "800", color: colors.ink },
+  offerGrid: { flexDirection: "row", marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line },
+  gridLabel: { fontSize: 11, fontWeight: "700", color: colors.muted },
+  gridValue: { marginTop: 3, fontSize: 15, fontWeight: "800", color: colors.ink },
+  net: { fontSize: 19, color: colors.primary },
 });

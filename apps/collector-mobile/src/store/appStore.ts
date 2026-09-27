@@ -1,171 +1,156 @@
+// src/store/appStore.ts — language, lots (offline-first + server merge), connectivity, sync.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 
-import { createOfflineLot, initialiseDatabase, listLots, updateLotStatus as updateSqliteLotStatus } from "../database/sqlite";
-import type { AdminStats, CreateLotInput, Language, Lot, LotStatus, UserProfile, UserRole } from "../types/domain";
+import { config } from "../constants/config";
+import {
+  clearLots,
+  createOfflineLot,
+  initialiseDatabase,
+  listLots,
+  markLotSynced,
+  updateLotStatus as updateSqliteLotStatus,
+  upsertLots,
+} from "../database/sqlite";
+import { checkHealth, listMyLots, type RemoteLot } from "../services/api/client";
+import { clearQueue, flush, queueSize } from "../services/sync/syncService";
+import { isMaterial, type CreateLotInput, type Language, type Lot, type LotStatus } from "../types/domain";
 
 const LANGUAGE_STORAGE_KEY = "@mhk_collector_language";
-const ROLE_STORAGE_KEY = "@mhk_role";
 
-// ─── Demo Profiles (one per role) ─────────────────────────────────────────────
-export const DEMO_PROFILES: Record<UserRole, UserProfile> = {
-  kabadiwala: {
-    id: "CLT-4218",
-    name: "Ramesh Kumar",
-    initials: "RK",
-    role: "kabadiwala",
-    cluster: "Bhosari MIDC, Pune",
-    collectorId: "CLT-4218",
-    monthlyAamdani: 34800,
-    greenKgSaved: 480,
-    co2OffsetKg: 340,
-    tier: "gold",
-    weeklyGoal: 12000
-  },
-  user: {
-    id: "USR-7731",
-    name: "Priya Sharma",
-    initials: "PS",
-    role: "user",
-    cluster: "Kothrud, Pune",
-    address: "Flat 4B, Sai Residency, Kothrud, Pune 411038",
-    lastPickupDate: "2026-09-15"
-  },
-  admin: {
-    id: "ADM-001",
-    name: "Siddharth Rao",
-    initials: "SR",
-    role: "admin",
-    cluster: "Maharashtra Region",
-    jurisdiction: "Maharashtra — CPCB Zone 3"
-  }
-};
-
-// ─── Demo Admin Stats (computed from in-memory store on web, real on native) ──
-export const DEMO_ADMIN_STATS: AdminStats = {
-  totalCollectors: 1284,
-  totalLotsToday: 347,
-  totalKgToday: 8920,
-  totalEarningsToday: 2340800,
-  hazardLotsOpen: 12,
-  pendingSyncLots: 28,
-  eprTonnageMonth: 145.6,
-  topCluster: "Dharavi Recycling Hub, Mumbai"
-};
-
-// ─── State ────────────────────────────────────────────────────────────────────
 type AppState = {
   language: Language;
   lots: Lot[];
-  isOnline: boolean;
   isHydrated: boolean;
-  role: UserRole;
-  profile: UserProfile;
-  adminStats: AdminStats;
+  /** Backend reachable (from /health), not just "phone has internet". */
+  isOnline: boolean;
+  /** Free cloud AI configured on the backend. */
+  aiConnected: boolean;
+  pendingSync: number;
 
   setLanguage: (language: Language) => void;
-  setOnline: (isOnline: boolean) => void;
-  setRole: (role: UserRole) => void;
   hydrate: () => Promise<void>;
   addLot: (input: CreateLotInput) => Promise<Lot>;
   updateLotStatus: (lotId: string, status: LotStatus) => Promise<void>;
-  refreshLots: () => Promise<void>;
-
-  // Derived getters (computed from live lots)
-  weeklyEarnings: () => number;
-  weeklyWeight: () => number;
-  weeklyGoalProgress: () => number; // 0-100
+  refreshLots: (collectorId?: string) => Promise<void>;
+  checkConnection: () => Promise<boolean>;
+  syncNow: (collectorId?: string) => Promise<void>;
+  resetForSignOut: () => Promise<void>;
 };
 
-export const useAppStore = create<AppState>((set, get) => ({
-  language: "hi",
-  lots: [],
-  isOnline: true,
-  isHydrated: false,
-  role: "kabadiwala",
-  profile: DEMO_PROFILES.kabadiwala,
-  adminStats: DEMO_ADMIN_STATS,
+function fromRemote(r: RemoteLot, existing?: Lot): Lot | null {
+  if (!isMaterial(r.material)) return null;
+  return {
+    id: r.id,
+    material: r.material,
+    quality: r.quality,
+    weightKg: r.weight_kg,
+    status: r.status as LotStatus,
+    createdAt: existing?.createdAt ?? (r.created_at.endsWith("Z") ? r.created_at : `${r.created_at}Z`),
+    expectedNetEarnings: r.expected_net_earnings ?? existing?.expectedNetEarnings,
+    syncState: "SYNCED",
+    imageUri: existing?.imageUri,
+    imageUris: existing?.imageUris,
+    recyclerId: existing?.recyclerId,
+    recyclerName: existing?.recyclerName,
+  };
+}
 
-  // ── Setters ──────────────────────────────────────────────────────────────
+export const useAppStore = create<AppState>((set, get) => ({
+  language: config.defaultLocale,
+  lots: [],
+  isHydrated: false,
+  isOnline: true,
+  aiConnected: false,
+  pendingSync: 0,
 
   setLanguage: (language) => {
     set({ language });
-    void AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, language).catch((err) => {
-      console.warn("Failed to persist language preference:", err);
-    });
+    void AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, language).catch(() => {});
   },
-
-  setOnline: (isOnline) => set({ isOnline }),
-
-  setRole: (role) => {
-    set({ role, profile: DEMO_PROFILES[role] });
-    void AsyncStorage.setItem(ROLE_STORAGE_KEY, role).catch(() => {});
-  },
-
-  // ── Hydration ─────────────────────────────────────────────────────────────
 
   hydrate: async () => {
     try {
       await initialiseDatabase();
-      const [storedLang, storedRole, lots] = await Promise.all([
+      const [storedLang, lots, pending] = await Promise.all([
         AsyncStorage.getItem(LANGUAGE_STORAGE_KEY),
-        AsyncStorage.getItem(ROLE_STORAGE_KEY),
-        listLots()
+        listLots(),
+        queueSize(),
       ]);
       const language: Language =
-        storedLang === "en" || storedLang === "hi" || storedLang === "mr"
-          ? storedLang
-          : "hi";
-      const role: UserRole =
-        storedRole === "kabadiwala" || storedRole === "user" || storedRole === "admin"
-          ? storedRole
-          : "kabadiwala";
-      set({ language, lots, isHydrated: true, role, profile: DEMO_PROFILES[role] });
+        storedLang === "en" || storedLang === "hi" || storedLang === "mr" ? storedLang : config.defaultLocale;
+      set({ language, lots, pendingSync: pending, isHydrated: true });
     } catch (error) {
       console.warn("Hydration error:", error);
-      const lots = await listLots().catch(() => []);
-      set({ lots, isHydrated: true });
+      set({ isHydrated: true });
     }
-  },
-
-  // ── Lot actions ──────────────────────────────────────────────────────────
-
-  refreshLots: async () => {
-    const lots = await listLots();
-    set({ lots });
+    void get().checkConnection();
   },
 
   addLot: async (input) => {
     const lot = await createOfflineLot(input);
-    set((state) => ({ lots: [lot, ...state.lots] }));
+    set((state) => ({ lots: [lot, ...state.lots.filter((l) => l.id !== lot.id)] }));
     return lot;
   },
 
   updateLotStatus: async (lotId, status) => {
     await updateSqliteLotStatus(lotId, status);
-    set((state) => ({
-      lots: state.lots.map((l) => (l.id === lotId ? { ...l, status } : l))
-    }));
+    set((state) => ({ lots: state.lots.map((l) => (l.id === lotId ? { ...l, status } : l)) }));
   },
 
-  // ── Derived computations (live from lots) ────────────────────────────────
-
-  weeklyEarnings: () => {
-    const { lots, profile } = get();
-    const fromLots = lots.reduce((acc, l) => acc + (l.expectedNetEarnings || 0), 0);
-    // Fallback to a plausible default when no lots added yet
-    return fromLots > 0 ? fromLots : 8460;
+  refreshLots: async (collectorId) => {
+    const local = await listLots();
+    if (collectorId) {
+      try {
+        const remote = await listMyLots(collectorId);
+        const byId = new Map(local.map((l) => [l.id, l]));
+        const merged = remote.map((r) => fromRemote(r, byId.get(r.id))).filter((l): l is Lot => !!l);
+        await upsertLots(merged);
+        set({ lots: await listLots(), isOnline: true });
+        return;
+      } catch {
+        // Offline — keep showing what's on the phone.
+      }
+    }
+    set({ lots: local });
   },
 
-  weeklyWeight: () => {
-    const { lots } = get();
-    const fromLots = lots.reduce((acc, l) => acc + (l.weightKg || 0), 0);
-    return fromLots > 0 ? fromLots : 142;
+  checkConnection: async () => {
+    try {
+      const health = await checkHealth();
+      const providers = health.components.ai_assistant?.providers;
+      set({
+        isOnline: true,
+        aiConnected: !!(health.components.vision_ai?.huggingface_api || providers?.huggingface || providers?.gemini),
+      });
+      return true;
+    } catch {
+      set({ isOnline: false });
+      return false;
+    }
   },
 
-  weeklyGoalProgress: () => {
-    const { weeklyEarnings, profile } = get();
-    const goal = profile.weeklyGoal || 12000;
-    return Math.min(100, Math.round((weeklyEarnings() / goal) * 100));
-  }
+  syncNow: async (collectorId) => {
+    const summary = await flush();
+    for (const id of summary.syncedEntityIds) await markLotSynced(id);
+    set({ pendingSync: summary.remaining, isOnline: !summary.hadError || get().isOnline });
+    if (summary.syncedEntityIds.length || collectorId) await get().refreshLots(collectorId);
+  },
+
+  resetForSignOut: async () => {
+    await Promise.all([clearLots(), clearQueue()]);
+    set({ lots: [], pendingSync: 0 });
+  },
 }));
+
+/** One loop for the whole app: health check + queue flush + server refresh. */
+export function startSyncLoop(getCollectorId: () => string | undefined): () => void {
+  const tick = async () => {
+    const store = useAppStore.getState();
+    const online = await store.checkConnection();
+    if (online) await store.syncNow(getCollectorId());
+  };
+  void tick();
+  const timer = setInterval(() => void tick(), Math.max(10_000, config.syncIntervalMs));
+  return () => clearInterval(timer);
+}

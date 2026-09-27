@@ -2,5 +2,9 @@ fastapi>=0.115.0
 uvicorn>=0.30.0
 pydantic>=2.8.0
 sqlalchemy>=2.0.30
-transformers>=4.40.0
+httpx>=0.27.0
 pillow>=10.0.0
+
+# Optional — only for fully-offline local CLIP (≈600 MB model + torch).
+# Not needed when HF_API_TOKEN is set.
+#   pip install transformers torch --index-url https://download.pytorch.org/whl/cpu

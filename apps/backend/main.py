@@ -3,12 +3,16 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import settings
+from services import market_price_service
 from db import init_db
 from routers import (
     lots, offers, handover, prices, vision, aggregator, reports, payment,
     collectors, demands, opportunities, admin,
-    risk, ml, sync, recycler_console,
+    risk, ml, sync, recycler_console, assistant, accounts, pickups, regional,
 )
+from services.ai_providers import provider_status
+from services.ml_classifier import ml_classifier
 
 init_db()
 
@@ -17,7 +21,7 @@ app = FastAPI(
     description=(
         "E-waste collection, marketplace, reverse marketplace, traceability, "
         "CPCB compliance, fraud detection, ML valuation, offline sync.\n\n"
-        "Real: SQLite persistence, PIN verification, CLIP vision, spatial matching, "
+        "Real: SQLite persistence, PIN verification, CLIP vision (HF API / local), spatial matching, "
         "EPR credits, collectors, demands, opportunity engine, admin, risk engine, "
         "ML valuation, sync batch, recycler console.\n"
         "Simulated (labelled): payment gateway, ARIMA forecast, CPCB report, KYC verification."
@@ -29,7 +33,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,6 +56,10 @@ app.include_router(risk.router)
 app.include_router(ml.router)
 app.include_router(sync.router)
 app.include_router(recycler_console.router)
+app.include_router(assistant.router)
+app.include_router(accounts.router)
+app.include_router(pickups.router)
+app.include_router(regional.router)
 
 
 @app.get("/", tags=["Health"])
@@ -71,10 +79,13 @@ def health_check():
         "components": {
             "database":            {"status": "real",         "backend": "SQLite via SQLAlchemy"},
             "pin_verification":    {"status": "real"},
-            "vision_ai":           {"status": "real",         "model": "openai/clip-vit-base-patch32"},
+            "vision_ai":           {"status": "real", **ml_classifier.status()},
+            "ai_assistant":        {"status": "real", "providers": provider_status(), "offline_fallback": True},
             "spatial_matching":    {"status": "real"},
             "epr_credits":         {"status": "real"},
             "collectors":          {"status": "real"},
+            "households_companies": {"status": "real"},
+            "pickup_requests":     {"status": "real"},
             "reverse_marketplace": {"status": "real"},
             "opportunity_engine":  {"status": "real"},
             "admin_dashboard":     {"status": "real"},
@@ -85,6 +96,9 @@ def health_check():
             "recycler_console":    {"status": "real"},
             "kyc_verification":    {"status": "simulated"},
             "national_context":    {"status": "configurable"},
+            "market_prices":       market_price_service.status(),
+            "rate_cards":          {"status": "configurable", "cities": len(market_price_service.rate_cards().get("cities", {})),
+                                    "source": market_price_service.rate_cards().get("source", {}).get("name")},
             "price_forecast":      {"status": "simulated"},
             "payment_gateway":     {"status": "simulated"},
             "cpcb_report":         {"status": "simulated"},

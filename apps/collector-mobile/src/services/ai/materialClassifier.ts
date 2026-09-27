@@ -34,6 +34,13 @@ const PRIORS: Record<Material, number> = {
   "Lithium-ion batteries":         0.03,
   "Compressors & cooling units":   0.02,
   "CRT & monitor glass":           0.01,
+  // Household scrap — common at the doorstep
+  "Newspaper":                     0.06,
+  "Mixed plastic":                 0.06,
+  "Cardboard":                     0.04,
+  "PET bottles":                   0.04,
+  "Books & notebooks":             0.03,
+  "Stainless steel":               0.03,
 };
 
 // ─── Feature buckets ──────────────────────────────────────────────────────────
@@ -66,6 +73,12 @@ const HUE_LIKELIHOODS: Record<Material, Record<HueBucket, number>> = {
   "Lithium-ion batteries":         { red: .06, orange: .10, yellow: .12, green: .08, cyan: .06, blue: .10, purple: .04, neutral: .44 },
   "Compressors & cooling units":   { red: .05, orange: .06, yellow: .05, green: .06, cyan: .10, blue: .10, purple: .03, neutral: .55 },
   "CRT & monitor glass":           { red: .04, orange: .05, yellow: .05, green: .05, cyan: .07, blue: .10, purple: .05, neutral: .59 },
+  "Newspaper":                     { red: .03, orange: .04, yellow: .06, green: .03, cyan: .03, blue: .04, purple: .02, neutral: .75 },
+  "Books & notebooks":             { red: .10, orange: .08, yellow: .08, green: .08, cyan: .06, blue: .12, purple: .05, neutral: .43 },
+  "Cardboard":                     { red: .05, orange: .40, yellow: .20, green: .02, cyan: .02, blue: .02, purple: .01, neutral: .28 },
+  "Mixed plastic":                 { red: .14, orange: .10, yellow: .12, green: .12, cyan: .10, blue: .16, purple: .06, neutral: .20 },
+  "PET bottles":                   { red: .03, orange: .03, yellow: .03, green: .08, cyan: .15, blue: .15, purple: .03, neutral: .50 },
+  "Stainless steel":               { red: .02, orange: .03, yellow: .04, green: .03, cyan: .06, blue: .07, purple: .02, neutral: .73 },
 };
 
 const BRIGHT_LIKELIHOODS: Record<Material, Record<BrightBucket, number>> = {
@@ -81,6 +94,12 @@ const BRIGHT_LIKELIHOODS: Record<Material, Record<BrightBucket, number>> = {
   "Lithium-ion batteries":         { dark: .35, mid: .50, bright: .15 },
   "Compressors & cooling units":   { dark: .40, mid: .45, bright: .15 },
   "CRT & monitor glass":           { dark: .25, mid: .45, bright: .30 },
+  "Newspaper":                     { dark: .10, mid: .45, bright: .45 },
+  "Books & notebooks":             { dark: .20, mid: .50, bright: .30 },
+  "Cardboard":                     { dark: .15, mid: .60, bright: .25 },
+  "Mixed plastic":                 { dark: .20, mid: .45, bright: .35 },
+  "PET bottles":                   { dark: .10, mid: .40, bright: .50 },
+  "Stainless steel":               { dark: .10, mid: .40, bright: .50 },
 };
 
 const METALLIC_LIKELIHOODS: Record<Material, [number, number]> = {
@@ -97,6 +116,12 @@ const METALLIC_LIKELIHOODS: Record<Material, [number, number]> = {
   "Lithium-ion batteries":         [0.30, 0.70],
   "Compressors & cooling units":   [0.70, 0.30],
   "CRT & monitor glass":           [0.10, 0.90],
+  "Newspaper":                     [0.05, 0.95],
+  "Books & notebooks":             [0.05, 0.95],
+  "Cardboard":                     [0.05, 0.95],
+  "Mixed plastic":                 [0.10, 0.90],
+  "PET bottles":                   [0.15, 0.85],
+  "Stainless steel":               [0.90, 0.10],
 };
 
 // ─── Feature extractor ────────────────────────────────────────────────────────
@@ -168,7 +193,6 @@ function estimateQuality(features: VisualFeatures, mat: Material): "low" | "medi
   if (features.bright === "bright" && features.metallic) return "high";
   if (features.bright === "dark") return "low";
   // Special cases
-  if (mat === "Lithium-ion batteries" && features.bright === "dark") return "low";
   if (mat === "Copper cable" && features.metallic) return features.bright === "bright" ? "high" : "medium";
   return "medium";
 }

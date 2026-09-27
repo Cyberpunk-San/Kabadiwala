@@ -1,11 +1,13 @@
 // src/components/ValuationCard.tsx
 import { useQuery } from "@tanstack/react-query";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
 import { getValuation } from "../services/api/client";
 import { currency } from "../utils/format";
 
+import { P } from "../constants/palette";
 type Props = {
   material: string;
   quality: "low" | "medium" | "high";
@@ -24,7 +26,7 @@ export function ValuationCard({ material, quality, weightKg }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.kicker}>🤖 ML FAIR PRICE</Text>
+        <Text style={styles.kicker}>Fair price estimate</Text>
         {data ? (
           <Text style={styles.confidence}>
             {Math.round(data.confidence * 100)}% confidence
@@ -65,9 +67,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: "#E5F3E9",
+    backgroundColor: P("rgba(25,169,130,0.08)"),
     borderWidth: 1,
-    borderColor: "#A3D4B3",
+    borderColor: P("rgba(168,232,201,0.18)"),
   },
   header: {
     flexDirection: "row",
@@ -75,23 +77,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  kicker: { fontSize: 9, fontWeight: "900", color: "#3C6349", letterSpacing: 0.8 },
-  confidence: { fontSize: 9, fontWeight: "700", color: "#3C6349" },
+  kicker: { fontSize: 9, fontWeight: "900", color: P("#A8E8C9"), letterSpacing: 0.8 },
+  confidence: { fontSize: 9, fontWeight: "700", color: P("#A8E8C9") },
   valuesRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
   },
-  label: { fontSize: 8, fontWeight: "900", color: "#3C6349", letterSpacing: 0.5 },
+  label: { fontSize: 8, fontWeight: "900", color: P("#A8E8C9"), letterSpacing: 0.5 },
   bigValue: { marginTop: 4, fontSize: 18, fontWeight: "900", color: colors.green },
   bigValueGreen: { marginTop: 4, fontSize: 18, fontWeight: "900", color: colors.green },
   unit: { fontSize: 10, fontWeight: "700", color: colors.muted },
   reasoning: {
     marginTop: 10,
     fontSize: 10,
-    color: "#4A5568",
+    color: P("rgba(248,250,247,0.62)"),
     lineHeight: 14,
     fontStyle: "italic",
   },
-  error: { fontSize: 11, color: "#C53030", fontWeight: "700", paddingVertical: 8 },
+  error: { fontSize: 11, color: P("#E7898F"), fontWeight: "700", paddingVertical: 8 },
 });

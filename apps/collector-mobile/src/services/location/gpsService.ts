@@ -49,12 +49,10 @@ export async function getCurrentCoordinates(): Promise<GeoCoordinates | undefine
       altitude: location.coords.altitude
     };
   } catch (error) {
-    console.warn("GPS location error, falling back to default cluster:", error);
-    return {
-      latitude: 18.6279,
-      longitude: 73.8488,
-      accuracy: 25
-    };
+    // No fix (GPS off, no signal, web without permission): let the caller fall back to a
+    // known location rather than silently pretending the user is in Bhosari.
+    console.warn("GPS location error:", error);
+    return undefined;
   }
 }
 

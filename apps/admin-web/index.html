@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <style>
     :root {
       --primary:       #0f3d2e;
@@ -93,6 +95,35 @@
     }
     .tab:hover { background: #f5f8f5; }
     .tab.active { background: var(--primary); color: #fff; }
+    .tab-count { display: inline-block; min-width: 16px; margin-left: 4px; padding: 1px 5px; border-radius: 50px; background: var(--red); color: #fff; font-size: 9px; }
+
+    /* ── Action buttons & filters ── */
+    .act {
+      font-family: inherit; font-size: 10px; font-weight: 800; padding: 6px 12px;
+      border: none; border-radius: 8px; cursor: pointer; background: var(--primary); color: #fff;
+    }
+    .act:hover { background: var(--primary-mid); }
+    .act.ghost { background: var(--red-light); color: var(--red); }
+    .act:disabled { opacity: .5; cursor: wait; }
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filter {
+      font-family: inherit; font-size: 11px; font-weight: 700; padding: 6px 12px; cursor: pointer;
+      border: 1px solid var(--line); border-radius: 50px; background: var(--card); color: var(--muted);
+    }
+    .filter.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .table-scroll { overflow-x: auto; }
+
+    /* ── Regional map ── */
+    .map-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
+    .map-controls label { display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-weight: 800; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; }
+    .map-controls select { font-family: inherit; font-size: 12px; font-weight: 700; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); }
+    #regionMap { height: 480px; border-radius: 12px; border: 1px solid var(--line); background: #eef2ee; }
+    .legend { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+    .legend-bar { width: 140px; height: 8px; border-radius: 4px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .reason { display: inline-flex; margin: 2px 3px 0 0; }
+    .gap-pos { color: var(--red); font-weight: 800; }
+    .gap-neg { color: var(--green); font-weight: 800; }
 
     /* ── Sections ── */
     .section-title {
@@ -213,6 +244,10 @@
 
   <div class="tabs">
     <button class="tab active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</button>
+    <button class="tab" data-tab="companies" onclick="switchTab('companies')">🏢 Companies</button>
+    <button class="tab" data-tab="households" onclick="switchTab('households')">🏠 Households</button>
+    <button class="tab" data-tab="pickups" onclick="switchTab('pickups')">🛺 Pickups</button>
+    <button class="tab" data-tab="regional" onclick="switchTab('regional')">🗺 Regional</button>
     <button class="tab" data-tab="risk" onclick="switchTab('risk')">🚨 Risk Alerts</button>
   </div>
 
@@ -226,9 +261,25 @@
   // ─────────────────────────────────────────────────────────────────────────
   // ADMIN DASHBOARD — talks to backend at /api/v1/admin/* and /api/v1/risk/*
   // ─────────────────────────────────────────────────────────────────────────
-  const API_BASE = "http://localhost:8000";
+  // Same machine that served this page, port 8000 — so the portal works from any device on the network.
+  // Override with ?api=http://host:port when the API lives elsewhere (e.g. a tunnel URL).
+  const API_BASE = new URLSearchParams(location.search).get("api")
+    || `${location.protocol === "https:" ? "https:" : "http:"}//${!location.hostname || location.hostname === "localhost" ? "127.0.0.1" : location.hostname}:8000`;
 
   let currentTab = "overview";
+  let pickupFilter = "ALL";
+  let companyFilter = "ALL";
+  const REGION_CENTERS = {
+    "18.6279,73.8488": "Bhosari MIDC (Pune)",
+    "18.5204,73.8567": "Pune city centre",
+    "18.5913,73.7389": "Hinjewadi",
+    "18.7606,73.8636": "Chakan",
+  };
+  const MATERIALS = ["Copper cable", "Server boards", "Aluminium", "Mixed e-waste", "Lithium-ion batteries", "Brass fittings",
+    "Printed Circuit Boards (PCB)", "Electric motors", "Iron & steel scrap", "CRT & monitor glass", "Lead acid batteries", "Compressors & cooling units"];
+  const REASON_LABEL = { SUPPLY: "Unsold supply", PICKUPS: "Open pickups", DEMAND: "Recycler demand", INDUSTRY: "Industry cluster" };
+  let region = { center: "18.6279,73.8488", radius: 35, layer: "hotspots" };
+  let regionMap = null;
 
   // ─── Utilities ────────────────────────────────────────────────────────────
   function money(n) {
@@ -236,6 +287,10 @@
     if (n >= 1_00_000) return "₹" + (n / 1_00_000).toFixed(2) + " L";
     if (n >= 1_000) return "₹" + (n / 1_000).toFixed(1) + "K";
     return "₹" + Math.round(n).toLocaleString("en-IN");
+  }
+  function dateIN(iso) {
+    if (!iso) return "—";
+    return new Date(iso.endsWith("Z") ? iso : iso + "Z").toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
   }
   function kg(n) {
     if (n >= 1000) return (n / 1000).toFixed(2) + " T";
@@ -406,6 +461,278 @@
     }).join("");
   }
 
+  // ─── Companies tab ────────────────────────────────────────────────────────
+  const TYPE_LABEL = { buyer: "Buyer (recycler)", seller: "Bulk e-waste seller", both: "Buyer + seller" };
+
+  function renderCompanies(rows) {
+    const pending = rows.filter(c => !c.approved);
+    const shown = companyFilter === "PENDING" ? pending : companyFilter === "APPROVED" ? rows.filter(c => c.approved) : rows;
+    const filters = [["ALL", `All (${rows.length})`], ["PENDING", `Pending (${pending.length})`], ["APPROVED", `Approved (${rows.length - pending.length})`]];
+    return `
+      <div class="section-title">Company Registry</div>
+      <div class="panel">
+        <div class="filters">
+          ${filters.map(([id, label]) => `<button class="filter ${companyFilter === id ? "active" : ""}" onclick="companyFilter='${id}';refreshAll()">${label}</button>`).join("")}
+        </div>
+        ${pending.length ? `<div class="alert alert-medium"><span class="alert-icon">⏳</span><div>${pending.length} compan${pending.length > 1 ? "ies are" : "y is"} waiting for approval. Buyers can't post demand, make offers or settle handovers until approved.</div></div>` : ""}
+        ${shown.length === 0 ? `<div class="loading">No companies here.</div>` : `
+        <div class="table-scroll"><table>
+          <thead><tr><th>Company</th><th>Type</th><th>Phone</th><th>GSTIN / CPCB</th><th>Address</th><th>Pickups</th><th>Registered</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${shown.map(c => `
+              <tr>
+                <td><strong>${esc(c.name)}</strong><br><span style="font-family:monospace;font-size:9px;color:var(--muted)">${esc(c.id)}</span>${c.contact_name ? `<br><span style="font-size:10px">${esc(c.contact_name)}</span>` : ""}</td>
+                <td><span class="badge ${c.company_type === "seller" ? "badge-gray" : "badge-blue"}">${esc(TYPE_LABEL[c.company_type] || c.company_type)}</span></td>
+                <td style="font-family:monospace;font-size:10px">${esc(c.phone)}</td>
+                <td style="font-family:monospace;font-size:9px">${esc(c.gstin || "—")}<br>${esc(c.cpcb_license || "—")}</td>
+                <td style="font-size:11px">${esc(c.address || "—")}</td>
+                <td>${c.total_pickups}</td>
+                <td style="font-size:10px">${dateIN(c.created_at)}</td>
+                <td><span class="badge ${c.approved ? "badge-green" : "badge-amber"}">${c.approved ? "APPROVED" : "PENDING"}</span></td>
+                <td>${c.approved
+                  ? `<button class="act ghost" onclick="setApproval(this,'${esc(c.id)}',false)">Suspend</button>`
+                  : `<button class="act" onclick="setApproval(this,'${esc(c.id)}',true)">Approve</button>`}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table></div>`}
+      </div>
+    `;
+  }
+
+  async function setApproval(btn, id, approved) {
+    if (!approved && !confirm("Suspend this company? A buyer disappears from the marketplace.")) return;
+    btn.disabled = true;
+    try {
+      await api(`/api/v1/admin/companies/${encodeURIComponent(id)}/approve?approved=${approved}`, { method: "POST" });
+      refreshAll();
+    } catch (err) {
+      btn.disabled = false;
+      alert("Failed: " + err.message);
+    }
+  }
+
+  // ─── Households tab ───────────────────────────────────────────────────────
+  function renderHouseholds(rows) {
+    const received = rows.reduce((s, h) => s + h.total_received, 0);
+    const pickups = rows.reduce((s, h) => s + h.total_pickups, 0);
+    return `
+      <div class="section-title">Households &amp; Shops</div>
+      <div class="kpi-grid">
+        <div class="kpi" style="border-left-color:#f97316"><div class="kpi-icon">🏠</div><div class="kpi-label">Households</div><div class="kpi-value">${rows.length}</div></div>
+        <div class="kpi" style="border-left-color:#16a34a"><div class="kpi-icon">🛺</div><div class="kpi-label">Completed Pickups</div><div class="kpi-value">${pickups}</div></div>
+        <div class="kpi" style="border-left-color:#059669"><div class="kpi-icon">💰</div><div class="kpi-label">Paid to Households</div><div class="kpi-value">${money(received)}</div></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        ${rows.length === 0 ? `<div class="loading">No households registered yet.</div>` : `
+        <div class="table-scroll"><table>
+          <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th>Language</th><th>Pickups</th><th>Received</th><th>Registered</th></tr></thead>
+          <tbody>
+            ${rows.map(h => `
+              <tr>
+                <td><strong>${esc(h.name)}</strong><br><span style="font-family:monospace;font-size:9px;color:var(--muted)">${esc(h.id)}</span></td>
+                <td style="font-family:monospace;font-size:10px">${esc(h.phone)}</td>
+                <td style="font-size:11px">${esc(h.address || "—")}</td>
+                <td>${esc(h.language.toUpperCase())}</td>
+                <td>${h.total_pickups}</td>
+                <td>${money(h.total_received)}</td>
+                <td style="font-size:10px">${dateIN(h.created_at)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table></div>`}
+      </div>
+    `;
+  }
+
+  // ─── Pickups tab ──────────────────────────────────────────────────────────
+  const PICKUP_BADGE = { OPEN: "badge-amber", ACCEPTED: "badge-blue", COMPLETED: "badge-green", CANCELLED: "badge-gray" };
+
+  function renderPickups(rows) {
+    const count = s => rows.filter(p => p.status === s).length;
+    const shown = pickupFilter === "ALL" ? rows : rows.filter(p => p.status === pickupFilter);
+    const paid = rows.reduce((s, p) => s + (p.amount_paid || 0), 0);
+    const filters = ["ALL", "OPEN", "ACCEPTED", "COMPLETED", "CANCELLED"];
+    return `
+      <div class="section-title">Doorstep Pickups</div>
+      <div class="kpi-grid">
+        <div class="kpi" style="border-left-color:#f59e0b"><div class="kpi-label">Open</div><div class="kpi-value">${count("OPEN")}</div><div class="kpi-sub">waiting for a kabadiwala</div></div>
+        <div class="kpi" style="border-left-color:#2563eb"><div class="kpi-label">Accepted</div><div class="kpi-value">${count("ACCEPTED")}</div><div class="kpi-sub">kabadiwala on the way</div></div>
+        <div class="kpi" style="border-left-color:#16a34a"><div class="kpi-label">Completed</div><div class="kpi-value">${count("COMPLETED")}</div><div class="kpi-sub">${money(paid)} paid at the door</div></div>
+        <div class="kpi" style="border-left-color:#9ca3af"><div class="kpi-label">Cancelled</div><div class="kpi-value">${count("CANCELLED")}</div></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="filters">
+          ${filters.map(f => `<button class="filter ${pickupFilter === f ? "active" : ""}" onclick="pickupFilter='${f}';refreshAll()">${f === "ALL" ? `All (${rows.length})` : `${f[0] + f.slice(1).toLowerCase()} (${count(f)})`}</button>`).join("")}
+        </div>
+        ${shown.length === 0 ? `<div class="loading">No pickups here.</div>` : `
+        <div class="table-scroll"><table>
+          <thead><tr><th>Pickup</th><th>Requester</th><th>Material</th><th>Weight</th><th>Value</th><th>Kabadiwala</th><th>Status</th><th>Created</th></tr></thead>
+          <tbody>
+            ${shown.map(p => `
+              <tr>
+                <td style="font-family:monospace;font-size:9px">${esc(p.id)}${p.lot_id ? `<br>→ ${esc(p.lot_id)}` : ""}</td>
+                <td><strong>${esc(p.requester_name)}</strong><br><span style="font-size:9px;color:var(--muted)">${p.requester_type === "company" ? "🏢 Company" : "🏠 Household"}${p.address ? " · " + esc(p.address) : ""}</span></td>
+                <td>${esc(p.material)}</td>
+                <td>${p.actual_weight_kg != null ? `<strong>${p.actual_weight_kg} kg</strong><br><span style="font-size:9px;color:var(--muted)">est. ${p.estimated_weight_kg}</span>` : `${p.estimated_weight_kg} kg`}</td>
+                <td>${money(p.amount_paid ?? p.estimated_value)}${p.amount_paid == null ? `<br><span style="font-size:9px;color:var(--muted)">estimate</span>` : ""}</td>
+                <td>${p.collector_name ? esc(p.collector_name) : "—"}</td>
+                <td><span class="badge ${PICKUP_BADGE[p.status] || "badge-gray"}">${esc(p.status)}</span></td>
+                <td style="font-size:10px">${dateIN(p.created_at)}${p.preferred_time ? `<br><span style="color:var(--muted)">${esc(p.preferred_time)}</span>` : ""}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table></div>`}
+      </div>
+    `;
+  }
+
+  // ─── Regional tab ─────────────────────────────────────────────────────────
+  // green → amber → red for 0..1
+  function heat(t) {
+    const x = Math.max(0, Math.min(1, t));
+    const stops = [[22, 163, 74], [245, 158, 11], [220, 38, 38]];
+    const [a, b, f] = x < .5 ? [stops[0], stops[1], x * 2] : [stops[1], stops[2], (x - .5) * 2];
+    return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * f)).join(",")})`;
+  }
+
+  function renderRegionalShell(o) {
+    const opt = (v, label, cur) => `<option value="${esc(v)}" ${String(v) === String(cur) ? "selected" : ""}>${esc(label)}</option>`;
+    return `
+      <div class="section-title">Regional E-Waste Intelligence</div>
+      <div class="panel">
+        <div class="map-controls">
+          <label>Centre<select onchange="region.center=this.value;refreshAll()">${Object.entries(REGION_CENTERS).map(([v, l]) => opt(v, l, region.center)).join("")}</select></label>
+          <label>Radius<select onchange="region.radius=+this.value;refreshAll()">${[15, 25, 35, 50].map(r => opt(r, r + " km", region.radius)).join("")}</select></label>
+          <label>Layer<select onchange="region.layer=this.value;refreshAll()">
+            ${opt("hotspots", "Collection hotspots", region.layer)}
+            ${MATERIALS.map(m => opt("price:" + m, "Price heatmap · " + m, region.layer)).join("")}
+          </select></label>
+        </div>
+        <div id="regionMap"></div>
+        <div class="legend" id="mapLegend"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px">
+          Industry clusters: ${esc(o.dataset.name)} (${o.dataset.clusters} areas${o.dataset.approximate ? ", approximate locations" : ""}${o.dataset.retrieved_on ? ", " + esc(o.dataset.retrieved_on) : ""}).
+          Supply, pickups, demand and prices are live platform data.
+        </div>
+      </div>
+
+      <div class="panels-grid" style="margin-top:14px">
+        <div class="panel">
+          <div class="panel-title"><span>🔥 Collection hotspots</span><span>${o.hotspots.length} areas</span></div>
+          ${o.hotspots.length === 0 ? `<div class="loading">No activity in this radius yet.</div>` : `
+          <table>
+            <thead><tr><th>#</th><th>Area</th><th>Score</th><th>Why</th><th>Dist.</th></tr></thead>
+            <tbody>${o.hotspots.map((h, i) => `
+              <tr>
+                <td><strong>${i + 1}</strong></td>
+                <td>${esc(h.area || "—")}</td>
+                <td><strong style="color:${heat(h.score / 100)}">${h.score}</strong></td>
+                <td>${h.reasons.map(r => `<span class="badge badge-gray reason">${REASON_LABEL[r] || r}</span>`).join("")}</td>
+                <td>${h.distance_km} km</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>`}
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span>⚖️ Supply vs demand</span><span>unsold + pickups vs open demand</span></div>
+          ${o.balance.length === 0 ? `<div class="loading">No supply or demand in this radius.</div>` : `
+          <table>
+            <thead><tr><th>Material</th><th>Supply</th><th>Demand</th><th>Gap</th><th>Best ₹/kg</th></tr></thead>
+            <tbody>${o.balance.map(b => `
+              <tr>
+                <td><strong>${esc(b.material)}</strong></td>
+                <td>${kg(b.supply_kg)}</td>
+                <td>${kg(b.demand_kg)}</td>
+                <td class="${b.gap_kg > 0 ? "gap-pos" : "gap-neg"}">${b.gap_kg > 0 ? "short " + kg(b.gap_kg) : "surplus " + kg(-b.gap_kg)}</td>
+                <td>${b.best_price_per_kg != null ? money(b.best_price_per_kg) : "—"}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>`}
+        </div>
+      </div>
+
+      <div class="section-title">Industry clusters → expected e-waste</div>
+      <div class="panel">
+        ${o.clusters.length === 0 ? `<div class="loading">No known industry clusters in this radius.</div>` : `
+        <div class="table-scroll"><table>
+          <thead><tr><th>Cluster</th><th>Sector</th><th>Dist.</th><th>Expected mix</th><th>Value of mix</th><th>Open demand</th><th>Opportunity</th></tr></thead>
+          <tbody>${o.clusters.map(c => `
+            <tr>
+              <td><strong>${esc(c.name)}</strong></td>
+              <td><span class="badge badge-blue">${esc(c.sector_label)}</span></td>
+              <td>${c.distance_km} km</td>
+              <td style="font-size:10px">${c.materials.slice(0, 4).map(m => `${esc(m.material)} ${Math.round(m.share * 100)}%`).join(" · ")}</td>
+              <td>${money(c.value_per_kg)}/kg</td>
+              <td>${kg(c.open_demand_kg)}</td>
+              <td><div class="bar-track" style="min-width:80px"><div class="bar-fill" style="width:${c.opportunity_score}%;background:${heat(c.opportunity_score / 100)}"></div></div><span style="font-size:10px;font-weight:800">${c.opportunity_score}</span></td>
+            </tr>`).join("")}
+          </tbody>
+        </table></div>`}
+        <div style="font-size:10px;color:var(--muted);margin-top:8px">Mix shares are sector heuristics, not measured tonnages. "Value of mix" prices that mix at today's best listed recycler rates.</div>
+      </div>
+    `;
+  }
+
+  function drawRegionalMap(o, heatmap) {
+    const el = document.getElementById("regionMap");
+    if (regionMap) { regionMap.remove(); regionMap = null; }
+    if (typeof L === "undefined") {
+      el.innerHTML = `<div class="loading">Map library could not load (offline?). The tables below still work.</div>`;
+      return;
+    }
+    regionMap = L.map(el).setView([o.latitude, o.longitude], o.radius_km > 30 ? 10 : 11);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18, attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(regionMap);
+    L.circle([o.latitude, o.longitude], { radius: o.radius_km * 1000, color: "#0f3d2e", weight: 1, fill: false, dashArray: "4 4" }).addTo(regionMap);
+
+    const legend = document.getElementById("mapLegend");
+    if (heatmap) {
+      const lo = heatmap.min_price ?? 0, hi = heatmap.max_price ?? 1, span = Math.max(1, hi - lo);
+      heatmap.cells.forEach(c => {
+        if (c.best_net_per_kg == null) return;
+        const t = 1 - (c.best_net_per_kg - lo) / span;   // best price = green
+        L.rectangle([[c.latitude - heatmap.step_lat / 2, c.longitude - heatmap.step_lon / 2], [c.latitude + heatmap.step_lat / 2, c.longitude + heatmap.step_lon / 2]],
+          { stroke: false, fillColor: heat(t), fillOpacity: .45 })
+          .bindPopup(`<strong>${money(c.best_net_per_kg)}/kg net</strong><br>${esc(c.best_recycler)}`).addTo(regionMap);
+      });
+      legend.innerHTML = `<span>${esc(heatmap.material)} · net ₹/kg for a 35 kg lot:</span><strong>${money(hi)}</strong>
+        <span class="legend-bar" style="background:linear-gradient(90deg,${heat(0)},${heat(.5)},${heat(1)})"></span><strong>${money(lo)}</strong>`;
+    } else {
+      const step = o.cell_deg;
+      o.cells.forEach(c => {
+        if (c.score <= 0) return;
+        L.rectangle([[c.latitude - step / 2, c.longitude - step / 2], [c.latitude + step / 2, c.longitude + step / 2]],
+          { stroke: false, fillColor: heat(c.score / 100), fillOpacity: .25 + .45 * c.score / 100 })
+          .bindPopup(`<strong>Score ${c.score}</strong><br>Unsold supply: ${kg(c.supply_kg)}<br>Open pickups: ${c.pickups} (${kg(c.pickup_kg)})<br>Recycler demand: ${kg(c.demand_kg)}<br>Recyclers: ${c.recyclers}`)
+          .addTo(regionMap);
+      });
+      o.hotspots.forEach((h, i) => L.marker([h.latitude, h.longitude], {
+        icon: L.divIcon({ className: "", html: `<div style="background:#0f3d2e;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font:800 11px sans-serif;border:2px solid #fff">${i + 1}</div>`, iconSize: [22, 22] }),
+      }).bindPopup(`<strong>#${i + 1} ${esc(h.area || "")}</strong><br>${h.reasons.map(r => REASON_LABEL[r] || r).join(", ")}`).addTo(regionMap));
+      legend.innerHTML = `<span>Hotspot score:</span><span>low</span><span class="legend-bar" style="background:linear-gradient(90deg,${heat(0)},${heat(.5)},${heat(1)})"></span><span>high</span>`;
+    }
+    o.clusters.forEach(c => L.circleMarker([c.latitude, c.longitude], { radius: 5 + c.size * 2, color: "#2563eb", weight: 2, fillOpacity: .15 })
+      .bindPopup(`<strong>${esc(c.name)}</strong><br>${esc(c.sector_label)}<br>${c.materials.slice(0, 3).map(m => esc(m.material) + " " + Math.round(m.share * 100) + "%").join("<br>")}`).addTo(regionMap));
+    o.recyclers.forEach(r => L.circleMarker([r.latitude, r.longitude], { radius: 6, color: "#fff", weight: 2, fillColor: "#16a34a", fillOpacity: 1 })
+      .bindPopup(`♻ <strong>${esc(r.name)}</strong>`).addTo(regionMap));
+    legend.innerHTML += `<span style="margin-left:12px"><span class="legend-dot" style="border:2px solid #2563eb"></span> industry cluster</span>
+      <span><span class="legend-dot" style="background:#16a34a"></span> recycler</span>`;
+  }
+
+  async function renderRegional(el) {
+    const [lat, lon] = region.center.split(",");
+    const q = `latitude=${lat}&longitude=${lon}`;
+    const priceMaterial = region.layer.startsWith("price:") ? region.layer.slice(6) : null;
+    const [o, heatmap] = await Promise.all([
+      api(`/api/v1/regional/overview?${q}&radius_km=${region.radius}`),
+      priceMaterial ? api(`/api/v1/regional/price-heatmap?material=${encodeURIComponent(priceMaterial)}&${q}&radius_km=${Math.min(region.radius, 60)}`) : null,
+    ]);
+    el.innerHTML = renderRegionalShell(o);
+    drawRegionalMap(o, heatmap);
+  }
+
   // ─── Risk tab renderer ────────────────────────────────────────────────────
   function renderRiskAlerts(payload) {
     const { total_alerts, by_severity, alerts } = payload;
@@ -464,11 +791,37 @@
   }
 
   // ─── Main refresh ─────────────────────────────────────────────────────────
+  // Red count on the Companies tab so pending approvals are visible from any tab.
+  async function updatePendingBadge() {
+    try {
+      const companies = await api("/api/v1/admin/companies");
+      const n = companies.filter(c => !c.approved).length;
+      document.querySelector('.tab[data-tab="companies"]').innerHTML = `🏢 Companies${n ? `<span class="tab-count">${n}</span>` : ""}`;
+    } catch { /* backend down — the main view shows the error */ }
+  }
+
   async function refreshAll() {
+    void updatePendingBadge();
     const el = document.getElementById("content");
     el.innerHTML = `<div class="loading">Refreshing…</div>`;
 
     try {
+      if (currentTab === "companies") {
+        el.innerHTML = renderCompanies(await api("/api/v1/admin/companies"));
+        return;
+      }
+      if (currentTab === "households") {
+        el.innerHTML = renderHouseholds(await api("/api/v1/admin/households"));
+        return;
+      }
+      if (currentTab === "pickups") {
+        el.innerHTML = renderPickups(await api("/api/v1/admin/pickups"));
+        return;
+      }
+      if (currentTab === "regional") {
+        await renderRegional(el);
+        return;
+      }
       if (currentTab === "risk") {
         const risk = await api("/api/v1/risk/scan", { method: "POST" });
         el.innerHTML = renderRiskAlerts(risk);
@@ -535,7 +888,7 @@
   window.addEventListener("DOMContentLoaded", () => {
     refreshAll();
     // Auto-refresh every 30s
-    setInterval(refreshAll, 30_000);
+    setInterval(() => { if (currentTab !== "regional") refreshAll(); }, 30_000);
   });
 </script>
 </body>

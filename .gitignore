@@ -14,9 +14,11 @@ __pycache__/
 venv/
 env/
 
-# SQLite database (regenerated on first run)
-data/
+# SQLite database (regenerated on first run). Seed JSON files in apps/backend/data ARE tracked.
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Env
 .env

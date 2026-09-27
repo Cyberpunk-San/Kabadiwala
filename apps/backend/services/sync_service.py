@@ -16,6 +16,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from db import LotRow, SyncOutboxRow
+from services.lot_service import generate_pin
 from models.domain import (
     SyncBatchItem,
     SyncBatchRequest,
@@ -50,7 +51,8 @@ def _apply_lot(db: Session, item: SyncBatchItem) -> SyncBatchResult:
             image_uri=payload.get("image_uri"),
             expected_net_earnings=payload.get("expected_net_earnings"),
             sync_state="SYNCED",
-            pickup_pin=payload.get("pickup_pin") or "0000",
+            # PINs are always server-owned — never trust one sent by the device.
+            pickup_pin=generate_pin(),
         )
         db.add(row); db.commit()
         return SyncBatchResult(
@@ -77,12 +79,12 @@ def process_batch(db: Session, request: SyncBatchRequest) -> SyncBatchResponse:
             .filter(SyncOutboxRow.idempotency_key == item.idempotency_key)
             .first()
         )
-        if seen and seen.status == "APPLIED":
+        if seen and seen.status in ("APPLIED", "DUPLICATE"):
             duplicates += 1
             results.append(SyncBatchResult(
                 entity=item.entity, entity_id=item.entity_id,
                 idempotency_key=item.idempotency_key,
-                status="DUPLICATE", message="Previously applied",
+                status="DUPLICATE", server_id=item.entity_id, message="Previously applied",
             ))
             continue
 
@@ -96,16 +98,20 @@ def process_batch(db: Session, request: SyncBatchRequest) -> SyncBatchResponse:
                 message=f"Entity type '{item.entity}' not supported in this sync path",
             )
 
-        db.add(SyncOutboxRow(
+        # A previously REJECTED key is being retried: update that outbox row
+        # instead of inserting a second one (idempotency_key is UNIQUE).
+        outbox = seen or SyncOutboxRow(
             id=f"outbox_{uuid.uuid4().hex[:10]}",
             device_id=request.device_id,
             entity=item.entity, entity_id=item.entity_id,
-            payload_json=json.dumps(item.payload),
             idempotency_key=item.idempotency_key,
-            status=result.status,
-            server_response_json=result.model_dump_json(),
-            applied_at=datetime.utcnow() if result.status == "APPLIED" else None,
-        ))
+        )
+        outbox.payload_json = json.dumps(item.payload)
+        outbox.status = result.status
+        outbox.server_response_json = result.model_dump_json()
+        outbox.applied_at = datetime.utcnow() if result.status == "APPLIED" else None
+        if not seen:
+            db.add(outbox)
         db.commit()
 
         if result.status == "APPLIED":    applied += 1

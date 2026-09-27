@@ -1,302 +1,174 @@
-import React, { useMemo } from "react";
-import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+// src/screens/EarningsScreen.tsx — real income from the collector's lots.
+import { useMemo, useState } from "react";
+import { RefreshControl, StyleSheet, View } from "react-native";
+import { Text } from "../ui/Text";
+import Animated from "react-native-reanimated";
 
-
-import { colors } from "../constants/theme";
+import { InsightsCard } from "../components/InsightsCard";
+import { LotRow } from "../components/LotRow";
+import { colors, radius, space, type } from "../constants/theme";
+import { useScreenNarration } from "../hooks/useScreenNarration";
 import { useTranslation } from "../hooks/useTranslation";
-import type { RootTabParamList } from "../navigation/types";
+import { go, goTab } from "../navigation/ref";
 import { useAppStore } from "../store/appStore";
-import { currency } from "../utils/format";
+import { useAuthStore } from "../store/authStore";
+import { materialName, type Lot } from "../types/domain";
+import { EmptyState } from "../ui/feedback";
+import { materialStyle } from "../ui/materials";
+import { AnimatedNumber, GrowBar, ProgressBar } from "../ui/motion";
+import { Card, Chip, enter, InkTitle, GradientCard, Screen, SectionHeader, textStyles } from "../ui/primitives";
+import { compactCurrency, currency } from "../utils/format";
 
-type Props = BottomTabScreenProps<RootTabParamList, "Earnings"> & {
-  navigation: {
-    navigate: (screen: any, params?: any) => void;
-  };
+import { P } from "../constants/palette";
+const DAY_NAMES = {
+  en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  hi: ["रवि", "सोम", "मंगल", "बुध", "गुरु", "शुक्र", "शनि"],
+  mr: ["रवि", "सोम", "मंगळ", "बुध", "गुरु", "शुक्र", "शनि"],
 };
 
-const materialColors: Record<string, string> = {
-  "Copper cable": "#E3823D",
-  "Server boards": "#46A572",
-  "Aluminium": "#96AEB0",
-  "Mixed e-waste": "#8C68CB",
-  "Lithium-ion batteries": "#E53E3E",
-  "Brass fittings": "#D69E2E",
-  "Printed Circuit Boards (PCB)": "#319795",
-  "Electric motors": "#DD6B20",
-  "Iron & steel scrap": "#718096"
-};
+const isPaid = (l: Lot) => l.status === "PAID" || l.status === "SOLD";
 
-export function EarningsScreen({ navigation }: Props) {
-  const { t } = useTranslation();
-  const lots = useAppStore((state) => state.lots);
+export function EarningsScreen() {
+  const { t, language } = useTranslation();
+  useScreenNarration("Earnings");
+  const lots = useAppStore((s) => s.lots);
+  const syncNow = useAppStore((s) => s.syncNow);
+  const collectorId = useAuthStore((s) => s.collector?.id);
+  const [filter, setFilter] = useState<"all" | "paid" | "open">("all");
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Dynamic calculations from live SQLite lots
-  const baselineEarnings = 8460;
-  const baselineWeight = 142;
+  const stats = useMemo(() => {
+    const paid = lots.filter(isPaid).reduce((s, l) => s + (l.expectedNetEarnings ?? 0), 0);
+    const expected = lots.filter((l) => !isPaid(l)).reduce((s, l) => s + (l.expectedNetEarnings ?? 0), 0);
+    const kg = lots.reduce((s, l) => s + l.weightKg, 0);
 
-  const lotEarnings = lots.reduce((acc, lot) => acc + (lot.expectedNetEarnings || 0), 0);
-  const lotWeight = lots.reduce((acc, lot) => acc + (lot.weightKg || 0), 0);
-
-  const totalEarnings = lots.length > 0 ? lotEarnings : baselineEarnings;
-  const totalWeight = lots.length > 0 ? lotWeight : baselineWeight;
-  const salesCount = lots.length > 0 ? lots.length : 6;
-  const avgNetPerKg = Math.round(totalEarnings / (totalWeight || 1));
-
-  // Dynamic aggregation by material
-  const materialAggregates = React.useMemo(() => {
-    if (!lots.length) {
-      return [
-        { material: "Copper cable", amount: 3560, percentage: "42%" as `${number}%`, color: "#E3823D" },
-        { material: "Server boards", amount: 2140, percentage: "25%" as `${number}%`, color: "#46A572" },
-        { material: "Aluminium", amount: 1470, percentage: "17%" as `${number}%`, color: "#96AEB0" }
-      ];
-    }
-
-    const byMaterial: Record<string, number> = {};
-    for (const lot of lots) {
-      byMaterial[lot.material] = (byMaterial[lot.material] || 0) + (lot.expectedNetEarnings || 0);
-    }
-
-    const sorted = Object.entries(byMaterial).sort((a, b) => b[1] - a[1]);
-    const total = totalEarnings || 1;
-
-    return sorted.map(([mat, amt]) => {
-      const pctNum = Math.min(100, Math.round((amt / total) * 100));
-      const percentage: `${number}%` = `${pctNum}%`;
-      return {
-        material: mat,
-        amount: amt,
-        percentage,
-        color: materialColors[mat] || "#48BB78"
-      };
+    // Last 7 calendar days, oldest → today.
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (6 - i));
+      return { date: d, total: 0 };
     });
-  }, [lots, totalEarnings]);
+    for (const l of lots) {
+      const created = new Date(l.createdAt);
+      created.setHours(0, 0, 0, 0);
+      const day = days.find((d) => d.date.getTime() === created.getTime());
+      if (day) day.total += l.expectedNetEarnings ?? 0;
+    }
 
-  const bars = [35, 55, 45, 75, 60, 95, Math.min(100, 40 + lots.length * 15)];
+    const byMaterial = new Map<string, number>();
+    for (const l of lots) byMaterial.set(l.material, (byMaterial.get(l.material) ?? 0) + (l.expectedNetEarnings ?? 0));
+    const materials = [...byMaterial.entries()].sort((a, b) => b[1] - a[1]);
+
+    return { paid, expected, kg, days, materials, total: paid + expected };
+  }, [lots]);
+
+  const maxDay = Math.max(1, ...stats.days.map((d) => d.total));
+  const shown = lots.filter((l) => (filter === "all" ? true : filter === "paid" ? isPaid(l) : !isPaid(l)));
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await syncNow(collectorId);
+    setRefreshing(false);
+  };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Text style={styles.kicker}>LIVE SQLITE LEDGER</Text>
-      <Text style={styles.title}>{t("earnings")}</Text>
+    <Screen withTabBar refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+      <Animated.View entering={enter(0)}>
+        <Text style={textStyles.kicker}>{t("earningsKicker")}</Text>
+        <InkTitle style={styles.title}>{t("earningsTitle")}</InkTitle>
+      </Animated.View>
 
-      {/* Main Net Earnings Hero */}
-      <View style={styles.hero}>
-        <Text style={styles.heroLabel}>NET EARNINGS (VERIFIED)</Text>
-        <Text style={styles.heroValue}>{currency(totalEarnings)}</Text>
-        <Text style={styles.heroHint}>
-          ↑ {lots.length > 0 ? `${lots.length} active lots in SQLite` : "18% vs last week"}
-        </Text>
-
-        <View style={styles.chart}>
-          {bars.map((height, index) => (
-            <View
-              key={index}
-              style={[styles.bar, { height: `${height}%` }, index === 6 && styles.highlightBar]}
-            />
-          ))}
+      {lots.length === 0 ? (
+        <View style={{ marginTop: space.xl }}>
+          <EmptyState icon="wallet-outline" title={t("noEarnings")} message={t("noEarningsMsg")} action={t("quickScan")} onAction={() => goTab("Collect")} />
         </View>
-
-        <View style={styles.days}>
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Today"].map((day) => (
-            <Text key={day} style={styles.dayLabel}>{day}</Text>
-          ))}
-        </View>
-      </View>
-
-      {/* Growth Insight */}
-      <View style={styles.insight}>
-        <View style={styles.insightIcon}>
-          <Text style={styles.insightIconText}>↗</Text>
-        </View>
-        <View style={styles.insightCopy}>
-          <Text style={styles.insightKicker}>SMART RECYCLING INSIGHT</Text>
-          <Text style={styles.insightTitle}>{t("growthInsight")}</Text>
-          <Text style={styles.insightText}>{t("growthText")}</Text>
-        </View>
-      </View>
-
-      {/* Metrics Row */}
-      <View style={styles.grid}>
-        <View style={styles.metric}>
-          <Text style={styles.metricLabel}>Total Collections</Text>
-          <Text style={styles.metricValue}>{salesCount}</Text>
-          <Text style={styles.metricHint}>↑ {lots.length} live records</Text>
-        </View>
-
-        <View style={styles.metric}>
-          <Text style={styles.metricLabel}>Avg. Net / kg</Text>
-          <Text style={styles.metricValue}>{currency(avgNetPerKg)}</Text>
-          <Text style={styles.metricHint}>Total: {totalWeight} kg</Text>
-        </View>
-      </View>
-
-      {/* Top Materials Breakdown */}
-      <Text style={styles.sectionTitle}>Material Earnings Breakdown</Text>
-      {materialAggregates.map((item) => (
-        <PerformanceRow
-          key={item.material}
-          color={item.color}
-          material={item.material}
-          amount={currency(item.amount)}
-          percentage={item.percentage}
-          width={item.percentage}
-        />
-      ))}
-
-      {/* Live Lots List with direct link to HandoverScreen */}
-      <View style={styles.recentLotsHeader}>
-        <Text style={styles.sectionTitle}>Active Lots & Handover Passes</Text>
-      </View>
-      {lots.length > 0 ? (
-        lots.map((lot) => (
-          <TouchableOpacity
-            key={lot.id}
-            style={styles.lotItemCard}
-            onPress={() =>
-              navigation.navigate("Handover", {
-                lotId: lot.id,
-                material: lot.material,
-                weightKg: lot.weightKg,
-                netAmount: lot.expectedNetEarnings
-              })
-            }
-          >
-            <View style={styles.lotItemLeft}>
-              <Text style={styles.lotItemTitle}>{lot.material}</Text>
-              <Text style={styles.lotItemMeta}>
-                {lot.weightKg} kg · {lot.id.slice(0, 14)}... · {lot.status}
-              </Text>
-            </View>
-            <View style={styles.lotItemRight}>
-              <Text style={styles.lotItemPrice}>{currency(lot.expectedNetEarnings || 0)}</Text>
-              <Text style={styles.lotPassLink}>View QR Pass ›</Text>
-            </View>
-          </TouchableOpacity>
-        ))
       ) : (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>{t("noLots")}</Text>
-        </View>
-      )}
-    </ScrollView>
-  );
-}
+        <>
+          <Animated.View entering={enter(1)}>
+            <GradientCard style={{ marginTop: space.lg }}>
+              <Text style={styles.heroLabel}>{t("paidOut")}</Text>
+              <AnimatedNumber value={stats.paid} format={currency} style={styles.heroValue} />
+              <Text style={styles.heroSub}>+ {currency(stats.expected)} {t("expected").toLowerCase()}</Text>
 
-function PerformanceRow({
-  color,
-  material,
-  amount,
-  percentage,
-  width
-}: {
-  color: string;
-  material: string;
-  amount: string;
-  percentage: string;
-  width: `${number}%`;
-}) {
-  return (
-    <View style={styles.performance}>
-      <View style={styles.performanceHead}>
-        <View style={styles.materialName}>
-          <View style={[styles.materialDot, { backgroundColor: color }]} />
-          <Text style={styles.materialText}>{material}</Text>
-        </View>
-        <Text style={styles.amount}>{amount}</Text>
-        <Text style={styles.percentage}>{percentage}</Text>
-      </View>
-      <View style={styles.performanceTrack}>
-        <View style={[styles.performanceFill, { width, backgroundColor: color }]} />
-      </View>
-    </View>
+              <Text style={[styles.heroLabel, { marginTop: space.xl }]}>{t("last7")}</Text>
+              <View style={styles.chart}>
+                {stats.days.map((d, i) => (
+                  <View key={i} style={styles.barCol}>
+                    <Text style={styles.barValue}>{d.total ? compactCurrency(d.total) : ""}</Text>
+                    <View style={styles.barTrack}>
+                      <GrowBar ratio={d.total / maxDay} color={i === 6 ? P("#E5B86A") : P("rgba(168,232,201,0.8)")} delay={150 + i * 70} />
+                    </View>
+                    <Text style={[styles.dayLabel, i === 6 && { color: P("#F8FAF7") }]}>{DAY_NAMES[language][d.date.getDay()]}</Text>
+                  </View>
+                ))}
+              </View>
+            </GradientCard>
+          </Animated.View>
+
+          <View style={styles.metrics}>
+            {[
+              [t("lotsCount"), String(lots.length)],
+              [t("collected"), `${Math.round(stats.kg)} ${t("kg")}`],
+              [t("avgPerKg"), currency(stats.kg ? stats.total / stats.kg : 0)],
+            ].map(([label, value], i) => (
+              <Animated.View key={label} entering={enter(2 + i)} style={styles.metric}>
+                <Text style={styles.metricLabel}>{label ? label.charAt(0).toUpperCase() + label.slice(1) : ""}</Text>
+                <Text style={styles.metricValue}>{value}</Text>
+              </Animated.View>
+            ))}
+          </View>
+
+          {collectorId ? <InsightsCard collectorId={collectorId} /> : null}
+
+          <SectionHeader title={t("byMaterial")} />
+          <Card>
+            {stats.materials.map(([m, amt], i) => (
+              <View key={m} style={{ marginBottom: i === stats.materials.length - 1 ? 0 : space.md }}>
+                <View style={styles.matHead}>
+                  <View style={[styles.dot, { backgroundColor: materialStyle(m).tint }]} />
+                  <Text style={styles.matName} numberOfLines={1}>{materialName(m as Lot["material"], language)}</Text>
+                  <Text style={styles.matAmt}>{currency(amt)}</Text>
+                </View>
+                <ProgressBar progress={stats.total ? amt / stats.total : 0} color={materialStyle(m).tint} delay={200 + i * 80} />
+              </View>
+            ))}
+          </Card>
+
+          <SectionHeader title={t("allLots")} />
+          <View style={styles.filters}>
+            <Chip label={t("all")} active={filter === "all"} onPress={() => setFilter("all")} />
+            <Chip label={t("statusPAID")} active={filter === "paid"} onPress={() => setFilter("paid")} icon="checkmark-circle" />
+            <Chip label={t("expected")} active={filter === "open"} onPress={() => setFilter("open")} icon="time" />
+          </View>
+          {shown.map((lot, i) => (
+            <LotRow key={lot.id} lot={lot} index={i} onPress={() => go("Handover", { lotId: lot.id })} />
+          ))}
+        </>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: 19, paddingBottom: 36 },
-  kicker: { color: "#84948B", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
-  title: { marginTop: 3, marginBottom: 14, color: colors.ink, fontSize: 25, fontWeight: "800", letterSpacing: -0.5 },
-  hero: { padding: 20, borderRadius: 21, backgroundColor: colors.green },
-  heroLabel: { color: "#BEE4C7", fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
-  heroValue: { marginTop: 2, color: colors.white, fontSize: 35, fontWeight: "800" },
-  heroHint: { color: "#C2EACB", fontSize: 10 },
-  chart: {
-    height: 86,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: 15
-  },
-  bar: { flex: 1, maxWidth: 24, borderRadius: 5, backgroundColor: "#70B57B" },
-  highlightBar: { backgroundColor: "#EABD56" },
-  days: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  dayLabel: { fontSize: 8, color: "#BEE4C7", fontWeight: "700" },
-  insight: {
-    flexDirection: "row",
-    gap: 11,
-    marginTop: 17,
-    padding: 14,
-    borderRadius: 17,
-    backgroundColor: "#FFF0CA"
-  },
-  insightIcon: {
-    width: 34,
-    height: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 11,
-    backgroundColor: "#F2C968"
-  },
-  insightIconText: { fontSize: 16, fontWeight: "900", color: colors.ink },
-  insightCopy: { flex: 1 },
-  insightKicker: { color: "#8A6616", fontSize: 8, fontWeight: "800", letterSpacing: 0.8 },
-  insightTitle: { marginTop: 4, color: colors.ink, fontSize: 13, fontWeight: "800" },
-  insightText: { marginTop: 4, color: "#756641", fontSize: 10, lineHeight: 14 },
-  grid: { flexDirection: "row", gap: 10, marginTop: 18 },
-  metric: {
-    flex: 1,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 16,
-    backgroundColor: colors.white
-  },
-  metricLabel: { color: colors.muted, fontSize: 10 },
-  metricValue: { marginTop: 7, color: colors.ink, fontSize: 20, fontWeight: "800" },
-  metricHint: { marginTop: 4, color: "#46825E", fontSize: 9 },
-  sectionTitle: { marginTop: 22, marginBottom: 8, color: colors.ink, fontSize: 18, fontWeight: "800" },
-  performance: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line },
-  performanceHead: { flexDirection: "row", alignItems: "center" },
-  materialName: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
-  materialDot: { width: 8, height: 8, borderRadius: 4 },
-  materialText: { color: colors.ink, fontSize: 11, fontWeight: "700" },
-  amount: { width: 68, color: colors.ink, fontSize: 11, fontWeight: "700", textAlign: "right" },
-  percentage: { width: 35, color: colors.muted, fontSize: 10, textAlign: "right" },
-  performanceTrack: { height: 6, marginTop: 8, overflow: "hidden", borderRadius: 4, backgroundColor: "#E8EEE8" },
-  performanceFill: { height: "100%", borderRadius: 4 },
+  title: { ...type.h1, color: colors.ink, marginTop: 2 },
+  heroLabel: { color: P("#A8E8C9"), fontSize: 12, fontWeight: "800", letterSpacing: 1 },
+  heroValue: { marginTop: 4, fontSize: 38, fontWeight: "800", color: P("#F8FAF7"), letterSpacing: -1 },
+  heroSub: { marginTop: 2, color: P("rgba(248,250,247,0.62)"), fontSize: 14, fontWeight: "600" },
+  chart: { flexDirection: "row", gap: 6, marginTop: space.md, height: 150 },
+  barCol: { flex: 1, alignItems: "center" },
+  barValue: { fontSize: 9, color: P("rgba(248,250,247,0.62)"), fontWeight: "700", height: 14 },
+  barTrack: { flex: 1, width: "100%", justifyContent: "flex-end", borderRadius: 8, backgroundColor: P("rgba(255,255,255,0.08)") },
+  dayLabel: { marginTop: 6, fontSize: 11, fontWeight: "700", color: P("#A8E8C9") },
 
-  recentLotsHeader: { marginTop: 8 },
-  lotItemCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: colors.white,
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.line,
-    marginBottom: 8
-  },
-  lotItemLeft: { flex: 1 },
-  lotItemTitle: { fontSize: 12, fontWeight: "800", color: colors.ink },
-  lotItemMeta: { fontSize: 9, color: colors.muted, marginTop: 2 },
-  lotItemRight: { alignItems: "flex-end" },
-  lotItemPrice: { fontSize: 12, fontWeight: "800", color: colors.green },
-  lotPassLink: { fontSize: 9, fontWeight: "700", color: colors.orange, marginTop: 2 },
-  emptyCard: { padding: 14, borderRadius: 12, borderWidth: 1, borderStyle: "dashed", borderColor: "#CBD5E1" },
-  emptyText: { fontSize: 10, color: colors.muted, textAlign: "center" }
+  metrics: { flexDirection: "row", gap: space.sm, marginTop: space.md },
+  metric: { flex: 1, padding: space.md, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
+  metricLabel: { fontSize: 11, fontWeight: "700", color: colors.muted },
+  metricValue: { marginTop: 4, fontSize: 17, fontWeight: "800", color: colors.ink },
+
+  matHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  matName: { flex: 1, fontSize: 14, fontWeight: "700", color: colors.ink },
+  matAmt: { fontSize: 14, fontWeight: "800", color: colors.ink },
+  filters: { flexDirection: "row", gap: space.sm, marginBottom: space.md, flexWrap: "wrap" },
 });
-

@@ -1,0 +1,151 @@
+{
+  "_comment": "How each scrap material's market value is derived from live exchange prices. value = sum(content × commodity ₹/kg) × payable. 'content' is kg of metal per kg of scrap (precious metals in grams per kg); 'payable' is the share of contained-metal value that scrap buyers typically pay (covers processing, losses, margin). Figures are APPROXIMATE industry/literature ranges — tune them here, no code change needed. Materials with no free live market use 'reference' (₹/kg) and are labelled as such. 'rate_card' materials use the nearest city's doorstep rate from data/india_rate_cards.json (built by tools/build_rate_cards.py) ÷ the 0.70 doorstep factor to get the dealer-level market value.",
+  "source": {
+    "name": "Yahoo Finance delayed futures quotes (COMEX/NYMEX) + USD/INR",
+    "url": "https://finance.yahoo.com",
+    "refresh_hours": 6
+  },
+  "fx_symbol": "INR=X",
+  "commodities": {
+    "copper": {
+      "symbol": "HG=F",
+      "unit": "usd_per_lb",
+      "label": "Copper (COMEX)"
+    },
+    "aluminium": {
+      "symbol": "ALI=F",
+      "unit": "usd_per_tonne",
+      "label": "Aluminium (COMEX)"
+    },
+    "steel": {
+      "symbol": "HRC=F",
+      "unit": "usd_per_short_ton",
+      "label": "Steel HRC (NYMEX)"
+    },
+    "gold": {
+      "symbol": "GC=F",
+      "unit": "usd_per_troy_oz",
+      "label": "Gold (COMEX)"
+    },
+    "silver": {
+      "symbol": "SI=F",
+      "unit": "usd_per_troy_oz",
+      "label": "Silver (COMEX)"
+    },
+    "palladium": {
+      "symbol": "PA=F",
+      "unit": "usd_per_troy_oz",
+      "label": "Palladium (NYMEX)"
+    }
+  },
+  "materials": {
+    "Copper cable": {
+      "content": {
+        "copper": 0.6
+      },
+      "payable": 0.88,
+      "note": "insulated cable, ~60% copper by weight"
+    },
+    "Brass fittings": {
+      "content": {
+        "copper": 0.62
+      },
+      "payable": 0.85,
+      "note": "brass ~62% copper (zinc share not priced)"
+    },
+    "Aluminium": {
+      "content": {
+        "aluminium": 1.0
+      },
+      "payable": 0.72,
+      "note": "mixed aluminium scrap vs primary metal"
+    },
+    "Iron & steel scrap": {
+      "rate_card": "Iron",
+      "note": "Indian city rate cards fit local iron scrap better than US steel futures"
+    },
+    "Electric motors": {
+      "content": {
+        "copper": 0.12,
+        "steel": 0.6,
+        "aluminium": 0.08
+      },
+      "payable": 0.35,
+      "note": "windings + laminations + housing; dismantling cost"
+    },
+    "Compressors & cooling units": {
+      "content": {
+        "copper": 0.08,
+        "steel": 0.7,
+        "aluminium": 0.03
+      },
+      "payable": 0.35,
+      "note": "shell steel + copper windings"
+    },
+    "Printed Circuit Boards (PCB)": {
+      "content": {
+        "copper": 0.18,
+        "gold_g": 0.15,
+        "silver_g": 0.8,
+        "palladium_g": 0.05
+      },
+      "payable": 0.15,
+      "note": "mixed-grade boards; refiners pay a small share of contained metal"
+    },
+    "Server boards": {
+      "content": {
+        "copper": 0.2,
+        "gold_g": 0.3,
+        "silver_g": 1.2,
+        "palladium_g": 0.1
+      },
+      "payable": 0.15,
+      "note": "high-grade boards"
+    },
+    "Mixed e-waste": {
+      "content": {
+        "copper": 0.08,
+        "aluminium": 0.05,
+        "steel": 0.4,
+        "gold_g": 0.02
+      },
+      "payable": 0.2,
+      "note": "unsorted small appliances and electronics"
+    },
+    "Lithium-ion batteries": {
+      "reference": 280,
+      "note": "value is in cobalt/nickel/lithium — no free live quote; reference rate"
+    },
+    "Lead acid batteries": {
+      "reference": 98,
+      "note": "no free live lead quote; reference rate"
+    },
+    "CRT & monitor glass": {
+      "reference": 18,
+      "note": "no traded market; reference rate"
+    },
+    "Newspaper": {
+      "rate_card": "Newspaper"
+    },
+    "Books & notebooks": {
+      "rate_card": "Books"
+    },
+    "Cardboard": {
+      "rate_card": "Carton"
+    },
+    "Mixed plastic": {
+      "rate_card": "Mix Plastic"
+    },
+    "PET bottles": {
+      "rate_card": "PET Bottle"
+    },
+    "Stainless steel": {
+      "rate_card": "Steel"
+    }
+  },
+  "rate_cards": {
+    "path": "india_rate_cards.json",
+    "radius_km": 150,
+    "doorstep_factor": 0.7
+  }
+}

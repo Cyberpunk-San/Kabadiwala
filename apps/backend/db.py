@@ -14,15 +14,13 @@ import os
 from datetime import datetime, timedelta
 
 from sqlalchemy import (
-    Column, DateTime, Float, Integer, String, Text, create_engine,
+    Column, DateTime, Float, Integer, String, Text, create_engine, inspect, text,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
-_DATA_DIR = os.path.join(_BACKEND_DIR, "data")
-os.makedirs(_DATA_DIR, exist_ok=True)
+from settings import DATA_DIR as _DATA_DIR, DB_PATH
 
-DB_PATH = os.path.join(_DATA_DIR, "mhk.db")
+os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
@@ -100,6 +98,9 @@ class RecyclerRow(Base):
     longitude = Column(Float, nullable=False)
     cluster = Column(String, nullable=True)
     prices_json = Column(Text, nullable=False)
+    # {material: spread} — these materials follow the live market (local price × spread) instead of a fixed ₹.
+    # Setting a price in the recycler console removes the material from here (the buyer's price wins).
+    price_spread_json = Column(Text, nullable=True)
     is_active = Column(Integer, nullable=False, default=1)
 
 
@@ -201,10 +202,96 @@ class RecyclerOfferRow(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class HouseholdRow(Base):
+    """A home / shop that wants its scrap picked up by a kabadiwala."""
+    __tablename__ = "households"
+    id = Column(String, primary_key=True)
+    phone = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    language = Column(String, nullable=False, default="hi")
+    address = Column(Text, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class CompanyRow(Base):
+    """
+    A business. company_type:
+      buyer  — recycler that buys from kabadiwalas (gets a RecyclerRow with the same id)
+      seller — office / factory / society with bulk e-waste to be picked up
+      both
+    Admin approval activates the buyer side in the marketplace.
+    """
+    __tablename__ = "companies"
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    contact_name = Column(String, nullable=True)
+    phone = Column(String, unique=True, nullable=False, index=True)
+    company_type = Column(String, nullable=False, default="seller")
+    gstin = Column(String, nullable=True)
+    cpcb_license = Column(String, nullable=True)
+    address = Column(Text, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    approved = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class PickupRequestRow(Base):
+    """A household or company asks nearby kabadiwalas to collect scrap."""
+    __tablename__ = "pickup_requests"
+    id = Column(String, primary_key=True)
+    requester_type = Column(String, nullable=False)  # household | company
+    requester_id = Column(String, nullable=False, index=True)
+    requester_name = Column(String, nullable=False)
+    requester_phone = Column(String, nullable=True)
+    address = Column(Text, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    material = Column(String, nullable=False)
+    estimated_weight_kg = Column(Float, nullable=False)
+    estimated_value = Column(Float, nullable=False, default=0.0)
+    notes = Column(Text, nullable=True)
+    preferred_time = Column(String, nullable=True)  # free-text label (legacy / admin display)
+    preferred_date = Column(String, nullable=True)  # YYYY-MM-DD chosen by the requester
+    preferred_slot = Column(String, nullable=True)  # morning | afternoon | evening | anytime
+    status = Column(String, nullable=False, default="OPEN", index=True)  # OPEN | ACCEPTED | COMPLETED | CANCELLED
+    pickup_pin = Column(String(4), nullable=False)
+    collector_id = Column(String, nullable=True, index=True)
+    collector_name = Column(String, nullable=True)
+    collector_phone = Column(String, nullable=True)
+    offered_price_per_kg = Column(Float, nullable=True)
+    actual_weight_kg = Column(Float, nullable=True)
+    amount_paid = Column(Float, nullable=True)
+    lot_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    accepted_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+
+
 # ─── Lifecycle ───────────────────────────────────────────────────────────────
+
+def _add_missing_columns() -> None:
+    """
+    create_all() never alters existing tables, so a DB created by an older version
+    would lack new columns. Add any missing *nullable* column (additive only).
+    """
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if not insp.has_table(table.name):
+                continue
+            existing = {c["name"] for c in insp.get_columns(table.name)}
+            for col in table.columns:
+                if col.name not in existing and col.nullable:
+                    conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col.type.compile(engine.dialect)}'))
+                    print(f"[MHK DB] Migrated: added {table.name}.{col.name}")
+
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    _add_missing_columns()
     db = SessionLocal()
     try:
         if db.query(LotRow).count() == 0:
@@ -215,6 +302,7 @@ def init_db() -> None:
             _seed_demo_collector(db)
         if db.query(DemandRow).count() == 0:
             _seed_demo_demands(db)
+        _link_prices_to_market(db)
     finally:
         db.close()
 
@@ -256,6 +344,38 @@ def _seed_demo_lots(db) -> None:
     print(f"[MHK DB] Seeded {len(demo)} demo lots.")
 
 
+def _seed_spreads(prices: dict) -> dict:
+    """A seeded buyer's premium/discount vs the reference rate, e.g. 640 / 620 → 1.032."""
+    from services.price_forecaster import BASE_PRICES  # local import: services import db
+    return {m: round(p / BASE_PRICES[m], 4) for m, p in prices.items() if BASE_PRICES.get(m)}
+
+
+def _link_prices_to_market(db) -> None:
+    """
+    Older databases have no price_spread_json. Link every price that is still the untouched default
+    (seed-file price for demo buyers, reference × default factor for company buyers) to the market;
+    prices a buyer changed in the console stay fixed.
+    """
+    from services.account_service import DEFAULT_BUYER_PRICE_FACTOR
+    from services.price_forecaster import BASE_PRICES
+    path = os.path.join(_DATA_DIR, "recyclers_seed.json")
+    seed = {}
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            seed = {r["id"]: r["prices"] for r in json.load(f).get("recyclers", [])}
+    changed = 0
+    for row in db.query(RecyclerRow).filter(RecyclerRow.price_spread_json.is_(None)).all():
+        current = json.loads(row.prices_json or "{}")
+        defaults = seed.get(row.id) or {m: round(p * DEFAULT_BUYER_PRICE_FACTOR, 1) for m, p in BASE_PRICES.items()}
+        spreads = {m: round(defaults[m] / BASE_PRICES[m], 4) for m, p in current.items()
+                   if m in defaults and BASE_PRICES.get(m) and abs(float(p) - float(defaults[m])) < 0.051}
+        row.price_spread_json = json.dumps(spreads)
+        changed += 1
+    if changed:
+        db.commit()
+        print(f"[MHK DB] Linked {changed} buyer price tables to the live market")
+
+
 def _seed_recyclers_from_json(db) -> None:
     path = os.path.join(_DATA_DIR, "recyclers_seed.json")
     if not os.path.exists(path):
@@ -271,7 +391,8 @@ def _seed_recyclers_from_json(db) -> None:
             handling_cost=r["handling_cost"], platform_fee=r["platform_fee"],
             payment_reliability=r["payment_reliability"],
             latitude=r["latitude"], longitude=r["longitude"],
-            cluster=r.get("cluster"), prices_json=json.dumps(r["prices"]), is_active=1,
+            cluster=r.get("cluster"), prices_json=json.dumps(r["prices"]),
+            price_spread_json=json.dumps(_seed_spreads(r["prices"])), is_active=1,
         ))
     db.commit()
     print(f"[MHK DB] Seeded {len(rows)} recyclers from {path}")

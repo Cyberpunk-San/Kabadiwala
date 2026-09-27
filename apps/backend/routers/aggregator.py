@@ -13,6 +13,8 @@ from typing import List
 from db import get_db, AggregatorPoolRow
 from models.domain import AggregatorPoolCreate, AggregatorPoolResponse
 from services import lot_service
+from services.ml_service import _avg_recycler_price
+from services.price_forecaster import BASE_PRICES
 
 router = APIRouter(prefix="/api/v1/aggregator", tags=["Aggregator Bulk Pooling"])
 
@@ -26,22 +28,25 @@ def create_bulk_pool(
     if not req.lot_ids:
         raise HTTPException(status_code=400, detail="At least one lot_id is required")
 
-    total_weight = 0.0
-    material = "Copper cable"
-    aggregated_count = 0
-
-    for lot_id in req.lot_ids:
-        lot = lot_service.get_lot(db, lot_id)
-        if lot:
-            total_weight += lot.weight_kg
-            material = lot.material
-            lot_service.update_status(db, lot_id, "AGGREGATED")
-            aggregated_count += 1
-
-    if aggregated_count == 0:
+    lots = [lot for lot in (lot_service.get_lot(db, i) for i in dict.fromkeys(req.lot_ids)) if lot]
+    if not lots:
         raise HTTPException(status_code=404, detail="None of the supplied lot_ids exist")
 
-    base_rate = 620.0
+    materials = {lot.material for lot in lots}
+    if len(materials) > 1:
+        raise HTTPException(status_code=400, detail="A bulk pool must contain a single material")
+    settled = [lot.id for lot in lots if lot.status in ("PAID", "SOLD", "AGGREGATED")]
+    if settled:
+        raise HTTPException(status_code=409, detail=f"Lots already sold or pooled: {', '.join(settled)}")
+
+    material = lots[0].material
+    total_weight = sum(lot.weight_kg for lot in lots)
+    aggregated_count = len(lots)
+    for lot in lots:
+        lot_service.update_status(db, lot.id, "AGGREGATED")
+
+    from services.market_price_service import market_price
+    base_rate = _avg_recycler_price(db, material) or market_price(material)[0] or BASE_PRICES.get(material, 85.0)
     bulk_rate = round(base_rate * 1.15, 1)  # +15% institutional premium
 
     pool = AggregatorPoolRow(

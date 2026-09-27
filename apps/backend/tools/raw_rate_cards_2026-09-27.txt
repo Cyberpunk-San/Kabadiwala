@@ -1,0 +1,935 @@
+# Raw doorstep scrap rate cards, extracted 2026-09-27 from https://www.thekabadiwala.com/scrap-rates/<city>
+# Format: Item | rate (INR) | unit. Copied as extracted — including obvious errors (e.g. unit mix-ups);
+# tools/build_rate_cards.py cleans them. Pages show no "last updated" date.
+## mumbai
+Newspaper | 10 | kg
+Carton | 4 | kg
+Mix Plastic | 7 | kg
+Books | 12 | kg
+Iron | 22 | kg
+Tin | 15 | kg
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 15 | kg
+Plastic Jar (15 Litre) | 10 | kg
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 10 | kg
+Copy | 8 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 4 | kg
+Brass | 500 | kg
+Copper | 700 | kg
+Plastic (PP) Bags | 4 | kg
+Fibre | 5 | kg
+Inverter Battery | 1700 | pcs
+Milk Covers | 1 | kg
+Casting Aluminium | 95 | kg
+Beverage Cans (Aluminium) | 25 | kg
+Record Paper | 10 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 200 | pcs
+AC (1 ton) | 2000 | kg
+AC (1.5 ton) | 3000 | pcs
+Washing machine | 300 | pcs
+AC (2 Ton) | 3500 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 500 | pcs
+Refrigerator (Double Door) | 700 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 400 | kg
+Aluminium Wire | 25 | kg
+Monitor (CRT) | 200 | kg
+Monitor (LCD/LED) | 100 | pcs
+CPU | 150 | pcs
+Geyser | 200 | pcs
+PET Bottle | 14 | kg
+Printer | 20 | kg
+UPS (with battery) | 250 | kg
+UPS (without battery) | 150 | kg
+Water Tank (Sintex) | 20 | kg
+Cooler (Plastic/Fibre) | 10 | kg
+Cooler (Tin) | 15 | kg
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 10 | kg
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 8 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 1 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 15 | kg
+Car | 10000 | pcs
+## delhi
+Newspaper | 11 | kg
+Carton | 6 | kg
+Mix Plastic | 8 | kg
+Books | 10 | kg
+Iron | 25 | kg
+Tin | 18 | pcs
+Grey Board | 5 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 5 | kg
+E-waste | 20 | kg
+Plastic Jar (15 Litre) | 12 | kg
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 10 | pcs
+Copy | 10 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 10 | kg
+Brass | 450 | kg
+Copper | 550 | kg
+Plastic (PP) Bags | 4 | kg
+Tyre | 2 | kg
+Fibre | 5 | kg
+Inverter Battery | 3000 | pcs
+Casting Aluminium | 60 | kg
+Beverage Cans (Aluminium) | 70 | kg
+Record Paper | 10 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 200 | pcs
+AC (1 ton) | 3000 | pcs
+AC (1.5 ton) | 4000 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 4500 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 500 | pcs
+Refrigerator (Double Door) | 800 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 69 | kg
+Aluminium Wire | 30 | kg
+Monitor (CRT) | 149 | pcs
+Monitor (LCD/LED) | 100 | kg
+CPU | 13 | kg
+Geyser | 14 | kg
+PET Bottle | 10 | kg
+Printer | 50 | pcs
+UPS (with battery) | 300 | pcs
+UPS (without battery) | 220 | pcs
+Water Tank (Sintex) | 14 | kg
+Cooler (Plastic/Fibre) | 100 | pcs
+Cooler (Tin) | 15 | kg
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 14 | kg
+MS Drums (200 Litre) | 25 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 7 | kg
+Plastic Can (25 Litre) | 10 | kg
+Plastic Can (50 Litre) | 14 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 1 | kg
+Polythene Bags (HM) | 7 | kg
+Microwave | 300 | pcs
+## bangalore
+Newspaper | 10 | kg
+Carton | 3 | kg
+Mix Plastic | 5 | kg
+Books | 8 | kg
+Iron | 22 | kg
+Tin | 10 | pcs
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 10 | kg
+Plastic Jar (15 Litre) | 5 | kg
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 8 | kg
+Copy | 8 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 5 | kg
+Brass | 400 | kg
+Copper | 500 | kg
+Plastic (PP) Bags | 4 | kg
+Fibre | 5 | kg
+Inverter Battery | 70 | kg
+Casting Aluminium | 50 | kg
+Beverage Cans (Aluminium) | 60 | kg
+Record Paper | 10 | kg
+White Paper | 5 | kg
+Television (LCD/LED) | 50 | pcs
+Laptop | 250 | pcs
+AC (1 ton) | 10 | kg
+AC (1.5 ton) | 2500 | pcs
+Washing machine | 300 | pcs
+AC (2 Ton) | 3000 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 350 | pcs
+Refrigerator (Double Door) | 550 | pcs
+PVC Pipe | 8 | kg
+Copper Wire | 50 | kg
+Aluminium Wire | 35 | kg
+Monitor (CRT) | 100 | pcs
+Monitor (LCD/LED) | 60 | pcs
+CPU | 150 | pcs
+Geyser | 100 | pcs
+PET Bottle | 10 | kg
+Printer | 10 | kg
+UPS (with battery) | 250 | pcs
+Water Tank (Sintex) | 10 | kg
+Cooler (Plastic/Fibre) | 8 | kg
+Cooler (Tin) | 12 | kg
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 15 | kg
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 10 | kg
+Core Pipe (Cardboard) | 2 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 14 | kg
+Alkaline Battery (Cell) | 1 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 130 | pcs
+Car | 10000 | pcs
+## hyderabad
+Newspaper | 10 | kg
+Carton | 4 | kg
+Mix Plastic | 8 | kg
+Books | 8 | kg
+Iron | 20 | kg
+Tin | 17 | kg
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 20 | kg
+Plastic Jar (15 Litre) | 10 | kg
+Aluminium | 120 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 10 | kg
+Copy | 8 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 10 | kg
+Brass | 300 | kg
+Copper | 400 | kg
+Plastic (PP) Bags | 9 | kg
+Tyre | 2 | kg
+Fibre | 5 | kg
+Inverter Battery | 1000 | pcs
+Casting Aluminium | 120 | kg
+Beverage Cans (Aluminium) | 90 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 200 | pcs
+AC (1 ton) | 2100 | pcs
+AC (1.5 ton) | 3200 | pcs
+Washing machine | 350 | pcs
+AC (2 Ton) | 7000 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 300 | pcs
+Refrigerator (Double Door) | 500 | pcs
+PVC Pipe | 4 | kg
+Copper Wire | 60 | kg
+Aluminium Wire | 10 | kg
+Monitor (CRT) | 100 | pcs
+Monitor (LCD/LED) | 100 | pcs
+CPU | 250 | pcs
+Geyser | 100 | pcs
+PET Bottle | 15 | kg
+Printer | 10 | kg
+UPS (with battery) | 250 | pcs
+UPS (without battery) | 150 | pcs
+Water Tank (Sintex) | 15 | kg
+Cooler (Plastic/Fibre) | 4 | kg
+Cooler (Tin) | 17 | kg
+Plastic Can (20 Litre) | 10 | kg
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 10 | kg
+Core Pipe (Cardboard) | 8 | kg
+Plastic Can (25 Litre) | 10 | kg
+Plastic Can (50 Litre) | 10 | kg
+MS Drum (50 Litre) | 15 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 10 | kg
+## ahmedabad
+Newspaper | 10 | kg
+Carton | 10 | kg
+Mix Plastic | 10 | kg
+Books | 10 | kg
+Iron | 22 | kg
+Tin | 20 | kg
+Grey Board | 8 | kg
+Soft Plastic | 12 | kg
+Hard Plastic | 8 | kg
+E-waste | 15 | kg
+Plastic Jar (15 Litre) | 5 | kg
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 4 | pcs
+Copy | 12 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 8 | kg
+Brass | 500 | kg
+Copper | 600 | kg
+Plastic (PP) Bags | 4 | kg
+Tyre | 5 | kg
+Fibre | 5 | kg
+Used Beverage Carton | 8 | kg
+Inverter Battery | 80 | kg
+Casting Aluminium | 120 | kg
+Beverage Cans (Aluminium) | 70 | kg
+Record Paper | 8 | kg
+White Paper | 8 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 100 | pcs
+AC (1 ton) | 3000 | pcs
+AC (1.5 ton) | 3500 | pcs
+Washing machine | 300 | pcs
+AC (2 Ton) | 4000 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 650 | pcs
+Refrigerator (Double Door) | 800 | pcs
+PVC Pipe | 10 | kg
+Copper Wire | 20 | kg
+Aluminium Wire | 40 | kg
+Monitor (CRT) | 100 | pcs
+Monitor (LCD/LED) | 100 | pcs
+CPU | 150 | pcs
+Geyser | 200 | pcs
+PET Bottle | 15 | kg
+Printer | 10 | kg
+UPS (with battery) | 250 | kg
+UPS (without battery) | 150 | pcs
+Water Tank (Sintex) | 15 | kg
+Cooler (Plastic/Fibre) | 5 | kg
+Cooler (Tin) | 15 | kg
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 15 | kg
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 7 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 19 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 20 | kg
+Car | 10000 | pcs
+## bhopal
+Newspaper | 13 | kg
+Carton | 12 | kg
+Mix Plastic | 12 | kg
+Books | 12 | kg
+Iron | 25 | kg
+Tin | 20 | kg
+Grey Board | 3 | kg
+Soft Plastic | 15 | pcs
+Hard Plastic | 2 | kg
+E-waste | 10 | pcs
+Plastic Jar (15 Litre) | 17 | pcs
+Aluminium | 150 | kg
+Steel | 45 | kg
+Plastic Jar (5 Litre) | 5 | pcs
+Copy | 12 | kg
+Polythene Bags (LD) | 4 | kg
+Beer/Wine Bottles | 1 | kg
+Magazines | 10 | kg
+Brass | 450 | kg
+Copper | 600 | kg
+Plastic (PP) Bags | 6 | pcs
+Tyre | 8 | kg
+Used Beverage Carton | 5 | kg
+Inverter Battery | 80 | kg
+Casting Aluminium | 140 | kg
+Beverage Cans (Aluminium) | 120 | kg
+Record Paper | 12 | kg
+White Paper | 12 | kg
+Television (LCD/LED) | 55 | pcs
+Laptop | 200 | pcs
+AC (1 ton) | 2000 | pcs
+AC (1.5 ton) | 2500 | pcs
+Washing machine | 400 | pcs
+AC (2 Ton) | 3000 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 300 | pcs
+Refrigerator (Double Door) | 400 | pcs
+Copper Wire | 60 | kg
+Aluminium Wire | 18 | kg
+Old Clothes | 1 | kg
+Monitor (CRT) | 200 | pcs
+Monitor (LCD/LED) | 55 | pcs
+CPU | 250 | pcs
+Geyser | 150 | kg
+PET Bottle | 25 | kg
+Printer | 20 | kg
+UPS (with battery) | 200 | pcs
+Cooler (Plastic/Fibre) | 10 | kg
+Cooler (Tin) | 15 | kg
+Bike | 2000 | pcs
+Microwave | 150 | pcs
+Car | 10000 | pcs
+## indore
+Newspaper | 10 | kg
+Carton | 10 | kg
+Mix Plastic | 8 | kg
+Books | 9 | kg
+Iron | 26 | kg
+Tin | 22 | kg
+Grey Board | 3 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 15 | kg
+Plastic Jar (15 Litre) | 8 | pcs
+Aluminium | 180 | kg
+Steel | 48 | kg
+Plastic Jar (5 Litre) | 3 | pcs
+Copy | 10 | kg
+Polythene Bags (LD) | 5 | kg
+Magazines | 9 | kg
+Brass | 420 | kg
+Copper | 800 | kg
+Plastic (PP) Bags | 3 | kg
+Tyre | 3 | kg
+Fibre | 5 | kg
+Used Beverage Carton | 5 | kg
+Inverter Battery | 75 | kg
+Casting Aluminium | 85 | kg
+Beverage Cans (Aluminium) | 80 | kg
+Record Paper | 7 | kg
+White Paper | 3 | kg
+Television (LCD/LED) | 50 | pcs
+Laptop | 150 | pcs
+AC (1 ton) | 2800 | pcs
+AC (1.5 ton) | 3000 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 3500 | pcs
+Television (CRT) | 50 | pcs
+Refrigerator (Single Door) | 350 | pcs
+Refrigerator (Double Door) | 500 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 60 | kg
+Aluminium Wire | 15 | kg
+Monitor (CRT) | 150 | pcs
+Monitor (LCD/LED) | 50 | pcs
+CPU | 150 | pcs
+Geyser | 100 | pcs
+PET Bottle | 18 | kg
+Printer | 18 | kg
+UPS (with battery) | 150 | pcs
+UPS (without battery) | 100 | pcs
+Water Tank (Sintex) | 14 | kg
+Cooler (Plastic/Fibre) | 5 | kg
+Cooler (Tin) | 15 | kg
+Bike | 2000 | pcs
+Wooden Pallets | 1 | kg
+Plastic Can (20 Litre) | 15 | pcs
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 8 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 14 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 18 | kg
+## nagpur
+Newspaper | 10 | kg
+Carton | 10 | kg
+Mix Plastic | 5 | kg
+Books | 9 | kg
+Iron | 26 | kg
+Tin | 20 | kg
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 15 | kg
+Plastic Jar (15 Litre) | 20 | kg
+Aluminium | 160 | kg
+Steel | 45 | kg
+Plastic Jar (5 Litre) | 14 | kg
+Copy | 10 | kg
+Polythene Bags (LD) | 24 | kg
+Beer/Wine Bottles | 2 | kg
+Magazines | 8 | kg
+Brass | 410 | kg
+Copper | 620 | kg
+Plastic (PP) Bags | 3 | kg
+Fibre | 4 | kg
+Used Beverage Carton | 4 | kg
+Inverter Battery | 80 | kg
+Milk Covers | 2 | kg
+Casting Aluminium | 110 | kg
+Beverage Cans (Aluminium) | 110 | kg
+Record Paper | 8 | kg
+White Paper | 8 | kg
+Television (LCD/LED) | 50 | pcs
+Laptop | 150 | pcs
+AC (1 ton) | 2000 | pcs
+AC (1.5 ton) | 2200 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 2500 | pcs
+Television (CRT) | 50 | pcs
+Refrigerator (Single Door) | 400 | pcs
+Refrigerator (Double Door) | 550 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 40 | kg
+Aluminium Wire | 15 | kg
+Monitor (CRT) | 150 | pcs
+Monitor (LCD/LED) | 50 | pcs
+CPU | 150 | pcs
+Geyser | 18 | kg
+PET Bottle | 17 | kg
+Printer | 20 | kg
+UPS (with battery) | 155 | pcs
+UPS (without battery) | 100 | kg
+Water Tank (Sintex) | 14 | kg
+Cooler (Plastic/Fibre) | 10 | kg
+Cooler (Tin) | 15 | kg
+Plastic Can (20 Litre) | 15 | pcs
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 8 | kg
+Plastic Can (25 Litre) | 25 | pcs
+Plastic Can (50 Litre) | 30 | pcs
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 18 | kg
+## raipur
+Newspaper | 10 | kg
+Carton | 10 | kg
+Mix Plastic | 6 | kg
+Books | 9 | kg
+Iron | 24 | kg
+Tin | 16 | kg
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 15 | kg
+Plastic Jar (15 Litre) | 10 | pcs
+Aluminium | 160 | kg
+Steel | 45 | kg
+Plastic Jar (5 Litre) | 15 | kg
+Copy | 8 | kg
+Polythene Bags (LD) | 6 | pcs
+Beer/Wine Bottles | 1 | kg
+Magazines | 8 | kg
+Brass | 410 | kg
+Copper | 600 | kg
+Plastic (PP) Bags | 3 | kg
+Tyre | 3 | kg
+Fibre | 5 | kg
+Used Beverage Carton | 5 | kg
+Inverter Battery | 70 | kg
+Milk Covers | 2 | kg
+Casting Aluminium | 80 | kg
+Beverage Cans (Aluminium) | 80 | kg
+Record Paper | 8 | kg
+White Paper | 2 | kg
+Television (LCD/LED) | 50 | pcs
+Laptop | 150 | pcs
+AC (1 ton) | 2200 | pcs
+AC (1.5 ton) | 2500 | pcs
+Washing machine | 400 | pcs
+AC (2 Ton) | 2800 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 350 | pcs
+Refrigerator (Double Door) | 500 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 20 | kg
+Aluminium Wire | 10 | kg
+Monitor (CRT) | 150 | pcs
+Monitor (LCD/LED) | 50 | pcs
+CPU | 150 | pcs
+Geyser | 100 | pcs
+PET Bottle | 15 | kg
+Printer | 15 | kg
+UPS (with battery) | 150 | pcs
+UPS (without battery) | 150 | pcs
+Water Tank (Sintex) | 15 | kg
+Cooler (Plastic/Fibre) | 5 | kg
+Cooler (Tin) | 18 | kg
+Glass Bottles | 1 | kg
+Plastic Can (20 Litre) | 14 | kg
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 8 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 14 | kg
+MS Drum (50 Litre) | 18 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 15 | kg
+## lucknow
+Newspaper | 10 | kg
+Carton | 10 | kg
+Mix Plastic | 4 | kg
+Books | 9 | kg
+Iron | 24 | kg
+Tin | 20 | kg
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 15 | kg
+Plastic Jar (15 Litre) | 15 | kg
+Aluminium | 155 | kg
+Steel | 45 | kg
+Plastic Jar (5 Litre) | 15 | kg
+Copy | 10 | kg
+Polythene Bags (LD) | 8 | kg
+Magazines | 7 | kg
+Brass | 410 | kg
+Copper | 650 | kg
+Plastic (PP) Bags | 3 | kg
+Tyre | 3 | kg
+Fibre | 5 | kg
+Used Beverage Carton | 5 | kg
+Inverter Battery | 80 | kg
+Casting Aluminium | 110 | kg
+Beverage Cans (Aluminium) | 110 | kg
+Record Paper | 8 | kg
+White Paper | 8 | kg
+Television (LCD/LED) | 40 | pcs
+Laptop | 50 | pcs
+AC (1 ton) | 2000 | pcs
+AC (1.5 ton) | 2500 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 3000 | pcs
+Television (CRT) | 40 | pcs
+Refrigerator (Single Door) | 400 | pcs
+Refrigerator (Double Door) | 600 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 45 | kg
+Aluminium Wire | 20 | kg
+Monitor (CRT) | 180 | pcs
+Monitor (LCD/LED) | 40 | pcs
+CPU | 200 | pcs
+Geyser | 15 | kg
+PET Bottle | 15 | kg
+Printer | 25 | kg
+UPS (with battery) | 220 | pcs
+UPS (without battery) | 120 | pcs
+Water Tank (Sintex) | 15 | kg
+Cooler (Plastic/Fibre) | 5 | kg
+Cooler (Tin) | 15 | kg
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 20 | kg
+MS Drums (200 Litre) | 19 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 6 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 18 | kg
+Car | 8000 | pcs
+## noida
+Newspaper | 10 | pcs
+Carton | 8 | kg
+Mix Plastic | 10 | kg
+Books | 11 | kg
+Iron | 22 | kg
+Tin | 18 | kg
+Grey Board | 2 | kg
+Soft Plastic | 12 | kg
+Hard Plastic | 5 | kg
+E-waste | 10 | pcs
+Plastic Jar (15 Litre) | 20 | pcs
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 36 | kg
+Copy | 10 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 10 | kg
+Brass | 420 | pcs
+Copper | 600 | kg
+Plastic (PP) Bags | 4 | kg
+Tyre | 2 | kg
+Fibre | 4 | kg
+Inverter Battery | 35 | kg
+Casting Aluminium | 90 | kg
+Beverage Cans (Aluminium) | 70 | kg
+Record Paper | 10 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 7 | kg
+AC (1 ton) | 3000 | pcs
+AC (1.5 ton) | 3500 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 4000 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 500 | pcs
+Refrigerator (Double Door) | 1000 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 60 | kg
+Aluminium Wire | 30 | kg
+Monitor (CRT) | 150 | pcs
+Monitor (LCD/LED) | 100 | pcs
+CPU | 13 | kg
+Geyser | 14 | kg
+PET Bottle | 15 | kg
+Printer | 10 | kg
+UPS (with battery) | 249 | pcs
+UPS (without battery) | 150 | kg
+Water Tank (Sintex) | 14 | kg
+Cooler (Plastic/Fibre) | 100 | pcs
+Cooler (Tin) | 400 | pcs
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 15 | kg
+MS Drums (200 Litre) | 25 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 7 | kg
+Plastic Can (25 Litre) | 10 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 1 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 250 | pcs
+## ghaziabad
+Newspaper | 10 | kg
+Carton | 9 | kg
+Mix Plastic | 10 | kg
+Books | 10 | kg
+Iron | 1000 | pcs
+Tin | 18 | pcs
+Grey Board | 2 | kg
+Soft Plastic | 15 | kg
+Hard Plastic | 5 | kg
+E-waste | 10 | pcs
+Plastic Jar (15 Litre) | 20 | pcs
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 15 | kg
+Copy | 10 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 10 | kg
+Brass | 420 | pcs
+Copper | 700 | kg
+Plastic (PP) Bags | 9 | kg
+Tyre | 2 | kg
+Fibre | 5 | kg
+Inverter Battery | 35 | kg
+Casting Aluminium | 70 | kg
+Beverage Cans (Aluminium) | 70 | kg
+Record Paper | 10 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 7 | kg
+AC (1 ton) | 2500 | pcs
+AC (1.5 ton) | 3000 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 3500 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 600 | pcs
+Refrigerator (Double Door) | 800 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 70 | kg
+Aluminium Wire | 30 | kg
+Monitor (CRT) | 149 | pcs
+Monitor (LCD/LED) | 100 | kg
+CPU | 13 | kg
+Geyser | 120 | pcs
+PET Bottle | 10 | kg
+Printer | 10 | kg
+UPS (with battery) | 300 | pcs
+UPS (without battery) | 150 | kg
+Water Tank (Sintex) | 14 | kg
+Cooler (Plastic/Fibre) | 12 | kg
+Cooler (Tin) | 300 | pcs
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 15 | kg
+MS Drums (200 Litre) | 25 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 7 | kg
+Plastic Can (25 Litre) | 22 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 1 | kg
+Polythene Bags (HM) | 9 | kg
+Microwave | 250 | pcs
+## gurgaon
+Newspaper | 10 | pcs
+Carton | 7 | kg
+Mix Plastic | 10 | kg
+Books | 10 | kg
+Iron | 26 | kg
+Tin | 18 | pcs
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 10 | pcs
+Plastic Jar (15 Litre) | 15 | kg
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 15 | kg
+Copy | 10 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 8 | kg
+Brass | 420 | pcs
+Copper | 700 | kg
+Plastic (PP) Bags | 9 | kg
+Tyre | 8 | kg
+Fibre | 5 | kg
+Inverter Battery | 80 | kg
+Casting Aluminium | 60 | kg
+Beverage Cans (Aluminium) | 90 | kg
+Record Paper | 10 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 50 | pcs
+Laptop | 300 | pcs
+AC (1 ton) | 4000 | pcs
+AC (1.5 ton) | 2500 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 3500 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 800 | pcs
+Refrigerator (Double Door) | 700 | pcs
+PVC Pipe | 5 | kg
+Copper Wire | 70 | kg
+Aluminium Wire | 40 | kg
+Monitor (CRT) | 100 | pcs
+Monitor (LCD/LED) | 100 | kg
+CPU | 250 | pcs
+Geyser | 14 | kg
+PET Bottle | 20 | kg
+Printer | 40 | pcs
+UPS (with battery) | 300 | pcs
+UPS (without battery) | 150 | pcs
+Water Tank (Sintex) | 17 | kg
+Cooler (Plastic/Fibre) | 100 | pcs
+Cooler (Tin) | 300 | pcs
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 15 | kg
+MS Drums (200 Litre) | 300 | pcs
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 8 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 150 | pcs
+Car | 10000 | pcs
+## jaipur
+Newspaper | 10 | kg
+Carton | 10 | kg
+Mix Plastic | 7 | kg
+Books | 10 | kg
+Iron | 25 | kg
+Tin | 20 | kg
+Grey Board | 2 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 5 | kg
+E-waste | 10 | kg
+Plastic Jar (15 Litre) | 10 | kg
+Aluminium | 180 | kg
+Steel | 50 | kg
+Plastic Jar (5 Litre) | 10 | kg
+Copy | 10 | kg
+Polythene Bags (LD) | 10 | kg
+Magazines | 7 | kg
+Brass | 500 | kg
+Copper | 900 | kg
+Plastic (PP) Bags | 10 | kg
+Tyre | 13 | kg
+Fibre | 5 | kg
+Inverter Battery | 90 | kg
+Casting Aluminium | 50 | pcs
+Beverage Cans (Aluminium) | 90 | kg
+Record Paper | 10 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 200 | pcs
+AC (1 ton) | 3000 | pcs
+AC (1.5 ton) | 3200 | pcs
+Washing machine | 500 | pcs
+AC (2 Ton) | 3500 | pcs
+Television (CRT) | 150 | pcs
+Refrigerator (Single Door) | 800 | pcs
+Refrigerator (Double Door) | 1200 | pcs
+PVC Pipe | 10 | kg
+Copper Wire | 250 | kg
+Aluminium Wire | 20 | kg
+Monitor (CRT) | 100 | pcs
+Monitor (LCD/LED) | 100 | pcs
+CPU | 250 | pcs
+Geyser | 15 | kg
+PET Bottle | 20 | kg
+Printer | 10 | kg
+UPS (with battery) | 300 | pcs
+UPS (without battery) | 150 | pcs
+Water Tank (Sintex) | 15 | kg
+Cooler (Plastic/Fibre) | 8 | kg
+Cooler (Tin) | 15 | kg
+Bike | 2000 | pcs
+Plastic Can (20 Litre) | 10 | kg
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 10 | kg
+Core Pipe (Cardboard) | 5 | kg
+Plastic Can (25 Litre) | 15 | kg
+Plastic Can (50 Litre) | 14 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 10 | kg
+Microwave | 15 | kg
+Car | 10000 | pcs
+## pune
+Newspaper | 11 | kg
+Carton | 4 | kg
+Mix Plastic | 10 | kg
+Books | 10 | kg
+Iron | 23 | kg
+Tin | 12 | pcs
+Grey Board | 3 | kg
+Soft Plastic | 10 | kg
+Hard Plastic | 2 | kg
+E-waste | 10 | kg
+Plastic Jar (15 Litre) | 10 | kg
+Aluminium | 150 | kg
+Steel | 40 | kg
+Plastic Jar (5 Litre) | 8 | kg
+Copy | 10 | kg
+Polythene Bags (LD) | 15 | kg
+Magazines | 8 | kg
+Brass | 400 | kg
+Copper | 500 | kg
+Plastic (PP) Bags | 4 | kg
+Tyre | 5 | kg
+Fibre | 5 | kg
+Inverter Battery | 1700 | pcs
+Casting Aluminium | 80 | kg
+Beverage Cans (Aluminium) | 50 | kg
+Record Paper | 10 | kg
+White Paper | 10 | kg
+Television (LCD/LED) | 100 | pcs
+Laptop | 200 | pcs
+AC (1 ton) | 2000 | pcs
+AC (1.5 ton) | 2500 | pcs
+Washing machine | 400 | pcs
+AC (2 Ton) | 3500 | pcs
+Television (CRT) | 100 | pcs
+Refrigerator (Single Door) | 500 | pcs
+Refrigerator (Double Door) | 850 | pcs
+PVC Pipe | 15 | kg
+Copper Wire | 150 | kg
+Aluminium Wire | 15 | kg
+Monitor (CRT) | 100 | pcs
+Monitor (LCD/LED) | 100 | pcs
+CPU | 150 | pcs
+Geyser | 200 | pcs
+PET Bottle | 20 | kg
+Printer | 15 | kg
+UPS (with battery) | 300 | pcs
+UPS (without battery) | 150 | kg
+Water Tank (Sintex) | 15 | kg
+Cooler (Plastic/Fibre) | 10 | kg
+Cooler (Tin) | 20 | kg
+Bike | 1000 | pcs
+Plastic Can (20 Litre) | 15 | kg
+MS Drums (200 Litre) | 20 | kg
+Plastic Drum (200 Litre) | 15 | kg
+Core Pipe (Cardboard) | 6 | kg
+Plastic Can (25 Litre) | 12 | kg
+Plastic Can (50 Litre) | 15 | kg
+MS Drum (50 Litre) | 20 | kg
+Alkaline Battery (Cell) | 2 | kg
+Polythene Bags (HM) | 15 | kg
+Microwave | 100 | pcs
+Car | 10000 | pcs

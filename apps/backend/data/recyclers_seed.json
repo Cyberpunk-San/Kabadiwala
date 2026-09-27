@@ -1,0 +1,113 @@
+{
+  "_comment": "Seed list of CPCB-registered recyclers. Replace with a live directory feed in production.",
+  "recyclers": [
+    {
+      "id": "eco-cycle",
+      "recycler_name": "EcoCycle Recyclers Pvt Ltd",
+      "cpcb_license": "CPCB/EW/MH/2023/8812",
+      "rating": 4.8,
+      "pickup_base_cost": 180,
+      "handling_cost": 70,
+      "platform_fee": 120,
+      "payment_reliability": 98,
+      "latitude": 18.6320,
+      "longitude": 73.8540,
+      "cluster": "Bhosari MIDC, Pune",
+      "prices": {
+        "Copper cable": 625,
+        "Server boards": 520,
+        "Aluminium": 148,
+        "Mixed e-waste": 88,
+        "Lithium-ion batteries": 285,
+        "Brass fittings": 435,
+        "Printed Circuit Boards (PCB)": 345,
+        "Electric motors": 198,
+        "Iron & steel scrap": 39,
+        "CRT & monitor glass": 19,
+        "Lead acid batteries": 100,
+        "Compressors & cooling units": 168
+      }
+    },
+    {
+      "id": "green-loop",
+      "recycler_name": "GreenLoop Smelters & Refining",
+      "cpcb_license": "CPCB/EW/MH/2022/4109",
+      "rating": 4.6,
+      "pickup_base_cost": 450,
+      "handling_cost": 90,
+      "platform_fee": 120,
+      "payment_reliability": 95,
+      "latitude": 18.6810,
+      "longitude": 73.8920,
+      "cluster": "Chakan Industrial Zone, Pune",
+      "prices": {
+        "Copper cable": 635,
+        "Server boards": 505,
+        "Aluminium": 144,
+        "Mixed e-waste": 85,
+        "Lithium-ion batteries": 275,
+        "Brass fittings": 430,
+        "Printed Circuit Boards (PCB)": 340,
+        "Electric motors": 195,
+        "Iron & steel scrap": 38,
+        "CRT & monitor glass": 18,
+        "Lead acid batteries": 98,
+        "Compressors & cooling units": 165
+      }
+    },
+    {
+      "id": "urban-recover",
+      "recycler_name": "Urban Recover Hub",
+      "cpcb_license": "CPCB/EW/MH/2024/1102",
+      "rating": 4.4,
+      "pickup_base_cost": 95,
+      "handling_cost": 60,
+      "platform_fee": 120,
+      "payment_reliability": 91,
+      "latitude": 18.6210,
+      "longitude": 73.8410,
+      "cluster": "Pimpri Scrap Yard, Pune",
+      "prices": {
+        "Copper cable": 605,
+        "Server boards": 490,
+        "Aluminium": 140,
+        "Mixed e-waste": 82,
+        "Lithium-ion batteries": 268,
+        "Brass fittings": 425,
+        "Printed Circuit Boards (PCB)": 335,
+        "Electric motors": 192,
+        "Iron & steel scrap": 37,
+        "CRT & monitor glass": 17,
+        "Lead acid batteries": 96,
+        "Compressors & cooling units": 162
+      }
+    },
+    {
+      "id": "maha-e-metals",
+      "recycler_name": "Maharashtra E-Metals Authorized Disassembler",
+      "cpcb_license": "MPCB/EW-REG/2021/045",
+      "rating": 4.9,
+      "pickup_base_cost": 320,
+      "handling_cost": 80,
+      "platform_fee": 120,
+      "payment_reliability": 99,
+      "latitude": 18.5900,
+      "longitude": 73.7850,
+      "cluster": "Hinjawadi Tech Corridor, Pune",
+      "prices": {
+        "Copper cable": 640,
+        "Server boards": 530,
+        "Aluminium": 150,
+        "Mixed e-waste": 90,
+        "Lithium-ion batteries": 290,
+        "Brass fittings": 440,
+        "Printed Circuit Boards (PCB)": 348,
+        "Electric motors": 200,
+        "Iron & steel scrap": 40,
+        "CRT & monitor glass": 20,
+        "Lead acid batteries": 102,
+        "Compressors & cooling units": 170
+      }
+    }
+  ]
+}

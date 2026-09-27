@@ -1,6 +1,8 @@
 // src/hooks/useResponsive.ts
 import { Dimensions } from "react-native";
 
+import { APP_MAX_WIDTH } from "../ui/frame";
+
 import { useAccessibilityStore } from "../store/accessibilityStore";
 
 export type ResponsiveTokens = {
@@ -22,7 +24,7 @@ export type ResponsiveTokens = {
  */
 export function useResponsive(): ResponsiveTokens {
   const simpleMode = useAccessibilityStore((s) => s.simpleMode);
-  const { width } = Dimensions.get("window");
+  const width = Math.min(Dimensions.get("window").width, APP_MAX_WIDTH);
   const isSmallDevice = width < 360;
 
   // Base scale — small devices get slightly smaller text, simple mode bumps up

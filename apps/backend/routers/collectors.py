@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from models.domain import (
+    CollectorInsights,
     CollectorLoginRequest,
     CollectorProfileResponse,
     CollectorRegisterRequest,
@@ -16,7 +17,7 @@ from models.domain import (
     KycStartRequest,
     KycVerifyRequest,
 )
-from services import collector_service
+from services import collector_service, insights_service
 
 router = APIRouter(prefix="/api/v1/collectors", tags=["Collectors & KYC"])
 
@@ -68,6 +69,15 @@ def kyc_verify(collector_id: str, data: KycVerifyRequest, db: Session = Depends(
     if not updated:
         raise HTTPException(status_code=404, detail=f"Collector {collector_id} not found")
     return updated
+
+
+@router.get("/{collector_id}/insights", response_model=CollectorInsights)
+def get_insights(collector_id: str, db: Session = Depends(get_db)):
+    """Underpriced sales, best material/buyer, collection pattern and money-first suggestions."""
+    ins = insights_service.collector_insights(db, collector_id)
+    if not ins:
+        raise HTTPException(status_code=404, detail="Collector not found")
+    return ins
 
 
 @router.get("/{collector_id}/stats", response_model=CollectorStatsResponse)

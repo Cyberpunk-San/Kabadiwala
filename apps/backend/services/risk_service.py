@@ -23,6 +23,7 @@ from typing import Dict, List
 
 from sqlalchemy.orm import Session
 
+from services import market_price_service
 from db import (
     CollectorRow,
     HandoverRow,
@@ -120,7 +121,7 @@ def _detect_price_outliers(db, alerts):
     prices_by_material: dict[str, List[float]] = {}
     for r in db.query(RecyclerRow).all():
         try:
-            for mat, p in json.loads(r.prices_json).items():
+            for mat, p in market_price_service.buyer_prices(db, r).items():
                 prices_by_material.setdefault(mat, []).append(float(p))
         except Exception:
             continue
