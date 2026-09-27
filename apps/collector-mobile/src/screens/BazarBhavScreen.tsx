@@ -128,7 +128,7 @@ export function BazarBhavScreen() {
           const selected = activeMaterial === item.material;
           return (
             <Animated.View key={item.id} entering={enter(Math.min(i, 6))}>
-              <PressScale onPress={() => announcePrice(item)} scaleTo={0.985} accessibilityRole="button" accessibilityLabel={materialName(item.material, language)}>
+              <PressScale onPress={() => announcePrice(item)} scaleTo={0.985} accessibilityLabel={materialName(item.material, language)}>
                 <Card style={[styles.card, selected && styles.cardSelected]}>
                   <View style={styles.cardTop}>
                     <MaterialAvatar material={item.material} size={44} />

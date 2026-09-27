@@ -1,11 +1,12 @@
 // src/components/FloatingVoiceButton.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Tappable } from "../ui/Tappable";
 import { Text } from "../ui/Text";
 import { useNavigation } from "@react-navigation/native";
 
-import { colors } from "../constants/theme";
+import { colors, shadow } from "../constants/theme";
 import { useAccessibilityStore } from "../store/accessibilityStore";
 import { useAppStore } from "../store/appStore";
 import { useAuthStore } from "../store/authStore";
@@ -50,14 +51,14 @@ export function FloatingVoiceButton() {
 
   return (
     <>
-      <TouchableOpacity
+      <Tappable
         style={styles.fab}
         onPress={() => setOpen(true)}
         accessibilityLabel="Voice command"
         activeOpacity={0.9}
       >
         <Ionicons name="mic-outline" size={22} color={P("#A8E8C9")} />
-      </TouchableOpacity>
+      </Tappable>
 
       <VoiceCommandBar
         visible={open}
@@ -85,11 +86,7 @@ const styles = StyleSheet.create({
     borderColor: P("rgba(168,232,201,0.22)"),
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: P("#000"),
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    ...shadow.md,
     zIndex: 1000,
   },
   fabIcon: { fontSize: 24 },

@@ -2,7 +2,7 @@
 // The agent calls tools on live data and returns actions, rendered here as buttons.
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentRef } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Text } from "../ui/Text";
 import Animated, { FadeInUp } from "react-native-reanimated";
@@ -76,7 +76,7 @@ export function AssistantScreen({ route }: Props) {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [listening, setListening] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const listenRef = useRef<RecognitionHandle | null>(null);
 
   const send = async (text: string) => {
@@ -113,6 +113,8 @@ export function AssistantScreen({ route }: Props) {
   // Opened with a question (e.g. from the voice button) — ask it straight away.
   const initialPrompt = route.params?.prompt;
   useEffect(() => {
+    // Sending the question is a side effect (network request) triggered by navigation — an effect is right here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (initialPrompt) void send(initialPrompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPrompt]);

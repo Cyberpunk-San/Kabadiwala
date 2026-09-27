@@ -1,6 +1,6 @@
 // src/ui/Text.tsx — app-wide Text: Inter at the requested weight, in ink.
 // Android can't synthesise weights for custom fonts, so each fontWeight maps to its own file.
-import { forwardRef } from "react";
+import { forwardRef, type ComponentRef } from "react";
 import { Text as RNText, StyleSheet, type TextProps } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -38,7 +38,7 @@ function indicFor(style: TextProps["style"], family: string) {
   };
 }
 
-export const Text = forwardRef<RNText, TextProps>(function Text({ style, children, ...rest }, ref) {
+export const Text = forwardRef<ComponentRef<typeof RNText>, TextProps>(function Text({ style, children, ...rest }, ref) {
   const face = fontFor(style);
   const script = hasDevanagari(children) ? indicFor(style, face.fontFamily) : null;
   return <RNText ref={ref} {...rest} style={[styles.base, style, face, script]}>{children}</RNText>;

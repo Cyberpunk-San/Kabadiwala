@@ -1,4 +1,5 @@
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Tappable } from "../ui/Tappable";
 import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
@@ -7,10 +8,10 @@ import { P } from "../constants/palette";
 type Props = { label: string; onPress: () => void };
 
 export function VoiceButton({ label, onPress }: Props) {
-  return <TouchableOpacity accessibilityRole="button" style={styles.button} onPress={onPress}>
+  return <Tappable accessibilityRole="button" style={styles.button} onPress={onPress}>
     <View style={styles.icon}><Text style={styles.iconText}>●</Text></View>
     <Text style={styles.label}>{label}</Text>
-  </TouchableOpacity>;
+  </Tappable>;
 }
 
 const styles = StyleSheet.create({

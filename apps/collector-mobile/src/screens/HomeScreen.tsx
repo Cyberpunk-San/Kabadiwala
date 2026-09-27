@@ -217,7 +217,7 @@ function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unso
       </View>
 
       <Animated.View style={[styles.header, header]}>
-        <View pointerEvents="none" style={styles.headerLight}><Glow color={C.emerald} opacity={0.07} /></View>
+        <View style={[styles.headerLight, { pointerEvents: "none" }]}><Glow color={C.emerald} opacity={0.07} /></View>
         <InkTitle style={styles.title}>{t("hiName", { name: firstName })}</InkTitle>
         <Text style={styles.subtitle}>{t("homeSubtitle")}</Text>
       </Animated.View>
@@ -236,8 +236,8 @@ function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unso
             end={{ x: 1, y: 1 }}
             style={styles.hero}
           >
-            <View pointerEvents="none" style={styles.heroLightA}><Glow color={C.emerald} opacity={0.24} /></View>
-            <View pointerEvents="none" style={styles.heroLightB}><Glow color={C.teal} opacity={0.08} /></View>
+            <View style={[styles.heroLightA, { pointerEvents: "none" }]}><Glow color={C.emerald} opacity={0.24} /></View>
+            <View style={[styles.heroLightB, { pointerEvents: "none" }]}><Glow color={C.teal} opacity={0.08} /></View>
             <ContourTexture />
             <EdgeLight strength={0.10} />
             <View style={styles.heroHead}>
@@ -291,7 +291,7 @@ function HomeBody({ t, language, location, firstName, unreadCount, totalKg, unso
               <GlowPress key={p.id} onPress={() => go("MaterialDetail", { material: p.material })} glow={up ? C.emerald : C.rose} glowBase={0.03} glowSize={1.1} style={[styles.trendWrap, styles.depth]} label={materialName(p.material, language)}>
                 <LinearGradient colors={[P("rgba(248,250,247,0.07)"), P("rgba(248,250,247,0.025)")]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.trendCard}>
                   <View style={styles.trendWell}>
-                    <View pointerEvents="none" style={styles.trendLight}><Glow color={up ? C.emerald : C.teal} opacity={0.12} /></View>
+                    <View style={[styles.trendLight, { pointerEvents: "none" }]}><Glow color={up ? C.emerald : C.teal} opacity={0.12} /></View>
                     <View style={styles.trendDisc}><MaterialCommunityIcons name={materialStyle(p.material).icon} size={26} color={C.mint} style={styles.trendGlyph} /></View>
                   </View>
                   <EdgeLight strength={0.08} />
@@ -370,7 +370,7 @@ function HomeBackdrop() {
 /** Faint topographic contours — organic texture inside the hero. */
 function ContourTexture() {
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}>
       <Svg width="100%" height="100%" viewBox="0 0 340 220" preserveAspectRatio="xMidYMid slice">
         {[0, 1, 2, 3, 4].map((i) => (
           <Path
@@ -407,13 +407,12 @@ function Glow({ color, opacity = 0.3 }: { color: string; opacity?: number }) {
 function EdgeLight({ strength = 0.08 }: { strength?: number }) {
   return (
     <>
-      <LinearGradient pointerEvents="none" colors={[`rgba(248,250,247,${strength})`, P("rgba(248,250,247,0)")]} style={styles.sheen} />
+      <LinearGradient colors={[`rgba(248,250,247,${strength})`, P("rgba(248,250,247,0)")]} style={[styles.sheen, { pointerEvents: "none" }]} />
       <LinearGradient
-        pointerEvents="none"
         colors={[P("rgba(248,250,247,0)"), `rgba(248,250,247,${strength * 2.2})`, P("rgba(248,250,247,0)")]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.edge}
+        style={[styles.edge, { pointerEvents: "none" }]}
       />
     </>
   );
@@ -440,13 +439,13 @@ function GlowPress({ children, onPress, glow, glowBase, glowSize, style, label, 
   return (
     <Pressable
       onPress={() => { tap(); onPress(); }}
-      onPressIn={() => { p.value = withTiming(1, { duration: 110 }); }}
-      onPressOut={() => { p.value = withSpring(0, motion.spring); }}
+      onPressIn={() => { p.set(withTiming(1, { duration: 110 })); }}
+      onPressOut={() => { p.set(withSpring(0, motion.spring)); }}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={style}
     >
-      <Animated.View pointerEvents="none" style={[{ position: "absolute", top: inset, bottom: inset, left: inset, right: inset }, halo]}>
+      <Animated.View style={[[{ position: "absolute", top: inset, bottom: inset, left: inset, right: inset }, halo], { pointerEvents: "none" }]}>
         <Glow color={glow} opacity={0.55} />
       </Animated.View>
       <Animated.View style={face}>{children}</Animated.View>
@@ -469,7 +468,7 @@ function IconButton({ icon, label, onPress, badge }: { icon: IconName; label: st
 function IconOrb({ icon, accent }: { icon: IconName; accent: string }) {
   return (
     <View style={styles.orb}>
-      <View style={styles.orbGlow} pointerEvents="none"><Glow color={accent} opacity={0.14} /></View>
+      <View style={[styles.orbGlow, { pointerEvents: "none" }]}><Glow color={accent} opacity={0.14} /></View>
       <View style={[styles.orbCore, { backgroundColor: P("#020705"), borderColor: rgba(accent, 0.22) }]}>
         <Ionicons name={icon} size={20} color={accent} />
       </View>
@@ -482,7 +481,7 @@ function QuickTile({ index, icon, label, accent, onPress }: { index: number; ico
     <Animated.View entering={enter(index)} style={{ flex: 1 }}>
       <GlowPress onPress={onPress} glow={accent} glowBase={0.02} glowSize={1.2} style={styles.depth} label={label}>
         <LinearGradient colors={[P("rgba(248,250,247,0.06)"), P("rgba(248,250,247,0.02)")]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.tile}>
-          <LinearGradient pointerEvents="none" colors={[rgba(accent, 0), rgba(accent, 0.3), rgba(accent, 0)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tileEdge} />
+          <LinearGradient colors={[rgba(accent, 0), rgba(accent, 0.3), rgba(accent, 0)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.tileEdge, { pointerEvents: "none" }]} />
           <IconOrb icon={icon} accent={accent} />
           <Text style={styles.tileLabel} numberOfLines={2}>{label}</Text>
         </LinearGradient>
@@ -515,8 +514,8 @@ function LotLine({ lot, last, onPress, t, language, hint }: { lot: Lot; last: bo
   return (
     <Pressable
       onPress={() => { tap(); onPress(); }}
-      onPressIn={() => { p.value = withTiming(1, { duration: 110 }); }}
-      onPressOut={() => { p.value = withSpring(0, motion.spring); }}
+      onPressIn={() => { p.set(withTiming(1, { duration: 110 })); }}
+      onPressOut={() => { p.set(withSpring(0, motion.spring)); }}
       accessibilityRole="button"
     >
       <Animated.View style={[styles.lot, !last && styles.lotDivider, face]}>

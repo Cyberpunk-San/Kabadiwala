@@ -100,7 +100,7 @@ vendor, the government WPI for paper/plastic) are the planned upgrade — see ST
 
 ## Run it
 
-**Prerequisites:** Python 3.11+, Node.js 20+, Expo Go on your phone (optional).
+**Prerequisites:** Python 3.11+, Node.js 22 LTS (React Native 0.86 supports 20.19+, 22.13+, 24.3+ or 25+), Expo Go for **SDK 57** on your phone (optional).
 
 ```bash
 cp apps/backend/.env.example apps/backend/.env                  # all optional — no keys = offline AI

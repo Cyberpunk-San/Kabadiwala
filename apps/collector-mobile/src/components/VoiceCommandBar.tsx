@@ -1,13 +1,8 @@
 // src/components/VoiceCommandBar.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, StyleSheet, View } from "react-native";
+import { Tappable } from "../ui/Tappable";
 import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
@@ -97,9 +92,9 @@ export function VoiceCommandBar({
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.title}>Voice Command</Text>
-            <TouchableOpacity onPress={onClose}>
+            <Tappable onPress={onClose}>
               <Ionicons name="close" size={20} color={P("rgba(248,250,247,0.62)")} />
-            </TouchableOpacity>
+            </Tappable>
           </View>
 
           <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>

@@ -1,6 +1,6 @@
 # Project Status — Mai Hu Kabadiwala
 
-**Last updated:** 2026-09-27 · **Backend:** 3.0.0 · **Mobile:** Expo SDK 53
+**Last updated:** 2026-09-27 · **Backend:** 3.0.0 · **Mobile:** Expo SDK 57 (React Native 0.86, React 19.2, Reanimated 4, TypeScript 6)
 **State:** every role works end-to-end and is demo-ready. Payments, KYC, OTP, CPCB numbers and the price
 history are simulated and labelled as such.
 
@@ -92,7 +92,8 @@ Fixed during this round of testing:
 - **Live camera QR scanning** in the recycler console needs https or `localhost`; on LAN http use *Scan from photo*.
 - **No auth tokens**: a phone number identifies the account; no rate limiting. Fine for demos, not for production.
 - **SQLite single node**; additive migrations only.
-- **Expo SDK 53**: current Expo Go targets SDK 57, so phones need a matching Expo Go or a dev build (upgrade pending).
+- **Node version**: React Native 0.86 officially supports Node 20.19+, 22.13+, 24.3+ or 25+; this machine's Node 23.5 works but is outside that list — use Node 22 LTS.
+- **Expo SDK 58** is still a preview; a trial upgrade lives on the `sdk-58-preview` branch (see its notes) — store Expo Go can't open it.
 - Vision without an HF token uses local CLIP (≈600 MB first download) or the on-device fallback.
 
 ---
@@ -101,7 +102,7 @@ Fixed during this round of testing:
 1. Official price feeds: MCX via a licensed vendor for metals (drop-in for the exchange adapter); monthly WPI
    (eaindustry.nic.in / data.gov.in) to move paper & plastic rate cards; a rate-card data partnership; and, as
    deals accumulate, the median price actually paid nearby as the local market value.
-2. Upgrade Expo SDK 53 → 57 (Expo Go compatibility).
+2. Move to Expo SDK 58 once it is stable (trial branch `sdk-58-preview`).
 2. Token-based auth (OTP via SMS provider) and per-role authorization on every route.
 3. Real payment rail (UPI collect / payouts) behind the existing settlement flow.
 4. Replace simulated price series with a scraped/official daily feed; retrain the forecaster.

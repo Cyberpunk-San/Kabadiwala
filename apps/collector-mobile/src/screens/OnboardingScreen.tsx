@@ -1,6 +1,6 @@
 // src/screens/OnboardingScreen.tsx — language → phone + OTP (simulated) → name.
 import { Ionicons } from "@expo/vector-icons";
-import { useRef, useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 import { AnimatedText, Text } from "../ui/Text";
 import Animated, { FadeInDown, FadeInRight, FadeOutLeft, ZoomIn } from "react-native-reanimated";
@@ -46,7 +46,7 @@ export function OnboardingScreen() {
   const [role, setRole] = useState<Role>("kabadiwala");
   const [companyType, setCompanyType] = useState<CompanyProfile["company_type"]>("seller");
   const [busy, setBusy] = useState(false);
-  const otpRef = useRef<TextInput>(null);
+  const otpRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const digits = phone.replace(/\D/g, "").slice(-10);
   const normalizedPhone = `+91${digits}`;

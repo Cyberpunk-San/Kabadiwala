@@ -3,7 +3,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { RefreshControl, StyleSheet, View } from "react-native";
+import { Platform, RefreshControl, StyleSheet, View } from "react-native";
 import { useAppSize } from "../ui/frame";
 import { Text } from "../ui/Text";
 import Animated from "react-native-reanimated";
@@ -35,6 +35,9 @@ function heat(t: number) {
   const [a, b, f] = x < 0.5 ? [stops[0], stops[1], x * 2] : [stops[1], stops[2], (x - 0.5) * 2];
   return `rgb(${a.map((v, i) => Math.round(v + (b[i]! - v) * f)).join(",")})`;
 }
+
+/** SVG shapes take onPress on phones but need onClick in the browser (react-native-svg web ignores responder props). */
+const pressProps = (fn: () => void): Record<string, () => void> => (Platform.OS === "web" ? { onClick: fn } : { onPress: fn });
 
 export function RegionalScreen() {
   const { t, language } = useTranslation();
@@ -114,7 +117,7 @@ export function RegionalScreen() {
                   )}
 
               {o.clusters.map((c) => (
-                <G key={c.id} onPress={() => setSelected(c)}>
+                <G key={c.id} {...pressProps(() => setSelected(c))}>
                   <Circle cx={x(c.longitude)} cy={y(c.latitude)} r={6 + c.size * 3} stroke={colors.info} strokeWidth={selected?.id === c.id ? 3 : 2} fill={P("rgba(59,130,246,0.15)")} />
                 </G>
               ))}

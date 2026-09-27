@@ -139,7 +139,7 @@ export function CinematicBackdrop({ scrollY, intensity = 1 }: { scrollY?: Shared
   const k = intensity;
 
   return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: BACKDROP_BG }]}>
+    <View style={[[StyleSheet.absoluteFill, { backgroundColor: BACKDROP_BG }], { pointerEvents: "none" }]}>
       {/* Far layer: base wash + reflections */}
       <Animated.View style={[StyleSheet.absoluteFill, far]}>
         <View style={{ position: "absolute", width: w * 1.6, height: w * 1.6, left: -w * 0.3, top: -w * 0.55 }}><Light color={P("#12493E")} opacity={0.55 * k} /></View>

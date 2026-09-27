@@ -28,9 +28,11 @@ export function PickupsScreen({ route: nav }: NativeStackScreenProps<RootStackPa
   const collector = useAuthStore((s) => s.collector);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>(nav.params?.tab ?? "nearby");
-  useEffect(() => {
+  const [paramTab, setParamTab] = useState(nav.params?.tab);
+  if (nav.params?.tab !== paramTab) {
+    setParamTab(nav.params?.tab);
     if (nav.params?.tab) setTab(nav.params.tab);
-  }, [nav.params?.tab]);
+  }
   const [accepting, setAccepting] = useState<string | null>(null);
 
   // Every open request, nearest to where the kabadiwala is right now on top.

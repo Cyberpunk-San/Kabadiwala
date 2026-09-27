@@ -71,13 +71,12 @@ export const depth = Platform.select({
 export function EdgeLight({ strength = 0.07 }: { strength?: number }) {
   return (
     <>
-      <LinearGradient pointerEvents="none" colors={[`rgba(248,250,247,${strength})`, P("rgba(248,250,247,0)")]} style={styles.sheen} />
+      <LinearGradient colors={[`rgba(248,250,247,${strength})`, P("rgba(248,250,247,0)")]} style={[styles.sheen, { pointerEvents: "none" }]} />
       <LinearGradient
-        pointerEvents="none"
         colors={[P("rgba(248,250,247,0)"), `rgba(248,250,247,${strength * 2.2})`, P("rgba(248,250,247,0)")]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.edge}
+        style={[styles.edge, { pointerEvents: "none" }]}
       />
     </>
   );
@@ -115,11 +114,11 @@ export function PressScale({ style, scaleTo = 0.97, haptic = true, onPressIn, on
       {...rest}
       style={outer}
       onPressIn={(e) => {
-        p.value = withTiming(1, { duration: 110 });
+        p.set(withTiming(1, { duration: 110 }));
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        p.value = withSpring(0, motion.spring);
+        p.set(withSpring(0, motion.spring));
         onPressOut?.(e);
       }}
       onPress={(e) => {
@@ -206,13 +205,13 @@ export function Screen({ children, withTabBar = false, padded = true, dark = tru
         </Animated.ScrollView>
 
         {header ? (
-          <Animated.View pointerEvents="box-none" style={[styles.compactBar, { paddingTop: insets.top, height: insets.top + 48 }, bar]}>
+          <Animated.View style={[[styles.compactBar, { paddingTop: insets.top, height: insets.top + 48 }, bar], { pointerEvents: "box-none" }]}>
             {header.onBack ? (
               <Pressable onPress={header.onBack} hitSlop={8} style={styles.compactBack} accessibilityLabel="Back" accessibilityRole="button">
                 <Ionicons name="chevron-back" size={22} color={C.text} />
               </Pressable>
             ) : null}
-            <Animated.View style={[styles.compactTitleWrap, barTitle]} pointerEvents="none">
+            <Animated.View style={[[styles.compactTitleWrap, barTitle], { pointerEvents: "none" }]}>
               <Text style={styles.compactTitle} numberOfLines={1}>{header.title}</Text>
             </Animated.View>
           </Animated.View>

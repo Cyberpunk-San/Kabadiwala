@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Tappable } from "../ui/Tappable";
 import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
@@ -16,7 +17,7 @@ export function PriceCard({ offer, net, costs, best, chooseLabel, onChoose }: Pr
       <Text style={styles.price}>{currency(offer.listedPricePerKg)}<Text style={styles.unit}>/kg</Text></Text>
     </View>
     <View style={styles.costs}><Text>Pickup + handling</Text><Text>−{currency(costs)}</Text></View>
-    <View style={styles.total}><View><Text style={styles.takeHome}>TAKE HOME</Text><Text style={styles.net}>{currency(net)}</Text></View><TouchableOpacity style={[styles.choose, best && styles.chooseBest]} onPress={onChoose}><Text style={[styles.chooseText, best && styles.chooseTextBest]}>{chooseLabel}</Text></TouchableOpacity></View>
+    <View style={styles.total}><View><Text style={styles.takeHome}>TAKE HOME</Text><Text style={styles.net}>{currency(net)}</Text></View><Tappable style={[styles.choose, best && styles.chooseBest]} onPress={onChoose}><Text style={[styles.chooseText, best && styles.chooseTextBest]}>{chooseLabel}</Text></Tappable></View>
   </View>;
 }
 

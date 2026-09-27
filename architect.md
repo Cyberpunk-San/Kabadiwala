@@ -136,7 +136,7 @@ demo_check.py        35-step role-by-role walkthrough against a running server
 
 ## 4. Mobile app (`apps/collector-mobile`)
 
-Expo SDK 53 · React Native 0.79 · React 19 · React Navigation 7 · TanStack Query · Zustand · Reanimated 3 ·
+Expo SDK 57 · React Native 0.86 · React 19.2 · React Navigation 7 · TanStack Query · Zustand · Reanimated 4 ·
 react-native-svg · expo-location / camera / speech / speech-recognition · SQLite (web fallback).
 
 ### 4.1 Structure

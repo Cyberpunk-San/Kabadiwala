@@ -1,12 +1,8 @@
 // src/components/VoiceInputButton.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { Tappable } from "../ui/Tappable";
 import { Text } from "../ui/Text";
 
 import { colors } from "../constants/theme";
@@ -68,7 +64,7 @@ export function VoiceInputButton({
 
   return (
     <View style={styles.wrap}>
-      <TouchableOpacity
+      <Tappable
         style={[
           styles.btn,
           size === "large" && styles.btnLarge,
@@ -85,7 +81,7 @@ export function VoiceInputButton({
         <Text style={[styles.label, size === "large" && styles.labelLarge]}>
           {isListening ? listeningLabel : label}
         </Text>
-      </TouchableOpacity>
+      </Tappable>
 
       {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
     </View>

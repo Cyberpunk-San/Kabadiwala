@@ -77,14 +77,14 @@ function CenterAction({ focused, label, icon, onPress }: { focused: boolean; lab
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => { p.value = withTiming(1, { duration: 100 }); }}
-      onPressOut={() => { p.value = withSpring(0, motion.spring); }}
+      onPressIn={() => { p.set(withTiming(1, { duration: 100 })); }}
+      onPressOut={() => { p.set(withSpring(0, motion.spring)); }}
       style={styles.centerSlot}
       accessibilityRole="tab"
       accessibilityLabel={label}
       accessibilityState={{ selected: focused }}
     >
-      <Animated.View pointerEvents="none" style={[styles.centerHalo, halo]}>
+      <Animated.View style={[[styles.centerHalo, halo], { pointerEvents: "none" }]}>
         <SoftLight color={C.emerald} opacity={0.28} />
       </Animated.View>
       <Animated.View style={[styles.centerBtn, face]}>
@@ -108,17 +108,17 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   const light = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }], opacity: withTiming(onCenter ? 0 : 1, { duration: 180 }) }));
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom: Math.max(insets.bottom, 12) }]}>
+    <View style={[[styles.wrap, { bottom: Math.max(insets.bottom, 12) }], { pointerEvents: "box-none" }]}>
       <View style={styles.shadow}>
         <View style={styles.bar} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
           <View style={[StyleSheet.absoluteFill, styles.clip]}>
             {Platform.OS !== "android" ? <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> : null}
             <View style={[StyleSheet.absoluteFill, styles.tint]} />
-            <LinearGradient pointerEvents="none" colors={[P("rgba(248,250,247,0.07)"), P("rgba(248,250,247,0)")]} style={styles.sheen} />
-            <LinearGradient pointerEvents="none" colors={[P("rgba(168,232,201,0)"), P("rgba(168,232,201,0.14)"), P("rgba(168,232,201,0)")]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.edge} />
+            <LinearGradient colors={[P("rgba(248,250,247,0.07)"), P("rgba(248,250,247,0)")]} style={[styles.sheen, { pointerEvents: "none" }]} />
+            <LinearGradient colors={[P("rgba(168,232,201,0)"), P("rgba(168,232,201,0.14)"), P("rgba(168,232,201,0)")]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.edge, { pointerEvents: "none" }]} />
           </View>
           {width ? (
-            <Animated.View pointerEvents="none" style={[styles.light, light]}>
+            <Animated.View style={[[styles.light, light], { pointerEvents: "none" }]}>
               <SoftLight color={C.mint} opacity={0.16} />
               <View style={styles.lightDot} />
             </Animated.View>

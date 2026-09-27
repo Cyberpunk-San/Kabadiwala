@@ -53,13 +53,16 @@ export function CollectScreen({ route, navigation }: Props) {
   // Prefill from Demands / Opportunity / voice commands.
   const prefillMaterial = route.params?.prefillMaterial;
   const prefillWeight = route.params?.prefillWeightKg;
-  useEffect(() => {
+  const [prefillSeen, setPrefillSeen] = useState<string>("");
+  const prefillKey = `${prefillMaterial ?? ""}|${prefillWeight ?? ""}`;
+  if (prefillKey !== prefillSeen) {
+    setPrefillSeen(prefillKey);
     if (prefillMaterial) {
       setMaterial(prefillMaterial);
       setManual(true);
     }
     if (prefillWeight) setWeightText(String(prefillWeight));
-  }, [prefillMaterial, prefillWeight]);
+  }
 
   // Several photos of one lot → one combined answer (and a warning if they disagree).
   const consensus = useMemo(

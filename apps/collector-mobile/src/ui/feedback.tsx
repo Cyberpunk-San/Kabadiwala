@@ -4,7 +4,7 @@
 // onboarding and the market flow in the browser. Everything here works the same
 // on Android, iOS and web.
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Modal, PanResponder, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 import { APP_MAX_WIDTH } from "./frame";
 import Animated, {
@@ -65,7 +65,7 @@ export function ToastHost() {
   const remove = useToastStore((s) => s.remove);
   const insets = useSafeAreaInsets();
   return (
-    <View pointerEvents="box-none" style={[styles.toastWrap, { top: insets.top + space.sm }]}>
+    <View style={[[styles.toastWrap, { top: insets.top + space.sm }], { pointerEvents: "box-none" }]}>
       {toasts.map((t) => {
         const st = TOAST_STYLE[t.kind];
         return (
@@ -113,7 +113,7 @@ export function DialogHost() {
           <CinematicBackdrop intensity={0.8} />
           <View style={styles.successBody}>
             <Animated.View entering={ZoomIn.duration(420)} style={styles.successMark}>
-              <View pointerEvents="none" style={styles.successGlow}><Halo color={P("#19A982")} opacity={0.35} /></View>
+              <View style={[styles.successGlow, { pointerEvents: "none" }]}><Halo color={P("#19A982")} opacity={0.35} /></View>
               <View style={styles.successDisc}>
                 <Ionicons name="checkmark" size={44} color={P("#04120F")} />
               </View>
@@ -195,43 +195,45 @@ export function Sheet({ visible, onClose, title, children }: { visible: boolean;
   const { height: screenH } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
   const y = useSharedValue(screenH);
-  const sheetH = useRef(screenH);
+  const sheetH = useSharedValue(screenH);
+  // Mount as soon as it's asked to open (adjusting state during render, not in an effect).
+  if (visible && !mounted) setMounted(true);
 
   // Open: spring up from below. Close: glide down, then unmount.
   useEffect(() => {
     if (visible) {
-      setMounted(true);
       tap();
-      y.value = screenH;
-      y.value = withSpring(0, motion.spring);
-    } else if (mounted) {
-      y.value = withTiming(sheetH.current, { duration: 200, easing: Easing.in(Easing.cubic) }, (done) => {
+      y.set(screenH);
+      y.set(withSpring(0, motion.spring));
+    } else {
+      y.set(withTiming(sheetH.get(), { duration: 200, easing: Easing.in(Easing.cubic) }, (done) => {
         if (done) runOnJS(setMounted)(false);
-      });
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  const pan = useRef(
-    PanResponder.create({
+  const pan = useMemo(
+    () => PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderMove: (_, g) => {
         // Downward follows the finger; upward resists (rubber band).
-        y.value = g.dy > 0 ? g.dy : g.dy / 6;
+        y.set(g.dy > 0 ? g.dy : g.dy / 6);
       },
       onPanResponderRelease: (_, g) => {
         if (g.dy > DISMISS_DISTANCE || g.vy > DISMISS_VELOCITY) {
-          y.value = withSpring(sheetH.current, { ...motion.spring, velocity: g.vy * 1000 });
+          y.set(withSpring(sheetH.get(), { ...motion.spring, velocity: g.vy * 1000 }));
           onClose();
         } else {
-          y.value = withSpring(0, { ...motion.spring, velocity: g.vy * 1000 });
+          y.set(withSpring(0, { ...motion.spring, velocity: g.vy * 1000 }));
         }
       },
-    })
-  ).current;
+    }),
+    [y, sheetH, onClose]
+  );
 
   const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
-  const scrimStyle = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [0, sheetH.current], [1, 0]) }));
+  const scrimStyle = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [0, sheetH.value], [1, 0]) }));
 
   if (!mounted) return null;
   return (
@@ -241,7 +243,7 @@ export function Sheet({ visible, onClose, title, children }: { visible: boolean;
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
         </Animated.View>
         <Animated.View
-          onLayout={(e) => { sheetH.current = e.nativeEvent.layout.height; }}
+          onLayout={(e) => { sheetH.set(e.nativeEvent.layout.height); }}
           style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }, sheetStyle]}
           accessibilityViewIsModal
         >

@@ -57,7 +57,7 @@ export function DemandsScreen() {
           const urgent = d.hours_remaining < 48;
           return (
             <Animated.View key={d.id} entering={enter(Math.min(i, 6))}>
-              <PressScale onPress={() => setSelected(d)} scaleTo={0.985} accessibilityRole="button" accessibilityLabel={d.recycler_name}>
+              <PressScale onPress={() => setSelected(d)} scaleTo={0.985} accessibilityLabel={d.recycler_name}>
                 <Card tone={urgent ? "warn" : "surface"} style={styles.card}>
                   <View style={styles.head}>
                     <View style={{ flex: 1 }}>

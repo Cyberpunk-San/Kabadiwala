@@ -181,7 +181,7 @@ export function ScanOverlay({ active }: { active: boolean }) {
   const line = useAnimatedStyle(() => ({ top: `${4 + y.value * 88}%` }));
 
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}>
       {(["tl", "tr", "bl", "br"] as const).map((c) => (
         <View key={c} style={[styles.corner, styles[c]]} />
       ))}
