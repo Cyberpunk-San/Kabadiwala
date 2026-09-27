@@ -80,7 +80,9 @@ def get_market_quotes():
 @router.get("/forecast", response_model=PriceForecastResponse)
 def get_arima_price_forecast(
     material: MaterialType = Query("Copper cable", description="Material to forecast"),
-    zone: str = Query("Pune MIDC", description="Geographic industrial scrap zone")
+    zone: str = Query("Pune MIDC", description="Geographic industrial scrap zone"),
+    horizon: int = Query(7, ge=7, le=30),
+    db: Session = Depends(get_db),
 ):
     """7-day outlook starting from today's market price (the forecast curve itself is simulated)."""
     return generate_arima_forecast(material=material, zone=zone)

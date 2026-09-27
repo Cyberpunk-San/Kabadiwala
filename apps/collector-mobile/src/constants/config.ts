@@ -52,3 +52,4 @@ export const config: AppConfig = {
   ttsSpeechRate: num(process.env.EXPO_PUBLIC_TTS_SPEECH_RATE, 0.92, 0.1, 2),
   syncIntervalMs: num(process.env.EXPO_PUBLIC_SYNC_INTERVAL_MS, 30000, 5000, 3600000),
 };
+

@@ -478,3 +478,4 @@ const styles = StyleSheet.create({
   checkRow: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md, marginBottom: space.sm, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
   checkText: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.ink },
 });
+

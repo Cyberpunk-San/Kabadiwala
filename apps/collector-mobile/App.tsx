@@ -216,3 +216,4 @@ const styles = StyleSheet.create({
   splashSub: { marginTop: 6, fontFamily: fonts.body, fontSize: 15, letterSpacing: 0.2, color: P("rgba(248,250,247,0.55)") },
   splashFoot: { position: "absolute", bottom: 56, fontFamily: fonts.medium, fontSize: 13, letterSpacing: 0.4, color: P("rgba(248,250,247,0.38)") },
 });
+

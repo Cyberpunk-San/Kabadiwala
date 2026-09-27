@@ -165,3 +165,4 @@ const styles = StyleSheet.create({
   cardStat: { fontSize: 13, color: C.textSoft },
   cardReason: { fontSize: 13, lineHeight: 19, color: C.textFaint, marginTop: space.sm },
 });
+

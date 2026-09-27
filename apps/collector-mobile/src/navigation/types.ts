@@ -49,3 +49,4 @@ export type RootStackParamList = {
   Assistant: { prompt?: string } | undefined;
   Accessibility: undefined;
 };
+

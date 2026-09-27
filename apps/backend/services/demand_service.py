@@ -66,10 +66,16 @@ def create(db: Session, data: DemandCreate) -> DemandResponse:
     return _row_to_response(row)
 
 
-def list_open(db: Session, material: Optional[str] = None) -> List[DemandResponse]:
+def list_open(
+    db: Session,
+    material: Optional[str] = None,
+    recycler_id: Optional[str] = None,
+) -> List[DemandResponse]:
     q = db.query(DemandRow).filter(DemandRow.status.in_(["OPEN", "PARTIAL"]))
     if material:
         q = q.filter(DemandRow.material == material)
+    if recycler_id:
+        q = q.filter(DemandRow.recycler_id == recycler_id)
     q = q.order_by(DemandRow.deadline.asc())
     rows = q.all()
     out: List[DemandResponse] = []

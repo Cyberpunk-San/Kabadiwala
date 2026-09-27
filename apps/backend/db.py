@@ -5,6 +5,7 @@ SQLAlchemy + SQLite persistence layer.
 Tables:
   lots · handovers · aggregator_pools · recyclers · collectors
   demands · demand_matches · risk_alerts · sync_outbox · recycler_offers
+  price_history
 """
 
 from __future__ import annotations

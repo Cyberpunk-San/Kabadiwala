@@ -45,6 +45,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     }
 
     return (await res.json()) as T;
+  } catch (err: any) {
+    if (err?.name === "AbortError" || String(err?.message ?? "").toLowerCase().includes("cancel")) {
+      throw new Error(`Request timed out or was cancelled. Check backend at ${config.apiBaseUrl}`);
+    }
+    if (String(err?.message ?? "").toLowerCase().includes("network request failed")) {
+      throw new Error(`Cannot reach backend at ${config.apiBaseUrl}. Start FastAPI and check Android network settings.`);
+    }
+    throw err;
   } finally {
     clearTimeout(timeoutId);
   }

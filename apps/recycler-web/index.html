@@ -147,6 +147,7 @@
   <div id="tabs" class="tabs hidden">
     <button class="tab active" data-tab="verify" onclick="switchTab('verify')">✓ Verify</button>
     <button class="tab" data-tab="incoming" onclick="switchTab('incoming')">📥 Incoming</button>
+    <button class="tab" data-tab="demands" onclick="switchTab('demands')">📣 Demands</button>
     <button class="tab" data-tab="offers" onclick="switchTab('offers')">💰 Offers</button>
     <button class="tab" data-tab="demands" onclick="switchTab('demands')">📢 Demands</button>
     <button class="tab" data-tab="prices" onclick="switchTab('prices')">🏷 Prices</button>
@@ -611,6 +612,114 @@
     } catch (err) { alert("Failed: " + err.message); }
   }
 
+  // ─── DEMANDS TAB ───────────────────────────────────────────────────────────
+  const DEMAND_MATERIALS = [
+    "Copper cable", "Server boards", "Aluminium", "Mixed e-waste",
+    "Lithium-ion batteries", "Brass fittings", "Printed Circuit Boards (PCB)",
+    "Electric motors", "Iron & steel scrap", "CRT & monitor glass",
+    "Lead acid batteries", "Compressors & cooling units",
+  ];
+
+  async function renderDemands() {
+    try {
+      const demands = await api(`/api/v1/demands?recycler_id=${encodeURIComponent(getRecyclerId())}`);
+      return `
+        <div class="card">
+          <p class="kicker">Reverse Marketplace</p>
+          <h2>Tell collectors what you need</h2>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Post a buying requirement and matching collectors will see it in the mobile app.</p>
+          <div id="demand-error" class="alert error hidden"></div>
+          <div class="field-row">
+            <label class="field-label">Material</label>
+            <select id="demand-material">${DEMAND_MATERIALS.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("")}</select>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Minimum quality</label>
+            <select id="demand-quality"><option value="low">Any quality</option><option value="medium" selected>Medium</option><option value="high">High</option></select>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Quantity needed (kg)</label>
+            <input id="demand-quantity" type="number" min="1" step="0.5" value="50" />
+          </div>
+          <div class="field-row">
+            <label class="field-label">Offer price per kg (₹)</label>
+            <input id="demand-price" type="number" min="1" step="1" value="620" />
+          </div>
+          <div class="field-row">
+            <label class="field-label">Need by (days)</label>
+            <input id="demand-deadline" type="number" min="1" max="30" value="7" />
+          </div>
+          <div class="field-row">
+            <label class="field-label">Pickup hub</label>
+            <input id="demand-hub" value="Pune Bhosari Cluster" />
+          </div>
+          <div class="field-row">
+            <label class="field-label">Notes (optional)</label>
+            <input id="demand-notes" placeholder="Clean, sorted material preferred" maxlength="180" />
+          </div>
+          <button id="btn-demand" onclick="createDemand()">📣 Publish Demand</button>
+        </div>
+
+        <div class="card">
+          <p class="kicker">My Active Requirements</p>
+          <h2>${demands.length} open demand${demands.length === 1 ? "" : "s"}</h2>
+          ${demands.length ? `<table>
+            <thead><tr><th>Material</th><th>Wanted</th><th>Price</th><th>Deadline</th><th>Status</th></tr></thead>
+            <tbody>${demands.map(d => `<tr>
+              <td><strong>${esc(d.material)}</strong><br><span style="font-size:9px;color:var(--muted)">${esc(d.hub || "No hub")}</span></td>
+              <td>${Math.max(0, d.quantity_kg - d.filled_kg).toFixed(1)} / ${d.quantity_kg} kg</td>
+              <td>${money(d.offered_price_per_kg)}/kg</td>
+              <td>${d.hours_remaining < 24 ? Math.round(d.hours_remaining) + "h" : Math.round(d.hours_remaining / 24) + "d"}</td>
+              <td><span class="badge ${d.status === "PARTIAL" ? "badge-amber" : "badge-green"}">${esc(d.status)}</span></td>
+            </tr>`).join("")}</tbody>
+          </table>` : `<p class="loading">No active demands yet.</p>`}
+        </div>
+      `;
+    } catch (err) {
+      return `<div class="card"><p class="error-msg">Could not load demands: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  async function createDemand() {
+    const error = document.getElementById("demand-error");
+    error.classList.add("hidden");
+    const quantity = parseFloat(document.getElementById("demand-quantity").value);
+    const price = parseFloat(document.getElementById("demand-price").value);
+    const days = parseInt(document.getElementById("demand-deadline").value, 10);
+    if (!quantity || quantity <= 0 || !price || price <= 0 || !days || days < 1) {
+      error.textContent = "Enter valid quantity, price and deadline.";
+      error.classList.remove("hidden");
+      return;
+    }
+    const button = document.getElementById("btn-demand");
+    button.disabled = true; button.textContent = "Publishing…";
+    try {
+      await api("/api/v1/demands", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recycler_id: getRecyclerId(),
+          recycler_name: "EcoCycle Recyclers Pvt Ltd",
+          material: document.getElementById("demand-material").value,
+          quality_required: document.getElementById("demand-quality").value,
+          quantity_kg: quantity,
+          offered_price_per_kg: price,
+          deadline_days: days,
+          hub: document.getElementById("demand-hub").value.trim() || "Pune Bhosari Cluster",
+          latitude: 18.6507,
+          longitude: 73.8470,
+          notes: document.getElementById("demand-notes").value.trim() || null,
+        }),
+      });
+      alert("Demand published. Collectors can now see it.");
+      await render();
+    } catch (err) {
+      error.textContent = "Failed to publish: " + err.message;
+      error.classList.remove("hidden");
+    } finally {
+      button.disabled = false; button.textContent = "📣 Publish Demand";
+    }
+  }
+
   // ─── OFFERS TAB ──────────────────────────────────────────────────────────
   async function renderOffers() {
     try {
@@ -904,6 +1013,7 @@
     try {
       if (currentTab === "verify") html = renderVerify();
       else if (currentTab === "incoming") html = await renderIncoming();
+      else if (currentTab === "demands") html = await renderDemands();
       else if (currentTab === "offers") html = await renderOffers();
       else if (currentTab === "demands") html = await renderDemands();
       else if (currentTab === "prices") html = await renderPrices();

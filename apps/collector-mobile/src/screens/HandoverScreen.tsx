@@ -222,3 +222,4 @@ const styles = StyleSheet.create({
   receiptRow: { flexDirection: "row", justifyContent: "space-between", gap: space.md, paddingVertical: 6 },
   receiptValue: { flexShrink: 1, fontSize: 13, fontWeight: "700", color: colors.ink, textAlign: "right" },
 });
+
