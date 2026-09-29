@@ -6,9 +6,7 @@ Values come from real environment variables first, then from a `.env` file
 (apps/backend/.env, falling back to the repo-root .env). No extra dependency
 is needed — the loader below understands plain KEY=VALUE lines.
 
-Free AI keys (both optional — the app still works without them):
-  HF_API_TOKEN     Hugging Face token (huggingface.co/settings/tokens, "Read" is enough)
-  GEMINI_API_KEY   Google AI Studio key (aistudio.google.com/apikey)
+No AI keys: photo recognition (CLIP) and the chat helper (Qwen) run locally.
 """
 
 from __future__ import annotations
@@ -57,18 +55,20 @@ DB_PATH = _get("MHK_DB_PATH") or os.path.join(DATA_DIR, "mhk.db")
 # Default "*" so Expo web, file:// portals and phones on the LAN all work in dev.
 ALLOWED_ORIGINS = [o.strip() for o in _get("MHK_ALLOWED_ORIGINS", "*").split(",") if o.strip()] or ["*"]
 
-# ─── AI providers ────────────────────────────────────────────────────────────
-HF_API_TOKEN = _get("HF_API_TOKEN")
-HF_VISION_MODEL = _get("HF_VISION_MODEL", "openai/clip-vit-large-patch14")
-HF_CHAT_MODEL = _get("HF_CHAT_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
-HF_ROUTER_URL = _get("HF_ROUTER_URL", "https://router.huggingface.co")
-
-GEMINI_API_KEY = _get("GEMINI_API_KEY")
-GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-2.0-flash")
-
-# "auto" tries HF API → local CLIP → safe fallback. Set to "hf", "local" or "off" to force.
+# ─── AI (all free and local — no keys) ────────────────────────────────────────
+# "auto"/"local" use local CLIP (falls back safely if not installed); "off" disables photo AI.
 VISION_BACKEND = _get("VISION_BACKEND", "auto").lower()
 # Local CLIP downloads ~600 MB on first use; allow turning it off on small machines.
 ENABLE_LOCAL_CLIP = _get("ENABLE_LOCAL_CLIP", "true").lower() != "false"
 
 AI_TIMEOUT_S = float(_get("AI_TIMEOUT_S", "30"))
+
+# Free local chat model (llama.cpp on CPU — no key, no limits). Helper only: it
+# answers free-form questions the offline assistant doesn't understand.
+# Needs `pip install llama-cpp-python`; the ~1 GB GGUF file downloads on first use.
+ENABLE_LOCAL_LLM = _get("ENABLE_LOCAL_LLM", "true").lower() != "false"
+LOCAL_LLM_REPO = _get("LOCAL_LLM_REPO", "Qwen/Qwen2.5-1.5B-Instruct-GGUF")
+LOCAL_LLM_FILE = _get("LOCAL_LLM_FILE", "qwen2.5-1.5b-instruct-q4_k_m.gguf")
+LOCAL_LLM_CTX = int(_get("LOCAL_LLM_CTX", "2048"))
+LOCAL_LLM_THREADS = int(_get("LOCAL_LLM_THREADS", "0")) or None  # 0 = all CPU cores
+

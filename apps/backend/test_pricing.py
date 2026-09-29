@@ -17,9 +17,8 @@ from datetime import datetime, timedelta, timezone
 
 _TMP = tempfile.mkdtemp(prefix="mhk_price_test_")
 os.environ.setdefault("MHK_DB_PATH", os.path.join(_TMP, "test.db"))
-os.environ.setdefault("HF_API_TOKEN", "")
-os.environ.setdefault("GEMINI_API_KEY", "")
 os.environ.setdefault("VISION_BACKEND", "off")
+os.environ.setdefault("ENABLE_LOCAL_LLM", "false")
 os.environ["MHK_MARKET_FEED"] = "off"
 
 import httpx  # noqa: E402

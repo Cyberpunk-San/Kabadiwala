@@ -121,7 +121,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const providers = health.components.ai_assistant?.providers;
       set({
         isOnline: true,
-        aiConnected: !!(health.components.vision_ai?.huggingface_api || providers?.huggingface || providers?.gemini),
+        aiConnected: !!(health.components.vision_ai?.local_clip || providers?.local),
       });
       return true;
     } catch {

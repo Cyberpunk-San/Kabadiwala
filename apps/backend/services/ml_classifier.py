@@ -2,12 +2,10 @@
 """
 E-waste material classifier — zero-shot, no training data needed.
 
-Providers are tried in order (see settings.VISION_BACKEND):
-  1. Hugging Face Inference API (free token) — CLIP ViT-L/14 in the cloud.
-     Fast, nothing to download, works on any laptop.
-  2. Local CLIP ViT-B/32 via transformers + torch (if installed).
-     Fully offline; first run downloads ~600 MB to ~/.cache/huggingface/.
-  3. Safe fallback — confidence 0 so the app asks the collector to choose.
+Providers (see settings.VISION_BACKEND):
+  1. Local CLIP ViT-B/32 via transformers + torch (if installed).
+     Fully offline and free; first run downloads ~600 MB to ~/.cache/huggingface/.
+  2. Safe fallback — confidence 0 so the app asks the collector to choose.
 
 Images arrive as base64 (what the mobile app sends). A local file path is
 still accepted for scripts/tests running on the same machine.
@@ -24,7 +22,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import settings
 from models.domain import MaterialAlternative, MLMaterialPrediction
-from services.ai_providers import AIProviderError, hf_available, hf_zero_shot_image
 
 
 # ─── Safety rules (business rules, not ML) ───────────────────────────────────
@@ -231,12 +228,6 @@ def _classify_local(image_bytes: bytes) -> List[Tuple[str, float]]:
     return sorted(scored, key=lambda x: x[1], reverse=True)
 
 
-def _classify_hf(image_bytes: bytes) -> List[Tuple[str, float]]:
-    by_prompt = {c["prompt"]: c["material"] for c in CANDIDATE_PROMPTS}
-    results = hf_zero_shot_image(image_bytes, list(by_prompt.keys()))
-    return [(by_prompt[r["label"]], float(r["score"])) for r in results if r.get("label") in by_prompt]
-
-
 # ─── Public classifier ───────────────────────────────────────────────────────
 
 class MaterialClassifier:
@@ -246,7 +237,6 @@ class MaterialClassifier:
     def status(self) -> Dict[str, Any]:
         return {
             "backend": settings.VISION_BACKEND,
-            "huggingface_api": settings.HF_VISION_MODEL if hf_available() else None,
             "local_clip": local_clip_installed(),
         }
 
@@ -256,8 +246,6 @@ class MaterialClassifier:
 
         backend = settings.VISION_BACKEND
         attempts: List[Tuple[str, Any]] = []
-        if backend in ("auto", "hf") and hf_available():
-            attempts.append((f"huggingface:{settings.HF_VISION_MODEL}", _classify_hf))
         if backend in ("auto", "local") and local_clip_installed():
             attempts.append(("local:openai/clip-vit-base-patch32", _classify_local))
 
@@ -267,14 +255,14 @@ class MaterialClassifier:
                 ranked = fn(image_bytes)
                 if ranked:
                     return self._build(ranked, source)
-            except (AIProviderError, Exception) as exc:  # any provider failure → try next
+            except Exception as exc:  # any provider failure → safe fallback
                 print(f"[MHK ML] {source} failed: {exc}")
                 errors.append(f"{source}: {exc}")
 
         if not attempts:
             return self._fallback(
-                "AI vision is not configured. Add a free HF_API_TOKEN to the backend .env, "
-                "or choose the material manually."
+                "AI vision is not installed on the server (local CLIP). "
+                "Please choose the material manually."
             )
         return self._fallback("AI could not analyse this photo. Please choose the material manually.")
 

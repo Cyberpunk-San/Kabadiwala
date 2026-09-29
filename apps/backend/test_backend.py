@@ -18,9 +18,8 @@ import tempfile
 # Must be set BEFORE importing the app — settings/db read them at import time.
 _TMP_DIR = tempfile.mkdtemp(prefix="mhk_test_")
 os.environ["MHK_DB_PATH"] = os.path.join(_TMP_DIR, "test.db")
-os.environ["HF_API_TOKEN"] = ""
-os.environ["GEMINI_API_KEY"] = ""
 os.environ["VISION_BACKEND"] = "off"
+os.environ.setdefault("ENABLE_LOCAL_LLM", "false")
 os.environ["MHK_MARKET_FEED"] = "off"  # no network in tests: metals use reference rates
 
 from fastapi.testclient import TestClient  # noqa: E402
@@ -307,35 +306,6 @@ def test_assistant_offline():
     })
     assert res_hi.status_code == 200 and res_hi.json()["steps"][0]["tool"] == "get_safety"
     print("✓ Offline agent (tools + actions) passed")
-
-
-def test_assistant_llm_agent_loop():
-    """Drive the real agent loop with a scripted fake model: tool call → final answer."""
-    from db import SessionLocal
-    from models.domain import AssistantChatRequest
-    from services import assistant_service as a
-
-    script = iter([
-        '```json\n{"tool": "get_best_offers", "args": {"material": "copper", "weight_kg": 20}}\n```',
-        '{"final": "EcoCycle gives the most.", "actions": [{"type": "open_market", "material": "Copper cable", "weight_kg": 20}]}',
-    ])
-    seen = []
-
-    def fake_complete(system, msgs):
-        seen.append(msgs[-1]["content"])
-        return next(script)
-
-    db = SessionLocal()
-    try:
-        req = AssistantChatRequest(language="en", messages=[{"role": "user", "content": "copper 20kg"}])
-        reply, actions, steps = a._llm_agent(a.AgentContext(db, req), fake_complete)
-    finally:
-        db.close()
-    assert reply == "EcoCycle gives the most."
-    assert [s.tool for s in steps] == ["get_best_offers"]
-    assert actions[0].material == "Copper cable" and actions[0].weight_kg == 20
-    assert "TOOL RESULT (get_best_offers)" in seen[1] and "take_home_inr" in seen[1]
-    print("✓ LLM agent loop (tool call → result → final + actions) passed")
 
 
 def test_roles_and_pickups():
@@ -692,7 +662,6 @@ if __name__ == "__main__":
     test_settlement_credits_collector()
     test_sync_retry_after_reject()
     test_assistant_offline()
-    test_assistant_llm_agent_loop()
     test_roles_and_pickups()
     test_buyer_company_console()
     test_pickup_scheduling()

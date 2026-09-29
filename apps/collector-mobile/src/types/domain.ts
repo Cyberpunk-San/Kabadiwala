@@ -165,7 +165,7 @@ export interface MaterialPrediction {
   safetyMessage?: string;
   alternatives?: Array<{ material: Material; confidence: number }>;
   /** Where the answer came from: cloud AI, server AI, or a fallback. */
-  source?: "huggingface" | "local" | "fallback";
+  source?: "local" | "fallback";
 }
 
 export interface BazarPriceItem {

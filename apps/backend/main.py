@@ -11,10 +11,11 @@ from routers import (
     collectors, demands, opportunities, admin,
     risk, ml, sync, recycler_console, assistant, accounts, pickups, regional,
 )
-from services.ai_providers import provider_status
+from services.ai_providers import provider_status, warm_up_local_llm
 from services.ml_classifier import ml_classifier
 
 init_db()
+warm_up_local_llm()
 
 app = FastAPI(
     title="Mai Hu Kabadiwala — E-Waste Platform API",

@@ -7,19 +7,14 @@ The assistant doesn't just chat: it calls TOOLS on live platform data
 valuation) and returns ACTIONS the app renders as buttons
 ("Open Market: Copper 35 kg").
 
-Agent protocol (works with any chat LLM — no native function-calling needed):
-  the model replies with ONE JSON object per turn, either
-     {"tool": "<name>", "args": {...}}                 → we run it, feed result back
-     {"final": "<answer>", "actions": [{...}, ...]}    → done
-  up to MAX_STEPS tool calls.
 
-Provider order: Hugging Face → Gemini → offline agent (rule-based planner that
-uses the very same tools, so the feature always works, even with no keys).
+The offline agent (rule-based planner over the tools below) answers first — fast,
+with live data, no keys. If it doesn't understand the question, the free local model
+(llama.cpp) answers it as plain text — never with prices or live data.
 """
 
 from __future__ import annotations
 
-import json
 import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -33,7 +28,7 @@ from models.domain import (
     AssistantStep,
 )
 from services import ml_service, recycler_service
-from services.ai_providers import AIProviderError, gemini_available, gemini_chat, hf_available, hf_chat
+from services.ai_providers import AIProviderError, local_chat, local_llm_available
 from services.ml_classifier import MATERIAL_HAZARDS
 from services import market_price_service
 from services.price_forecaster import BASE_PRICES
@@ -244,96 +239,6 @@ def _summarise(name: str, args: Dict[str, Any]) -> AssistantStep:
     return AssistantStep(tool=name, summary=f"{label}{f' · {mat}' if mat else ''}")
 
 
-def _parse_actions(raw: Any) -> List[AssistantAction]:
-    actions: List[AssistantAction] = []
-    for a in raw if isinstance(raw, list) else []:
-        if not isinstance(a, dict):
-            continue
-        try:
-            actions.append(AssistantAction(
-                type=a.get("type"),
-                material=_normalise_material(a.get("material")),  # type: ignore[arg-type]
-                weight_kg=float(a["weight_kg"]) if a.get("weight_kg") is not None else None,
-            ))
-        except (ValueError, TypeError):
-            continue
-    return actions[:3]
-
-
-def _extract_json(text: str) -> Optional[Dict[str, Any]]:
-    """Pull the first {...} object out of a model reply (models love code fences)."""
-    start = text.find("{")
-    while start != -1:
-        depth = 0
-        for i in range(start, len(text)):
-            if text[i] == "{":
-                depth += 1
-            elif text[i] == "}":
-                depth -= 1
-                if depth == 0:
-                    try:
-                        obj = json.loads(text[start:i + 1])
-                        return obj if isinstance(obj, dict) else None
-                    except json.JSONDecodeError:
-                        break
-        start = text.find("{", start + 1)
-    return None
-
-
-# ─── LLM agent loop ──────────────────────────────────────────────────────────
-
-def _system_prompt(ctx: AgentContext) -> str:
-    who = ""
-    if ctx.collector:
-        c = ctx.collector
-        who = f"The user is {c.name}, a {c.tier}-tier collector in {c.operating_area or 'Pune'}.\n"
-    tools = "\n".join(f"- {n}: {desc}" for n, (_, desc) in TOOLS.items())
-    return (
-        "You are Kabadi Sahayak, an assistant AGENT inside the 'Mai Hu Kabadiwala' app for informal "
-        "scrap and e-waste collectors in India.\n" + who +
-        f"Materials the platform knows: {', '.join(MATERIALS)}.\n\n"
-        "You can call tools to get LIVE data. Never invent prices, buyers or numbers — call a tool.\n"
-        f"TOOLS:\n{tools}\n\n"
-        "Reply with EXACTLY ONE JSON object and nothing else:\n"
-        '  to use a tool: {"tool": "get_best_offers", "args": {"material": "Copper cable", "weight_kg": 35}}\n'
-        '  to answer:     {"final": "<answer>", "actions": [{"type": "open_market", "material": "Copper cable", "weight_kg": 35}]}\n'
-        "Action types: open_market (needs material, weight_kg), open_scan, open_rates, open_demands, "
-        "open_earnings, open_opportunity. Add 1-2 actions that help the user do the next step.\n\n"
-        f"The final answer MUST be in {LANGUAGE_NAMES.get(ctx.req.language, 'Hindi')}. Many users have little "
-        "formal education: use very simple words, at most 5 short lines, and use ₹. Safety first: never advise "
-        "burning cables, breaking batteries or CRTs, or acid baths."
-    )
-
-
-def _llm_agent(ctx: AgentContext, complete: Callable[[str, List[Dict[str, str]]], str]) -> Tuple[str, List[AssistantAction], List[AssistantStep]]:
-    system = _system_prompt(ctx)
-    convo: List[Dict[str, str]] = [m.model_dump() for m in ctx.req.messages][-8:]
-    steps: List[AssistantStep] = []
-
-    for _ in range(MAX_STEPS + 1):
-        raw = complete(system, convo)
-        obj = _extract_json(raw)
-        if obj is None:
-            # Model ignored the protocol — its text is still a usable answer.
-            return raw.strip(), [], steps
-        if "final" in obj:
-            return str(obj["final"]).strip(), _parse_actions(obj.get("actions")), steps
-        if "tool" in obj and len(steps) < MAX_STEPS:
-            name = str(obj["tool"])
-            args = obj.get("args") if isinstance(obj.get("args"), dict) else {}
-            result = run_tool(ctx, name, args)
-            steps.append(_summarise(name, args))
-            convo.append({"role": "assistant", "content": json.dumps({"tool": name, "args": args}, ensure_ascii=False)})
-            convo.append({"role": "user", "content": f"TOOL RESULT ({name}): {json.dumps(result, ensure_ascii=False)}\nNow continue — another tool or the final JSON answer."})
-            continue
-        break
-
-    # Out of steps: ask once more for a final answer with what we have.
-    convo.append({"role": "user", "content": 'Give the final JSON answer now: {"final": "...", "actions": [...]}'})
-    obj = _extract_json(complete(system, convo)) or {}
-    return str(obj.get("final") or "").strip(), _parse_actions(obj.get("actions")), steps
-
-
 # ─── Offline agent (same tools, rule-based planning) ─────────────────────────
 
 TEXT = {
@@ -449,19 +354,38 @@ def chat(db: Session, req: AssistantChatRequest) -> AssistantChatResponse:
     ctx = AgentContext(db, req)
     suggestions = SUGGESTIONS.get(req.language, SUGGESTIONS["hi"])
 
-    providers: List[Tuple[str, Callable[[str, List[Dict[str, str]]], str]]] = []
-    if hf_available():
-        providers.append(("huggingface", lambda system, msgs: hf_chat([{"role": "system", "content": system}, *msgs])))
-    if gemini_available():
-        providers.append(("gemini", lambda system, msgs: gemini_chat(system, msgs)))
-
-    for name, complete in providers:
-        try:
-            reply, actions, steps = _llm_agent(ctx, complete)
-            if reply:
-                return AssistantChatResponse(reply=reply, provider=name, suggestions=suggestions, actions=actions, steps=steps)
-        except AIProviderError as exc:
-            print(f"[MHK assistant] {name} failed: {exc}")
-
     reply, actions, steps = _offline_agent(ctx)
+    lang = req.language if req.language in TEXT["help"] else "hi"
+    understood = bool(steps) or reply != TEXT["help"][lang]
+    if not understood and local_llm_available():
+        helper_reply = _local_helper(ctx)
+        if helper_reply:
+            return AssistantChatResponse(reply=helper_reply, provider="local", suggestions=suggestions, actions=actions, steps=[])
     return AssistantChatResponse(reply=reply, provider="offline", suggestions=suggestions, actions=actions, steps=steps)
+
+
+# ─── Local helper (free-form questions only) ─────────────────────────────────
+
+# Any price or money figure means the small model is guessing — it has no live data.
+_MONEY_RE = re.compile(r"₹|\brs\.?\s*\d|\binr\b|\d+\s*(rupees?|रुपये|रुपए|रुपया)|/\s*(kg|किलो)", re.I)
+
+
+def _local_helper(ctx: AgentContext) -> Optional[str]:
+    """Answer a general question with the local model. Returns None if it can't do so safely."""
+    lang_name = LANGUAGE_NAMES.get(ctx.req.language, "Hindi")
+    system = (
+        "You are Kabadi Sahayak, a helpful assistant for informal scrap and e-waste collectors in India. "
+        f"Answer ONLY in {lang_name}, in at most 4 short, simple sentences. "
+        "NEVER mention prices, rates, rupee amounts or buyer names — you do not have live data; for those, "
+        "tell the user to check the Rates or Market screen in the app. "
+        "Safety first: never advise burning cables, breaking batteries or CRTs, or acid baths."
+    )
+    convo = [m.model_dump() for m in ctx.req.messages][-6:]
+    try:
+        text = local_chat([{"role": "system", "content": system}, *convo])
+    except AIProviderError as exc:
+        print(f"[MHK assistant] local helper failed: {exc}")
+        return None
+    if not text or _MONEY_RE.search(text) or text.lstrip().startswith("{"):
+        return None
+    return text

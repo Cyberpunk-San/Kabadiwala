@@ -140,7 +140,7 @@ class MLMaterialPrediction(BaseModel):
     bounding_box: Optional[Dict[str, float]] = None
     alternatives: List[MaterialAlternative] = []
     model_version: str = "fallback"
-    # "huggingface" | "local" | "fallback" — lets the UI say where the answer came from.
+    # "local" | "fallback" — lets the UI say where the answer came from.
     source: str = "fallback"
 
 
@@ -185,7 +185,7 @@ class AssistantStep(BaseModel):
 
 class AssistantChatResponse(BaseModel):
     reply: str
-    provider: str  # "huggingface" | "gemini" | "offline"
+    provider: str  # "local" | "offline"
     suggestions: List[str] = []
     actions: List[AssistantAction] = []
     steps: List[AssistantStep] = []

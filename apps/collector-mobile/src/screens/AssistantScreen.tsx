@@ -153,7 +153,7 @@ export function AssistantScreen({ route }: Props) {
   };
 
   const providerLabel = (p: AssistantReply["provider"]) =>
-    p === "offline" ? t("offlineAnswer") : p === "gemini" ? "Gemini" : "Hugging Face";
+    p === "offline" ? t("offlineAnswer") : t("sourceLocal");
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>

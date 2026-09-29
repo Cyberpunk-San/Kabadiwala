@@ -68,21 +68,56 @@ async function startNative(
 ): Promise<RecognitionHandle> {
   const mod = await loadNativeModule();
   if (!mod) {
-    onError("Speech recognition not available on this device");
+    // Expo Go does not ship this native module — a development build is required.
+    onError("Speech recognition not available (needs a development build, not Expo Go)");
+    onEnd();
     return { stop: () => {} };
   }
 
+  // The microphone + speech permission must be granted before start(),
+  // otherwise the engine fails immediately with "not-allowed".
+  try {
+    const perm = await mod.requestPermissionsAsync();
+    if (!perm?.granted) {
+      onError("Microphone permission denied");
+      onEnd();
+      return { stop: () => {} };
+    }
+  } catch (err) {
+    onError(String(err));
+    onEnd();
+    return { stop: () => {} };
+  }
+
+  if (typeof mod.isRecognitionAvailable === "function" && !mod.isRecognitionAvailable()) {
+    onError("No speech recognition service on this device (install/enable Google speech services)");
+    onEnd();
+    return { stop: () => {} };
+  }
+
+  const cleanup = () => {
+    resultSub?.remove?.();
+    endSub?.remove?.();
+    errorSub?.remove?.();
+  };
+
   // Subscribe to events
   const resultSub = mod.addListener("result", (event: any) => {
+    if (event?.isFinal === false) return;
     const transcript = event?.results?.[0]?.transcript ?? "";
     const confidence = event?.results?.[0]?.confidence ?? 0.5;
     if (transcript) onResult({ transcript, confidence });
   });
 
-  const endSub = mod.addListener("end", () => onEnd());
+  // Remove listeners when the session ends so they don't stack up and
+  // deliver duplicate results on the next tap.
+  const endSub = mod.addListener("end", () => {
+    cleanup();
+    onEnd();
+  });
 
   const errorSub = mod.addListener("error", (event: any) => {
-    onError(event?.message ?? "Recognition error");
+    onError(event?.message || event?.error || "Recognition error");
   });
 
   try {
@@ -94,7 +129,10 @@ async function startNative(
       addsPunctuation: false,
     });
   } catch (err) {
+    cleanup();
     onError(String(err));
+    onEnd();
+    return { stop: () => {} };
   }
 
   return {
@@ -102,9 +140,7 @@ async function startNative(
       try {
         mod.stop();
       } catch {}
-      resultSub?.remove?.();
-      endSub?.remove?.();
-      errorSub?.remove?.();
+      cleanup();
     },
   };
 }
@@ -120,7 +156,8 @@ async function startWeb(
   const W = window as any;
   const Ctor = W.SpeechRecognition ?? W.webkitSpeechRecognition;
   if (!Ctor) {
-    onError("Speech recognition not supported in this browser");
+    onError("Speech recognition not supported in this browser (use Chrome or Edge)");
+    onEnd();
     return { stop: () => {} };
   }
 

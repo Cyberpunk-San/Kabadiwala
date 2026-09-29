@@ -2,7 +2,7 @@ import type { MaterialPrediction } from "../../types/domain";
 import { combinePredictions } from "./photoConsensus";
 
 const pred = (material: MaterialPrediction["material"], confidence: number, extra: Partial<MaterialPrediction> = {}): MaterialPrediction => ({
-  material, confidence, category: "x", quality: "medium", hazard: false, source: "huggingface", alternatives: [], ...extra,
+  material, confidence, category: "x", quality: "medium", hazard: false, source: "local", alternatives: [], ...extra,
 });
 
 describe("multi-photo consensus", () => {
@@ -33,6 +33,6 @@ describe("multi-photo consensus", () => {
   it("ignores fallback guesses when a real AI result exists", () => {
     const c = combinePredictions([pred("Mixed e-waste", 0.9, { source: "fallback" }), pred("Server boards", 0.55)])!;
     expect(c.prediction.material).toBe("Server boards");
-    expect(c.prediction.source).toBe("huggingface");
+    expect(c.prediction.source).toBe("local");
   });
 });

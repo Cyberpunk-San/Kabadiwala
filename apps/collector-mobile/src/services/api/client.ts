@@ -16,11 +16,11 @@ export function isNetworkError(err: unknown): boolean {
 }
 
 // ─── Core fetch helper ───────────────────────────────────────────────────────
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function apiFetch<T>(path: string, init?: RequestInit, timeoutMs = config.apiTimeoutMs): Promise<T> {
   const url = `${config.apiBaseUrl}${path}`;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), config.apiTimeoutMs);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(url, {
@@ -353,7 +353,7 @@ type RawPrediction = {
   material: Material; category: string; quality: "low" | "medium" | "high";
   hazard: boolean; confidence: number; safety_message?: string | null;
   alternatives?: Array<{ material: Material; confidence: number }>;
-  source?: "huggingface" | "local" | "fallback";
+  source?: "local" | "fallback";
 };
 
 /** Send the photo (base64 JPEG) to the backend AI. Never throws — returns confidence 0 on failure. */
@@ -383,8 +383,8 @@ export async function analyseMaterial(imageBase64: string): Promise<MaterialPred
 export interface HealthInfo {
   status: string;
   components: {
-    vision_ai?: { huggingface_api?: string | null; local_clip?: boolean };
-    ai_assistant?: { providers?: { huggingface?: string | null; gemini?: string | null } };
+    vision_ai?: { local_clip?: boolean };
+    ai_assistant?: { providers?: { local?: string | null } };
   };
 }
 
@@ -409,7 +409,7 @@ export type AssistantActionType =
 export interface AssistantAction { type: AssistantActionType; material?: Material | null; weight_kg?: number | null }
 export interface AssistantReply {
   reply: string;
-  provider: "huggingface" | "gemini" | "offline";
+  provider: "local" | "offline";
   suggestions: string[];
   actions: AssistantAction[];
   steps: Array<{ tool: string; summary: string }>;
@@ -429,8 +429,11 @@ export async function askAssistant(input: {
       collector_id: input.collectorId ?? null,
       location: input.location ?? null,
     }),
-  });
+  }, ASSISTANT_TIMEOUT_MS);
 }
+
+// General questions are answered by the free on-server model (CPU), which can take ~20–40 s.
+const ASSISTANT_TIMEOUT_MS = 90_000;
 
 // ─── Reverse Marketplace: Demands ────────────────────────────────────────────
 

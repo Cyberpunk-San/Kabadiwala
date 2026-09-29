@@ -130,10 +130,10 @@ python -m http.server 3001 --directory admin-web        # authority dashboard
 ### Environment
 | Backend (`apps/backend/.env`) | Default |
 |---|---|
-| `HF_API_TOKEN` — Hugging Face token for photo recognition + assistant | empty (offline fallbacks) |
-| `GEMINI_API_KEY` — optional second assistant provider | empty |
-| `VISION_BACKEND` — `auto` / `hf` / `local` / `off` | `auto` |
+| No AI keys — photo recognition (local CLIP) and the chat helper (local Qwen2.5-1.5B) run on the server | — |
+| `VISION_BACKEND` — `auto` / `local` / `off` | `auto` |
 | `ENABLE_LOCAL_CLIP` — allow the ~600 MB offline vision model | `true` |
+| `ENABLE_LOCAL_LLM` — allow the ~1 GB local chat helper (needs `llama-cpp-python`) | `true` |
 | `MHK_DB_PATH` — SQLite file | `data/mhk.db` |
 | `MHK_ALLOWED_ORIGINS` — CORS | `*` |
 

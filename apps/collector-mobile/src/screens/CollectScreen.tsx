@@ -164,7 +164,7 @@ export function CollectScreen({ route, navigation }: Props) {
   };
 
   const lowConfidence = prediction && prediction.confidence < LOW_CONFIDENCE;
-  const sourceKey: TranslationKey = prediction?.source === "huggingface" ? "sourceHf" : prediction?.source === "local" ? "sourceLocal" : "sourceFallback";
+  const sourceKey: TranslationKey = prediction?.source === "local" ? "sourceLocal" : "sourceFallback";
 
   return (
     <Screen withTabBar>

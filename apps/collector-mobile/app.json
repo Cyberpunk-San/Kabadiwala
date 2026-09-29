@@ -6,13 +6,19 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "maihukabadiwala",
+    "icon": "./assets/icon.png",
     "android": {
       "package": "com.maihukabadiwala.collector",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1F4D3A"
+      },
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -37,7 +43,17 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FBF9F1"
+          "backgroundColor": "#FBF9F1",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
     ]
