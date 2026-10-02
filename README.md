@@ -1,5 +1,6 @@
 # Mai Hu Kabadiwala (मैं हूँ कबाड़ीवाला)
 
+
 A platform that turns informal scrap collectors (kabadiwalas) into data-driven micro-entrepreneurs.
 Households and companies book doorstep pickups, kabadiwalas identify and price scrap with AI, sell it
 to verified recyclers at the best take-home price, and every kilo is traced from doorstep to recycler
